@@ -1,0 +1,66 @@
+{
+  "expo": {
+    "owner": "progresarcorporation",
+    "plugins": [
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#BF0404",
+          "mode": "production"
+        }
+      ]
+    ],
+    "name": "Progresar Movil",
+    "slug": "progresar-movil",
+    "version": "1.5.0",
+    "orientation": "portrait",
+    "icon": "./assets/isologo.png",
+    "splash": {
+      "image": "./assets/splash.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#ffffff"
+    },
+    "updates": {
+      "fallbackToCacheTimeout": 0,
+      "url": "https://u.expo.dev/865fa322-e28d-47f1-8c9d-8c8c53e0b70e"
+    },
+    "assetBundlePatterns": [
+      "**/*"
+    ],
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.progresarcorporation.progresarmovil",
+      "runtimeVersion": {
+        "policy": "sdkVersion"
+      },
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Face ID se utiliza para autenticar al usuarior"
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#BF0404"
+      },
+      "versionCode": 13,
+      "permissions": [
+        "USER_FACING_NOTIFICATIONS"
+      ],
+      "package": "com.progresarcorporation.progresarmovil",
+      "googleServicesFile": "./google-services.json"
+    },
+    "notification": {
+      "icon": "./assets/adaptive-icon.png"
+    },
+    "web": {
+      "favicon": "./assets/isologo.png",
+      "config": {}
+    },
+    "extra": {
+      "eas": {
+        "projectId": "865fa322-e28d-47f1-8c9d-8c8c53e0b70e"
+      }
+    }
+  }
+}

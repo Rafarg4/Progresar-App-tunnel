@@ -1,0 +1,55 @@
+{
+  "project_info": {
+    "project_number": "860035223469",
+    "project_id": "app-progresar",
+    "storage_bucket": "app-progresar.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:860035223469:android:df52bceff6f6b3a292db24",
+        "android_client_info": {
+          "package_name": "com.progresarcorporation.progresarmovil"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "860035223469-8npmqnvdpnv0eu3mpid1lcumsfo0tf7p.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.progresarcorporation.progresarmovil",
+            "certificate_hash": "576e0e935ae414b403e517bfe8f5cc705af66447"
+          }
+        },
+        {
+          "client_id": "860035223469-smfghc4q9ebhh8mrh6997p1he8g3bokd.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.progresarcorporation.progresarmovil",
+            "certificate_hash": "df77e646cb950eb157f82ccf4c2596c9972554f0"
+          }
+        },
+        {
+          "client_id": "860035223469-oiulmu3nelqaqm7i3q4j928mq77ffi2c.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDfrlVUm4KuWoI82n7k5EJbQbCASGR4Zoc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "860035223469-oiulmu3nelqaqm7i3q4j928mq77ffi2c.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
