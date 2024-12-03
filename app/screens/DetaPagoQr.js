@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect,useRef  } from 'react';
 import { View, Text, ScrollView,StyleSheet, TouchableOpacity } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRoute } from '@react-navigation/native';
@@ -7,26 +7,54 @@ const DetaPagoQr = () => {
   const route = useRoute();
   const { nro_doc, clase_tarjeta,nro_tarjeta } = route.params;
 
+  const [months, setMonths] = useState([]); // Guardamos los meses obtenidos de la API
+  const [selectedMonth, setSelectedMonth] = useState(''); // Inicialmente vacío
+  const [loading, setLoading] = useState(true); // Para mostrar un indicador de carga mientras se obtiene el mes
+
+  // Función para obtener el mes actual desde la API
+  const fetchCurrentMonth = () => {
+    const url = 'https://api.progresarcorp.com.py/api/obtener_mes_actual'; // Suponiendo que esta es la URL de tu API
+
+    fetch(url)
+      .then((response) => response.json())
+      .then((data) => {
+        if (data && data.month && data.year) {
+          setSelectedMonth(`${data.month} - ${data.year}`);
+        } else {
+          console.error('No se pudo obtener el mes actual');
+        }
+      })
+      .catch((error) => {
+        console.error('Error al obtener el mes:', error);
+      })
+      .finally(() => {
+        setLoading(false);
+      });
+  };
+
+  useEffect(() => {
+    fetchCurrentMonth();
+  }, []);
+
   const [tarjetaData, setTarjetaData] = useState([]);
   const [cantidadTotal, setCantidadTotal] = useState(0);
   const [montoTotal, setMontoTotal] = useState(0);
   const [ultimoMovimiento, setUltimoMovimiento] = useState(null);
   const [saldoDisponible, setSaldoDisponible] = useState(0); // Nuevo estado para el saldo disponible
-  const [selectedMonth, setSelectedMonth] = useState('Septiembre - 2024'); // Mes actual por defecto
 
-  // Lista de meses con formato 'Mes - Año'
-  const months = [
-    { name: 'Septiembre', year: '2024' },
-    { name: 'Agosto', year: '2024' },
-    { name: 'Julio', year: '2024' },
-    { name: 'Junio', year: '2024' },
-    { name: 'Mayo', year: '2024' },
-    { name: 'Abril', year: '2024' },
-    { name: 'Marzo', year: '2024' },
-    { name: 'Febrero', year: '2024' },
-    { name: 'Enero', year: '2024' },
-    // Añadir más meses si es necesario
-  ];
+  const scrollViewRef = useRef();
+
+  // Obtener los meses desde la API de Laravel
+  const fetchMonths = async () => {
+    try {
+      const response = await fetch('https://api.progresarcorp.com.py/api/meses');
+      const data = await response.json();
+      setMonths(data); // Actualizamos el estado de los meses
+      setSelectedMonth(`${data[0].name} - ${data[0].year}`); // Seleccionamos el primer mes por defecto
+    } catch (error) {
+      console.error('Error al obtener los meses:', error);
+    }
+  };
 
   // Función para obtener el número de mes a partir del nombre del mes
   const getMonthNumber = (monthName) => {
@@ -88,10 +116,16 @@ const DetaPagoQr = () => {
       });
   }, [nro_tarjeta]); 
   // Actualiza los datos cuando cambia el mes seleccionado
-  useEffect(() => {
-    const [monthName, year] = selectedMonth.split(' - ');
-    fetchData(monthName, year);
-  }, [selectedMonth]);
+// Actualizar los datos cuando cambia el mes seleccionado
+useEffect(() => {
+  const [monthName, year] = selectedMonth.split(' - ');
+  fetchData(monthName, year);
+}, [selectedMonth]);
+
+// Llamar a la función para obtener los meses cuando el componente se monta
+useEffect(() => {
+  fetchMonths();
+}, []);
   useEffect(() => {
     // API para obtener el último movimiento
     const urlUltimoMovimiento = `https://api.progresarcorp.com.py/api/obtener_saldo_actual/${nro_tarjeta}`;
@@ -138,6 +172,7 @@ const DetaPagoQr = () => {
 
         {/* Card de Movimiento */}
         <View style={styles.movementCard}>
+          
           <Text style={styles.movementTitle}>Movimientos</Text>
           <Text style={styles.movementAmount}>{saldoDisponible !== null 
           ? parseFloat(saldoDisponible).toLocaleString('es-ES') + ' ₲' 
@@ -145,6 +180,8 @@ const DetaPagoQr = () => {
             ? 'Error al cargar el saldo' 
             : 'Cargando...'}</Text>
           <Text style={styles.availableMoney}>Saldo disponible</Text>
+          {/* Footer con el mensaje adicional */}
+      
         </View>
 
         {/* Detalles de pagos individuales */}
@@ -218,6 +255,8 @@ const DetaPagoQr = () => {
     ) : (
       <Text style={styles.noMovementsText}>No hay información del último movimiento</Text>
     )}
+    {/* Footer con el mensaje adicional */}
+
         {/* Detalles generales de los pagos */}
         <View style={styles.card}>
           <Text style={styles.generalHeader}>
@@ -237,6 +276,9 @@ const DetaPagoQr = () => {
               <Text style={styles.value}>{parseFloat(saldoDisponible).toLocaleString('es-ES')} ₲</Text>
             </View>
           </View>
+          <View style={styles.footer}>
+        <Text style={styles.footerText_importante}><Icon name="info-circle" size={22} color="#000" style={styles.iconStylemov} /> IMPORTANTE: En este apartado solo aparecerán las operaciones por QR.</Text>
+      </View>
         </View>
       </ScrollView>
     </View>
@@ -385,6 +427,12 @@ const styles = StyleSheet.create({
   footerText: {
     fontSize: 14,
     fontWeight: 'bold',
+  },
+  footerText_importante: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: 'red',  // Establecer el color a rojo
+    textAlign: 'center',  // Centrar el texto
   },
   noMovementsText: {
     // Estilos para el texto "Sin movimientos"

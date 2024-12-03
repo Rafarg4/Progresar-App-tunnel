@@ -545,7 +545,14 @@ export default class LoginScreen extends Component {
                                 <Text style={styles.tipoCuenta}>
                                     {item.clase_tarjeta === 'JM' ? 'Clásica' :
                                      item.clase_tarjeta === 'V6' ? 'Visa' :
+                                     item.clase_tarjeta === 'J7' ? 'Fep' :
+                                     item.clase_tarjeta === 'RM' ? 'Rotary' :
+                                     item.clase_tarjeta === 'EV' ? 'El viajero' :
+                                     item.clase_tarjeta === 'TS' ? 'Comedi' :
                                      item.clase_tarjeta === 'JW' ? 'Mujer' :
+                                     item.clase_tarjeta === 'FR' ? 'Afuni' :
+                                     item.clase_tarjeta === 'J0' ? 'Empresarial' :
+                                     item.clase_tarjeta === 'EI' ? 'Visa Empresarial' :
                                      item.clase_tarjeta === 'TR' ? 'La Trinidad' : item.clase_tarjeta}
                                 </Text>
                                 <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
@@ -777,13 +784,13 @@ export default class LoginScreen extends Component {
             );
           };*/
         //ver los movimientos de ATM
-        const ATM = () =>{
+        {/* const ATM = () =>{
             return(
                     <View style={{backgroundColor: 'white', padding: 5, borderRadius: 10, width: '100%', padding: 10, alignItems: 'center', alignContent: 'center'}}>
                         <Text>Proximamente...</Text>
                     </View>
                 )
-            }
+            }*/}
         
         //comprobar el saldo del prestamos
         const comprobarSaldoFinanciero = (value, item) => {
@@ -1163,7 +1170,7 @@ export default class LoginScreen extends Component {
                             </CollapseBody>
                         </Collapse>
 
-                         {/* Movimiento ATM */}
+                         {/* Movimiento ATM 
                          <Collapse style={{marginTop: 15}}>
                             <CollapseHeader>
                                 <View style= {{padding: 10, backgroundColor: '#bf0404', borderRadius: 10}}> 
@@ -1186,7 +1193,7 @@ export default class LoginScreen extends Component {
                                         <ATM />
                                     </View>
                             </CollapseBody>
-                        </Collapse>
+                        </Collapse>*/}
 
                         {/* Electrodomesticos */}
                         <Collapse style={{marginTop: 15}}>

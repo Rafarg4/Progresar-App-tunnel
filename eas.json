@@ -1,23 +1,48 @@
 {
 	"cli": {
-		"version": ">= 1.2.0"
+	  "version": ">= 3.6.0"
 	},
 	"build": {
-		"development": {
-			"distribution": "internal",
-			"android": {
-				"gradleCommand": ":app:assembleDebug"
-			},
-			"ios": {
-				"buildConfiguration": "Debug"
-			}
+	  "development": {
+		"distribution": "internal",
+		"android": {
+		  "buildType": "apk"
 		},
-		"preview": {
-			"distribution": "internal"
+		"ios": {
+		  "buildConfiguration": "Debug"
 		},
-		"production": {}
+		"channel": "development"
+	  },
+	  "preview": {
+		"distribution": "internal",
+		"android": {
+		  "buildType": "apk"
+		},
+		"ios": {
+		  "simulator": false
+		},
+		"channel": "preview"
+	  },
+	  "production": {
+		"android": {
+		  "buildType": "apk"  // Cambiado para APK si deseas un APK también en producción.
+		},
+		"ios": {
+		  "enterpriseProvisioning": "adhoc"
+		},
+		"channel": "production"
+	  }
 	},
 	"submit": {
-		"production": {}
+	  "production": {
+		"android": {
+		  "serviceAccountKeyPath": "./google-play-service-account.json"
+		},
+		"ios": {
+		  "appleId": "tu-correo@dominio.com",
+		  "ascAppId": "1234567890"
+		}
+	  }
 	}
-}
+  }
+  

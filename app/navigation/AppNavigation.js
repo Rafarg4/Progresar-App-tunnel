@@ -177,7 +177,7 @@ function App() {
             <Stack.Screen name="AdelantoQr" component={AdelantoQr} options={
                 {
                     headerTintColor: "white",
-                    headerTitle:"Scanerar Qr",
+                    headerTitle:"Adelanto ATM",
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
@@ -196,15 +196,15 @@ function App() {
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
-
-            <Stack.Screen name="Medios de Pago" component={MediosdePago} options={
+            {/* 
+             <Stack.Screen name="Medios de Pago" component={MediosdePago} options={
                 {
                     headerTintColor: "white",
                     headerTitle:"Medios de Pago",
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
-
+            */}
             <Stack.Screen name="Confirmar Compra" component={ConfirmarCompra} options={
                 {
                     headerShown: false,
@@ -218,14 +218,14 @@ function App() {
                     gestureEnabled: false
                 }
             }/>
-
+            {/*
             <Stack.Screen name="Mis Pagos" component={MisPagos} options={
                 {
                     headerTintColor: "white",
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
-
+            */}
             <Stack.Screen name="Verificar Email" component={VerificarEmail} options={
                 {
                     headerShown: false,

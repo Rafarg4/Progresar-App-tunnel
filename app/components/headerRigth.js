@@ -67,9 +67,9 @@ const Salir = () => {
       >
         <MenuItem onPress={ () => gotoScreen('Usuario')}><Icon name="user-circle" size={20} color='#bf0404' /> Mi Perfil</MenuItem>
         {/*<MenuItem onPress={ () => Alert.alert('Próximamente', 'Esta opción estará habilitada en versiones posteriores.')}><Icon name="money" size={20} color='#bf040450' /> <Text style={{color:'#00000050'}}> Mis pagos</Text></MenuItem> */}
-        <MenuItem onPress={ () => gotoScreen('Mis Pagos')}><Icon name="money" size={20} color='#bf0404' /> Mis pagos</MenuItem>
+        {/* <MenuItem onPress={ () => gotoScreen('Mis Pagos')}><Icon name="money" size={20} color='#bf0404' /> Mis pagos</MenuItem>
         {/* <MenuItem onPress={ () => Alert.alert('Próximamente', 'Esta opción estará habilitada en versiones posteriores.')}><Icon name="credit-card" size={20} color='#bf040450' /><Text style={{color:'#00000050'}}> Medios de Pago </Text></MenuItem> */}
-        <MenuItem onPress={ () => gotoScreen('Medios de Pago')}><Icon name="credit-card" size={20} color='#bf0404' /> Medios de Pago</MenuItem>
+         {/*<MenuItem onPress={ () => gotoScreen('Medios de Pago')}><Icon name="credit-card" size={20} color='#bf0404' /> Medios de Pago</MenuItem> */}
         <MenuDivider />
         <MenuItem onPress={ ()=> Alert.alert('Cerrar Sesión', 'Está seguro que desea cerrar sesión?',
             [

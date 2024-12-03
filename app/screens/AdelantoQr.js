@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Modal, TouchableOpacity, ScrollView, TextInput } from 'react-native';
 import { BarCodeScanner } from 'expo-barcode-scanner';
+import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native'; // Importar useNavigation
 const AdelantoQr = ({ route, navigation }) => {
   const [hasPermission, setHasPermission] = useState(null);
@@ -238,8 +239,20 @@ ${responseCode} - ${responseDescription}
         return 'La Fep';
       case 'JM':
         return 'Clasica';
+      case 'J0':
+        return 'Empresarial';
+      case 'J7':
+        return 'Fep';
+      case 'RM':
+        return 'Rotary';
+      case 'EV':
+        return 'El viajero';
       case 'JW':
-        return 'Clasica';
+          return 'Mujer';
+      case 'RC':
+          return 'Rotary';
+      case 'TS':
+          return 'Comedi';
       default:
         return 'No definida';
     }
@@ -279,10 +292,10 @@ ${responseCode} - ${responseDescription}
 >
   <View style={styles.modalContainer}>
     <View style={styles.modalContent}>
-      <Text style={styles.modalTitle}>Detalles de Qr escaneado</Text>
+      <Text style={styles.modalTitle}>Codigo Qr escaneado:</Text>
                 {qrCode && (
                     <Text style={{ fontSize: 18, color: 'green', marginTop: 10 }}>
-                        Qr correcto ✅
+                      Correcto <Icon name='check-circle' color='#bf0404' size={20} /> 
                     </Text>
                 )}
       <Text style={styles.modalTitle}>Seleccione una tarjeta</Text>

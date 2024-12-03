@@ -45,10 +45,14 @@
       },
       "versionCode": 13,
       "permissions": [
+        "USER_FACING_NOTIFICATIONS",
         "USER_FACING_NOTIFICATIONS"
       ],
       "package": "com.progresarcorporation.progresarmovil",
-      "googleServicesFile": "./google-services.json"
+      "googleServicesFile": "./google-services.json",
+      "runtimeVersion": {
+        "policy": "appVersion"
+      }
     },
     "notification": {
       "icon": "./assets/adaptive-icon.png"
