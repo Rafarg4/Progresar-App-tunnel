@@ -167,8 +167,12 @@ const Qr = ({ route, navigation }) => {
                 body: JSON.stringify(postData),
             });
 
+            // Registrar la respuesta completa
+            console.log('Respuesta completa de la API:', response);
+
             // Obtener el texto completo de la respuesta
             const text = await response.text();
+            console.log('Texto sin procesar de la respuesta:', text);
 
             // Manejo de la respuesta, considerando posibles respuestas vacías
             let responseData = null;
@@ -286,7 +290,7 @@ const Qr = ({ route, navigation }) => {
           };
 
             // Obtener el código de respuesta y su descripción
-            const responseCode = responseData?.codigoRespuestaTransaccion || 'N/A';
+            const responseCode = responseData?.codigoRespuestaTransaccion || 'Error!';
             const responseDescription = responseCodeMap[responseCode] || 'Código de respuesta desconocido, hubo un error al realizar la transcaccion.';
 
             if (responseCode === '00') {

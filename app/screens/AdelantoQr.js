@@ -144,7 +144,7 @@ const AdelantoQr = ({ route, navigation }) => {
             // Mostrar un Alert de procesamiento
             Alert.alert(
                 'Procesando⌛',
-                'Por favor, espera mientras se procesa la transacción...',
+                'Por favor, espera mientras se procesa la autorización...',
                 [],
                 { cancelable: false }
             );
@@ -166,10 +166,13 @@ const AdelantoQr = ({ route, navigation }) => {
                 },
                 body: JSON.stringify(postData),
             });
+            // Registrar la respuesta completa
+            console.log('Respuesta completa de la API:', response);
 
             // Obtener el texto completo de la respuesta
             const text = await response.text();
-
+            console.log('Texto sin procesar de la respuesta:', text);
+                        // Obtener el texto completo de la respuesta
             // Manejo de la respuesta, considerando posibles respuestas vacías
             let responseData = null;
             if (text) {
@@ -190,7 +193,7 @@ const AdelantoQr = ({ route, navigation }) => {
             const responseCode = responseData?.codigoRespuestaTransaccion || 'N/A';
             const responseDescription = responseCodeMap[responseCode] || 'Código de respuesta desconocido, hubo un error al realizar la transcaccion.';
 
-            if (responseCode === '1') {
+            if (responseCode !== '1') {
                 // Formatear la respuesta JSON de manera amigable
                 const formattedResponse = `
 Código de Respuesta: 
@@ -200,8 +203,8 @@ ${responseCode} - ${responseDescription}
 
                 // Mostrar el resultado de la API en un Alert
                 Alert.alert(
-                    'Transacción Exitosa ✅',
-                    `Tarjeta Seleccionada: ${selectedCard.numeroTarjeta}\n${formattedResponse}`,
+                    'Autenticación Exitosa ✅',
+                    `Tarjeta Seleccionada: ${selectedCard.numeroTarjeta}`,
                     [
                         {
                             text: 'Confirmar',
@@ -212,8 +215,8 @@ ${responseCode} - ${responseDescription}
             } else {
                 // Mostrar un error basado en el código de respuesta
                 Alert.alert(
-                    'Error en la Transacción ❌',
-                    `Código de Respuesta: ${responseCode}\nDescripción: ${responseDescription}`,
+                    'Error en la Autenticación ❌',
+                    `Código de Respuesta: Error!`,
                     [
                         {
                             text: 'Entendido',
