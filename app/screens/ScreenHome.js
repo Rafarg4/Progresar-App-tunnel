@@ -520,76 +520,107 @@ export default class LoginScreen extends Component {
                         setError(true);
                     });
             }, []);
+
             const enmascararTarjeta = (numero) => {
                 if (numero.length <= 8) return numero;
                 const masked = '*'.repeat(numero.length - 4) + numero.slice(-4);
                 return masked.match(/.{1,4}/g).join(' ');
             };
+            const [showSaldo, setShowSaldo] = useState(true)
             const renderItem = ({ item }) => (
                 <TouchableOpacity
                     onPress={() => {
-                        if (item.clase_tarjeta !== 'V6') {
-                            navigation.navigate('DetaPagoQr', {
-                                nro_doc: item.nro_doc,
-                                clase_tarjeta: item.clase_tarjeta,
-                                nro_tarjeta: item.nro_tarjeta,
-                            });
+                        if (item.tipo_tarjeta === '1') {
+                        navigation.navigate('DetaBepsa', {
+                            nro_doc: item.nro_doc,
+                            clase_tarjeta: item.clase_tarjeta,
+                            nro_tarjeta: item.nro_tarjeta,
+                        });
                         } else {
-                            Alert.alert('¡Atención!', 'Esta opción no está disponible para las tarjetas VISA.😔');
+                        navigation.navigate('DetaProcard', {
+                            nro_doc: item.nro_doc,
+                            clase_tarjeta: item.clase_tarjeta,
+                            nro_tarjeta: item.nro_tarjeta,
+                        });
                         }
                     }}
-                >
-                    <View style={styles.card}>
-                        <View style={styles.contentContainer}>
-                            <View style={styles.infoContainer}>
-                                <Text style={styles.tipoCuenta}>
-                                    {item.clase_tarjeta === 'JM' ? 'Clásica' :
-                                     item.clase_tarjeta === 'V6' ? 'Visa' :
-                                     item.clase_tarjeta === 'J7' ? 'Fep' :
-                                     item.clase_tarjeta === 'RM' ? 'Rotary' :
-                                     item.clase_tarjeta === 'EV' ? 'El viajero' :
-                                     item.clase_tarjeta === 'TS' ? 'Comedi' :
-                                     item.clase_tarjeta === 'JW' ? 'Mujer' :
-                                     item.clase_tarjeta === 'FR' ? 'Afuni' :
-                                     item.clase_tarjeta === 'J0' ? 'Empresarial' :
-                                     item.clase_tarjeta === 'EI' ? 'Visa Empresarial' :
-                                     item.clase_tarjeta === 'TR' ? 'La Trinidad' : item.clase_tarjeta}
-                                </Text>
-                                <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
-                                <Text style={styles.nombre}>{item.nombre_usuario}</Text>
-                            </View>
-                            <View style={styles.iconContainer}>
-                                <Icon name="credit-card" size={30} color="#FF0000" />
-                            </View>
-                        </View>
-                        <View style={styles.footer1}>
-                            <Text style={styles.saldoLabel}>Saldo disponible:</Text>
-                            <Text style={styles.saldo}>
-                                {saldos[item.nro_tarjeta] !== undefined
-                                    ? `${currencyFormat(saldos[item.nro_tarjeta])} Gs.`
-                                    : 'Cargando...'}
-                            </Text>
-                        </View>
+                    >
+                <View style={styles.card}>
+                  <View style={styles.contentContainer}>
+                    <View style={styles.infoContainer}>
+                      <Text style={styles.tipoCuenta}>
+                        {item.clase_tarjeta === 'JM' ? 'Clásica' :
+                         item.clase_tarjeta === 'V6' ? 'Visa' :
+                         item.clase_tarjeta === '1' ? 'Dinelco' :
+                         item.clase_tarjeta === 'J7' ? 'Fep' :
+                         item.clase_tarjeta === 'RM' ? 'Rotary' :
+                         item.clase_tarjeta === 'EV' ? 'El viajero' :
+                         item.clase_tarjeta === 'TS' ? 'Comedi' :
+                         item.clase_tarjeta === 'JW' ? 'Mujer' :
+                         item.clase_tarjeta === 'FR' ? 'Afuni' :
+                         item.clase_tarjeta === 'J0' ? 'Empresarial' :
+                         item.clase_tarjeta === 'EI' ? 'Visa Empresarial' :
+                         item.clase_tarjeta === 'TR' ? 'La Trinidad' : item.clase_tarjeta}
+                      </Text>
+                      <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
+                      <Text style={styles.nombre}>{item.nombre_usuario}</Text>
                     </View>
-                </TouchableOpacity>
+                    <View style={styles.iconContainer}>
+                    <Icon name="credit-card" size={30} color="#FF0000" />
+                    </View>
+                  </View>
+                  <View style={styles.footer1}>
+                    <Text style={styles.saldoLabel}>Saldo disponible:</Text>
+                    {/* Verifica si el tipo de tarjeta es '1' */}
+                    {item.tipo_tarjeta === '1' ? ( // Para tarjetas de tipo '1'
+                        <Text style={styles.saldo_dinelco}>
+                        {showSaldo // Verifica si showSaldo es true o false
+                            ? (item.limite_credito && item.deuda_total // Si existen limite_credito y deuda_total
+                                ? `${currencyFormat(item.limite_credito - item.deuda_total)} Gs.` // Realiza la resta
+                                : 'No disponible') // Si no hay valores para limite_credito o deuda_total
+                            : '******' // Si showSaldo es false, muestra '******'
+                        }
+                        </Text>
+                    ) : (
+                        <Text style={styles.saldo}>
+                        {showSaldo ? (
+                          saldos[item.nro_tarjeta] === null || saldos[item.nro_tarjeta] === undefined ? ( // Verifica si el saldo es null o undefined
+                            'Cargando...' // Muestra 'Cargando...' si el saldo es null o undefined
+                          ) : (
+                            `${currencyFormat(saldos[item.nro_tarjeta])} Gs.` // Muestra el saldo formateado
+                          )
+                        ) : (
+                          '******' // Si showSaldo es false, muestra '******'
+                        )}
+                      </Text>                      
+                    )}
+                    </View>
+                </View>
+              </TouchableOpacity>
             );
             const handleRequestCard = () => {
-                WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
-              };
-            
-              return (
-                <View style={styles.container}>
-                  {error ? (
-                    <View style={styles.card}>
-                      <View style={styles.noDataContainer}>
-                        <Icon name="info-circle" size={30} color="grey" style={styles.icon} />
-                        <Text style={styles.noDataText}>¡Sin tarjetas virtuales disponibles!</Text>
-                        <TouchableOpacity style={styles.requestButton} onPress={handleRequestCard}>
+              WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
+            };
+            return (
+              <View style={styles.containertitulo}>
+                {/* Título y botón para mostrar/ocultar saldo */}
+                <View style={styles.headerContainertitulo}>
+                  <Text style={styles.headerTitletitulo}>Tarjetas</Text>
+                  <TouchableOpacity onPress={() => setShowSaldo(!showSaldo)}>
+                    <Icon name={showSaldo ? 'eye-slash' : 'eye'} size={20} color="black" />
+                  </TouchableOpacity>
+                </View>
+                {error ? (
+                  <View style={styles.card}>
+                    <View style={styles.noDataContainer}>
+                      <Icon name="info-circle" size={30} color="grey" style={styles.icon} />
+                      <Text style={styles.noDataText}>¡Sin tarjetas disponibles!</Text>
+                      <TouchableOpacity style={styles.requestButton} onPress={handleRequestCard}>
                         <Icon name="plus" size={20} color="#fff" style={styles.buttonIcon} />
                         <Text style={styles.requestButtonText}>Solicitar Tarjeta</Text>
-                        </TouchableOpacity>
-                      </View>
+                      </TouchableOpacity>
                     </View>
+                  </View>
                 ) : (
                   <FlatList
                     data={tarjetaData}
@@ -1461,6 +1492,11 @@ const styles = StyleSheet.create({
         fontWeight: 'bold',
         color: '#333',
       },
+      saldo_dinelco: {
+        fontSize: 16,
+        fontWeight: 'bold',
+        color: '#333',
+      },
     carousel: {
         maxHeight:250
     },
@@ -1649,6 +1685,20 @@ const styles = StyleSheet.create({
       requestButtonText: {
         color: '#fff',
         fontSize: 12,
+      },
+      containertitulo: {
+        flex: 1,
+        padding: 10,
+      },
+      headerContainertitulo: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: 15,
+      },
+      headerTitletitulo: {
+        fontSize: 18,
+        fontWeight: 'bold',
       },
 
 })

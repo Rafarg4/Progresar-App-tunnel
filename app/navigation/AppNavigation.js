@@ -23,6 +23,8 @@ import MovTC from '../screens/MovTC'
 import DetaF from '../screens/DetaF'
 import DetaE from '../screens/DetaE'
 import DetaPagoQr from '../screens/DetaPagoQr'
+import DetaBepsa from '../screens/DetaBepsa'
+import DetaProcard from '../screens/DetaProcard'
 import AtmQr from '../screens/AtmQr'
 import Checkout from '../screens/Checkout';
 import ConfirmarCompra from '../screens/ConfirmarCompra';
@@ -178,6 +180,20 @@ function App() {
                 {
                     headerTintColor: "white",
                     headerTitle:"Adelanto ATM",
+                    headerStyle: { backgroundColor: '#bf0404' },
+                }
+            }/>
+            <Stack.Screen name="DetaBepsa" component={DetaBepsa} options={
+                {
+                    headerTintColor: "white",
+                    headerTitle:"Movimientos Dinelco",
+                    headerStyle: { backgroundColor: '#bf0404' },
+                }
+            }/>
+            <Stack.Screen name="DetaProcard" component={DetaProcard} options={
+                {
+                    headerTintColor: "white",
+                    headerTitle:"Movimientos Credicard",
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>

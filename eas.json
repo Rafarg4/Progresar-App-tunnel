@@ -3,6 +3,15 @@
 	  "version": ">= 3.6.0"
 	},
 	"build": {
+	  "production": {
+		"android": {
+		  "buildType": "app-bundle" // Esta es la configuración correcta para .aab
+		},
+		"ios": {
+		  "enterpriseProvisioning": "adhoc"
+		},
+		"channel": "production"
+	  },
 	  "development": {
 		"distribution": "internal",
 		"android": {
@@ -22,15 +31,6 @@
 		  "simulator": false
 		},
 		"channel": "preview"
-	  },
-	  "production": {
-		"android": {
-		  "buildType": "apk"  // Cambiado para APK si deseas un APK también en producción.
-		},
-		"ios": {
-		  "enterpriseProvisioning": "adhoc"
-		},
-		"channel": "production"
 	  }
 	},
 	"submit": {
@@ -45,4 +45,3 @@
 	  }
 	}
   }
-  
