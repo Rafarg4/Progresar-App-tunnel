@@ -26,6 +26,7 @@ import DetaPagoQr from '../screens/DetaPagoQr'
 import DetaBepsa from '../screens/DetaBepsa'
 import DetaProcard from '../screens/DetaProcard'
 import AtmQr from '../screens/AtmQr'
+import Extracto from '../screens/Extracto'
 import Checkout from '../screens/Checkout';
 import ConfirmarCompra from '../screens/ConfirmarCompra';
 import ConfirmarVenta from '../screens/ConfirmarVenta';
@@ -149,6 +150,13 @@ function App() {
             }/> 
 
             <Stack.Screen name="Movimientos TC" component={MovTC} options={
+                {
+                    headerTintColor: "white",
+                    headerStyle: { backgroundColor: '#bf0404' },
+                }
+            }/> 
+
+            <Stack.Screen name="Extracto" component={Extracto} options={
                 {
                     headerTintColor: "white",
                     headerStyle: { backgroundColor: '#bf0404' },

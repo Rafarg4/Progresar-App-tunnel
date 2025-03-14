@@ -101,6 +101,10 @@ export default class LoginScreen extends Component {
               monto: monto,
               cuota: cuota
             });
+        }else if (screenName === 'Extracto') {
+            this.props.navigation.navigate(screenName, { 
+              num_doc: item, // número de documento lo otro no es nesesario
+            });
         } else {
           // Lógica para otras pantallas si es necesario
           if (item === null) {
@@ -314,7 +318,7 @@ export default class LoginScreen extends Component {
             })
         })
         .catch((error) => {
-            Alert.alert('Error', 'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde')
+            Alert.alert('Error', 'No pudimos conectarnos a nuestro servidor promos, \nPor favor, inténtelo más tarde')
         })
     };
 
@@ -415,7 +419,7 @@ export default class LoginScreen extends Component {
         })
         .catch((error) => {
             console.log(error)  ;
-                Alert.alert('Error', 'No pudimos conectarnos con el proveedor del servicio. \nPor favor, inténtelo más tarde')
+                Alert.alert('Error', 'No pudimos conectarnos con el proveedor del servicio key. \nPor favor, inténtelo más tarde')
         })
     }*/
 
@@ -456,151 +460,278 @@ export default class LoginScreen extends Component {
                 );
             }
         }
-        const TarjetaInfo = () => {
+        const Flyers = () => {
+            const [loading, setLoading] = useState(true);
+            const [flyers, setFlyers] = useState([]);
+            const [historiaSeleccionada, setHistoriaSeleccionada] = useState(null);
+            const [error, setError] = useState(null); // Agregado para manejar errores
+          
+            useEffect(() => {
+               const fetchFlyers = async () => {
+                try {
+                    setLoading(true);
+                    setError(null);
+
+                    const response = await fetch('https://api.progresarcorp.com.py/api/ver_comercios_adheridos', {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                        'Cache-Control': 'no-cache', // Evitar respuestas cacheadas
+                    },
+                    });
+
+                    if (!response.ok) {
+                    throw new Error(`Error ${response.status}: No se pudo obtener los datos`);
+                    }
+              
+                    const data = await response.json();
+                    //console.log("Datos recibidos:", data); // Depuración
+              
+                    if (!Array.isArray(data)) {
+                      throw new Error("Formato inesperado de la respuesta");
+                    }
+              
+                    const formattedFlyers = data.map((item, index) => ({
+                      id: index + 1,
+                      imagen: item.imagen ? `https://api.progresarcorp.com.py/flayers/${item.imagen}` : null,
+                    }));
+              
+                    setFlyers(formattedFlyers);
+                  } catch (error) {
+                    setError(error.message);
+                    console.error("Error al obtener los datos:", error);
+                  } finally {
+                    setLoading(false);
+                  }
+                };
+              
+                fetchFlyers();
+              }, []);
+          
+            const mostrarHistoria = (historia) => {
+              setHistoriaSeleccionada(historia);
+              console.log(historia); // Para depurar, asegúrate de que la historia seleccionada se muestra
+            };
+            const cerrarModal = () => {
+                setHistoriaSeleccionada(null); // Cerrar el modal al establecer historiaSeleccionada en null
+              };
+          
+            // Verificar si los flyers están siendo cargados
+            if (loading) {
+              return <Text>Cargando...</Text>;
+            }
+          
+            // Verificar si ocurrió un error al cargar los flyers
+            if (error) {
+              return <Text>{error}</Text>;
+            }
+          
+            return (
+                <View style={{ flex: 1 }}>
+                {/* Historias en círculos */}
+                <View style={styles.storiesContainer}>
+                  <FlatList
+                    data={flyers}
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    keyExtractor={(item) => item.id.toString()}
+                    renderItem={({ item }) => (
+                      <TouchableOpacity
+                        onPress={() => mostrarHistoria(item)}
+                        style={styles.storyCircle}
+                      >
+                        <Image source={{ uri: item.imagen }} style={styles.storyImage} />
+                      </TouchableOpacity>
+                    )}
+                  />
+                </View>
+          
+                {/* Modal para mostrar la historia seleccionada */}
+                {historiaSeleccionada && (
+                  <Modal
+                    visible={!!historiaSeleccionada} // Si historiaSeleccionada no es null, muestra el modal
+                    animationType="fade"
+                    transparent={true}
+                    onRequestClose={cerrarModal}
+                  >
+                    <View style={styles.modalContainer}>
+                      <View style={styles.modalContent}>
+                        <TouchableOpacity onPress={cerrarModal} style={styles.closeButton}>
+                          <Text style={styles.closeText}>Cerrar</Text>
+                        </TouchableOpacity>
+                        {/* Imagen que cierra el modal al tocarla */}
+                        <TouchableOpacity onPress={cerrarModal} style={styles.modalImageContainer}>
+                          <Image source={{ uri: historiaSeleccionada.imagen }} style={styles.modalImage} />
+                        </TouchableOpacity>
+                        {/* Agrega aquí más detalles que quieras mostrar de la historia */}
+                      
+                      </View>
+                    </View>
+                  </Modal>
+                )}
+              </View>
+            );
+          };
+          const TarjetaInfo = () => {
             const navigation = useNavigation();
             const [tarjetaData, setTarjetaData] = useState([]);
-            const [saldos, setSaldos] = useState({}); // Estado para almacenar saldos por tarjeta
+            const [saldos, setSaldos] = useState({});
             const [error, setError] = useState(false);
+            const [showSaldo, setShowSaldo] = useState(true);
         
             useEffect(() => {
                 const num_doc = global.num_doc;
-        
-                // Primer API para obtener los datos de las tarjetas
                 const urlTarjetas = `https://api.progresarcorp.com.py/api/ver_tarjeta/${num_doc}`;
-                fetch(urlTarjetas)
-                    .then((response) => {
+            
+                const fetchData = async () => {
+                    try {
+                        const response = await fetch(urlTarjetas, {
+                            method: 'GET',
+                            headers: {
+                                'Accept': 'application/json',
+                                'Authorization': `Bearer ${global.token}`
+                            }
+                        });
+            
                         if (!response.ok) {
-                            throw new Error('Error de respuesta en ver_tarjeta');
+                            if (response.status === 429) {
+                                const retryAfter = response.headers.get('Retry-After'); // Obtén el tiempo de espera
+                                const retryDelay = retryAfter ? parseInt(retryAfter, 10) * 1000 : 5000; // Usa Retry-After o 5 segundos
+                                console.log(`Límite de solicitudes alcanzado. Reintentando en ${retryDelay / 1000} segundos...`);
+                                
+                                setTimeout(fetchData, retryDelay);
+                                return;
+                            }
+                            const errorData = await response.json();
+                            throw new Error(errorData?.message || `Error ${response.status}: ${response.statusText}`);
                         }
-                        return response.json();
-                    })
-                    .then((data) => {
+            
+                        const data = await response.json();
                         if (Array.isArray(data) && data.length > 0) {
                             setTarjetaData(data);
-        
-                            // Hacer la consulta de saldo para cada tarjeta
-                            data.forEach((item) => {
-                                const numeroTarjeta = item.nro_tarjeta;
-                                const urlSaldo = `https://api.progresarcorp.com.py/api/obtener_saldo_actual/${numeroTarjeta}`;
-                                
-                                fetch(urlSaldo)
-                                    .then((response) => {
-                                        if (!response.ok) {
-                                            throw new Error('Error de respuesta en obtener_saldo_actual');
-                                        }
-                                        return response.json();
-                                    })
-                                    .then((data) => {
-                                        if (data.cuenta && data.cuenta.disponi_adelanto) {
-                                            setSaldos((prevSaldos) => ({
-                                                ...prevSaldos,
-                                                [numeroTarjeta]: data.cuenta.disponi_adelanto, // Asociar saldo con el nro_tarjeta
-                                            }));
-                                        } else {
-                                            setSaldos((prevSaldos) => ({
-                                                ...prevSaldos,
-                                                [numeroTarjeta]: 'No disponible', // Si no hay saldo disponible
-                                            }));
-                                        }
-                                    })
-                                    .catch((error) => {
-                                        console.error('Error fetching saldo data:', error);
-                                        setSaldos((prevSaldos) => ({
-                                            ...prevSaldos,
-                                            [numeroTarjeta]: 'Error al cargar saldo', // Manejo de error
-                                        }));
-                                    });
-                            });
                         } else {
                             setError(true);
                         }
-                    })
-                    .catch((error) => {
-                        console.error('Error fetching tarjeta data:', error);
+            
+                    } catch (error) {
+                        console.error('Error obteniendo tarjetas:', error.message);
                         setError(true);
-                    });
+                    }
+                };
+            
+                fetchData();
             }, []);
-
+            
+        
+            // 🔹 Cargar saldo después de obtener tarjetas
+            useEffect(() => {
+                const tarjetasNoDinelco = tarjetaData.filter(item => item.tipo_tarjeta !== '1');
+        
+                tarjetasNoDinelco.forEach((item) => {
+                    const numeroTarjeta = item.nro_tarjeta;
+                    const urlSaldo = `https://api.progresarcorp.com.py/api/obtener_saldo_actual/${numeroTarjeta}`;
+        
+                    fetch(urlSaldo)
+                        .then((response) => {
+                            if (!response.ok) throw new Error('Error en obtener_saldo_actual');
+                            return response.json();
+                        })
+                        .then((data) => {
+                            setSaldos(prevSaldos => ({
+                                ...prevSaldos,
+                                [numeroTarjeta]: data.cuenta?.disponi_adelanto || 'No disponible',
+                            }));
+                        })
+                        .catch(() => {
+                            setSaldos(prevSaldos => ({
+                                ...prevSaldos,
+                                [numeroTarjeta]: 'Error al cargar saldo',
+                            }));
+                        });
+                });
+            }, [tarjetaData]); // Se ejecuta cuando cambian los datos de tarjetas
+        
             const enmascararTarjeta = (numero) => {
                 if (numero.length <= 8) return numero;
-                const masked = '*'.repeat(numero.length - 4) + numero.slice(-4);
-                return masked.match(/.{1,4}/g).join(' ');
+                return '*'.repeat(numero.length - 4) + numero.slice(-4);
             };
-            const [showSaldo, setShowSaldo] = useState(true)
-            const renderItem = ({ item }) => (
-                <TouchableOpacity
-                    onPress={() => {
-                        if (item.tipo_tarjeta === '1') {
-                        navigation.navigate('DetaBepsa', {
-                            nro_doc: item.nro_doc,
-                            clase_tarjeta: item.clase_tarjeta,
-                            nro_tarjeta: item.nro_tarjeta,
-                        });
-                        } else {
-                        navigation.navigate('DetaProcard', {
-                            nro_doc: item.nro_doc,
-                            clase_tarjeta: item.clase_tarjeta,
-                            nro_tarjeta: item.nro_tarjeta,
-                        });
-                        }
-                    }}
+            const renderItem = ({ item }) => {
+                return (
+                    <TouchableOpacity
+                        onPress={() => {
+                            if (item.tipo_tarjeta === '1') {
+                                navigation.navigate('DetaBepsa', {
+                                    nro_doc: item.nro_doc,
+                                    clase_tarjeta: item.clase_tarjeta,
+                                    nro_tarjeta: item.nro_tarjeta,
+                                });
+                            } else {
+                                navigation.navigate('DetaProcard', {
+                                    nro_doc: item.nro_doc,
+                                    clase_tarjeta: item.clase_tarjeta,
+                                    nro_tarjeta: item.nro_tarjeta,
+                                });
+                            }
+                        }}
                     >
-                <View style={styles.card}>
-                  <View style={styles.contentContainer}>
-                    <View style={styles.infoContainer}>
-                      <Text style={styles.tipoCuenta}>
-                        {item.clase_tarjeta === 'JM' ? 'Clásica' :
-                         item.clase_tarjeta === 'V6' ? 'Visa' :
-                         item.clase_tarjeta === '1' ? 'Dinelco' :
-                         item.clase_tarjeta === 'J7' ? 'Fep' :
-                         item.clase_tarjeta === 'RM' ? 'Rotary' :
-                         item.clase_tarjeta === 'EV' ? 'El viajero' :
-                         item.clase_tarjeta === 'TS' ? 'Comedi' :
-                         item.clase_tarjeta === 'JW' ? 'Mujer' :
-                         item.clase_tarjeta === 'FR' ? 'Afuni' :
-                         item.clase_tarjeta === 'J0' ? 'Empresarial' :
-                         item.clase_tarjeta === 'EI' ? 'Visa Empresarial' :
-                         item.clase_tarjeta === 'TR' ? 'La Trinidad' : item.clase_tarjeta}
-                      </Text>
-                      <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
-                      <Text style={styles.nombre}>{item.nombre_usuario}</Text>
-                    </View>
-                    <View style={styles.iconContainer}>
-                    <Icon name="credit-card" size={30} color="#FF0000" />
-                    </View>
-                  </View>
-                  <View style={styles.footer1}>
-                    <Text style={styles.saldoLabel}>Saldo disponible:</Text>
-                    {/* Verifica si el tipo de tarjeta es '1' */}
-                    {item.tipo_tarjeta === '1' ? ( // Para tarjetas de tipo '1'
-                        <Text style={styles.saldo_dinelco}>
-                        {showSaldo // Verifica si showSaldo es true o false
-                            ? (item.limite_credito && item.deuda_total // Si existen limite_credito y deuda_total
-                                ? `${currencyFormat(item.limite_credito - item.deuda_total)} Gs.` // Realiza la resta
-                                : 'No disponible') // Si no hay valores para limite_credito o deuda_total
-                            : '******' // Si showSaldo es false, muestra '******'
-                        }
-                        </Text>
-                    ) : (
-                        <Text style={styles.saldo}>
-                        {showSaldo ? (
-                          saldos[item.nro_tarjeta] === null || saldos[item.nro_tarjeta] === undefined ? ( // Verifica si el saldo es null o undefined
-                            'Cargando...' // Muestra 'Cargando...' si el saldo es null o undefined
-                          ) : (
-                            `${currencyFormat(saldos[item.nro_tarjeta])} Gs.` // Muestra el saldo formateado
-                          )
-                        ) : (
-                          '******' // Si showSaldo es false, muestra '******'
-                        )}
-                      </Text>                      
-                    )}
-                    </View>
-                </View>
-              </TouchableOpacity>
-            );
-            const handleRequestCard = () => {
-              WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
+                        <View style={styles.card}>
+                            <View style={styles.contentContainer}>
+                                <View style={styles.infoContainer}>
+                                    <Text style={styles.tipoCuenta}>
+                                        {item.clase_tarjeta === 'JM' ? 'Clásica' :
+                                            item.clase_tarjeta === 'V6' ? 'Visa' :
+                                            item.clase_tarjeta === '1' ? 'Dinelco' :
+                                            item.clase_tarjeta === 'J7' ? 'Fep' :
+                                            item.clase_tarjeta === 'RM' ? 'Rotary' :
+                                            item.clase_tarjeta === 'EV' ? 'El viajero' :
+                                            item.clase_tarjeta === 'TS' ? 'Comedi' :
+                                            item.clase_tarjeta === 'JW' ? 'Mujer' :
+                                            item.clase_tarjeta === 'FR' ? 'Afuni' :
+                                            item.clase_tarjeta === 'J0' ? 'Empresarial' :
+                                            item.clase_tarjeta === 'EI' ? 'Visa Empresarial' :
+                                            item.clase_tarjeta === 'TR' ? 'La Trinidad' :
+                                            item.clase_tarjeta}
+                                    </Text>
+                                    <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
+                                    <Text style={styles.nombre}>{item.nombre_usuario}</Text>
+                                </View>
+                                <View style={styles.iconContainer}>
+                                    <Icon name="credit-card" size={30} color="#FF0000" />
+                                </View>
+                            </View>
+                            
+                            {/* 🔹 Separamos el saldo para tarjetas Dinelco y las demás */}
+                            <View style={styles.footer1}>
+                                <Text style={styles.saldoLabel}>Saldo disponible:</Text>
+                                
+                                {item.tipo_tarjeta === '1' ? (
+                                    <Text style={styles.saldo_dinelco}>
+                                        {showSaldo ? (
+                                            item.limite_credito && item.deuda_total
+                                                ? `${currencyFormat(item.limite_credito - item.deuda_total)} Gs.`
+                                                : 'No disponible'
+                                        ) : '******'}
+                                    </Text>
+                                ) : (
+                                    <Text style={styles.saldo}>
+                                        {showSaldo ? (
+                                            saldos[item.nro_tarjeta] === null || saldos[item.nro_tarjeta] === undefined
+                                                ? 'Cargando...'
+                                                : `${currencyFormat(saldos[item.nro_tarjeta])} Gs.`
+                                        ) : '******'}
+                                    </Text>
+                                )}
+                            </View>
+                        </View>
+                    </TouchableOpacity>
+                );
             };
+        
+            const handleRequestCard = () => {
+                WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
+            };
+        
             return (
               <View style={styles.containertitulo}>
                 {/* Título y botón para mostrar/ocultar saldo */}
@@ -1117,6 +1248,8 @@ export default class LoginScreen extends Component {
                         </ImageBackground>
                          {/* Vista para obtener datos del cliente */}
                          <View>
+                         <Text style={styles.headerTitletitulo}>¡Descuentos de hoy !</Text>
+                         <Flyers  />
                         <TarjetaInfo  />
                             </View>
                             <Divider style={{ marginBottom: 10 }} />
@@ -1259,7 +1392,7 @@ export default class LoginScreen extends Component {
                                                 <Text style={{color: 'white', textAlign: 'center'}}>Comprar Electrodomésticos</Text>
                                             </TouchableOpacity>
 
-                                            {/* {botPagarElectro()} */}
+                                            
                                         </View>
                                     </View>
                                 </View>
@@ -1365,10 +1498,17 @@ export default class LoginScreen extends Component {
                                 style: styleBot,
                                 color: 'white',
                             },
-
+                            /*
                             {
                                 name: 'comments',
                                 onPress: () => this.gotoScreen('Soporte'),
+                                backgroundColor: '#bf0404',
+                                style: styleBot,
+                                color: 'white',
+                            },*/
+                            {  
+                                name: 'file-pdf-o',
+                                onPress: () => this.gotoScreen('Extracto', this.state.num_doc ),
                                 backgroundColor: '#bf0404',
                                 style: styleBot,
                                 color: 'white',
@@ -1436,7 +1576,7 @@ const styles = StyleSheet.create({
     card: {
         borderWidth: 1,
         borderColor: '#ddd',
-        borderRadius: 8,
+        borderRadius: 10,
         padding: 17,
         width: 360,
         shadowColor: '#000',
@@ -1444,11 +1584,10 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 4,
         position: 'relative', // Necesario para el posicionamiento absoluto del pie
-
       },
       contentContainer: {
         flexDirection: 'row',
-        alignItems: 'flex-start',
+        alignItems: 'center',
         justifyContent: 'space-between',
         marginBottom: 30, // Espacio para el pie de página
       },
@@ -1638,8 +1777,11 @@ const styles = StyleSheet.create({
 
     //input style
     container: {
-        padding: 2,
-    },
+        flex: 1, // Hace que el contenedor ocupe todo el espacio disponible
+        justifyContent: 'center', // Centra los cards verticalmente
+        alignItems: 'center', // Centra los cards horizontalmente
+        padding: 20, // Espaciado alrededor del contenedor
+      },
     input: {
         height: 48,
         paddingHorizontal: 15,
@@ -1698,7 +1840,67 @@ const styles = StyleSheet.create({
       },
       headerTitletitulo: {
         fontSize: 18,
+        alignItems: 'center',
         fontWeight: 'bold',
       },
-
+      storiesContainer: {
+        flexDirection: 'row',
+        marginBottom: 20,
+      },
+      storyCircle: {
+        marginHorizontal: 10,
+        borderRadius: 50,
+        width: 60,
+        height: 60,
+        overflow: 'hidden',
+        borderWidth: 2, // Borde en los círculos
+        borderColor: '#FF0000', // Color del borde
+      },
+      storyImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'cover',
+      },
+      modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(233, 20, 20, 0.8)', // Fondo más oscuro
+      },
+      modalContent: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#fff',
+        padding: 20,
+        alignItems: 'center',
+        justifyContent: 'center',
+        borderRadius: 0, // Eliminar bordes redondeados
+      },
+      closeButton: {
+        position: 'absolute',
+        top: 20,
+        left: 20,
+      },
+      closeText: {
+        fontSize: 18,
+        color: '#FF0000',
+      },
+      modalImageContainer: {
+        width: '100%',
+        height: '80%',
+        justifyContent: 'center',
+        alignItems: 'center',
+      },
+      modalImage: {
+        width: '100%',
+        height: '100%',
+        resizeMode: 'contain', // Ajusta la imagen dentro del modal
+        borderRadius: 0,
+      },
+      modalText: {
+        fontSize: 16,
+        textAlign: 'center',
+        marginTop: 10,
+      },  
+      
 })

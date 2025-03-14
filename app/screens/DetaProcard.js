@@ -1,134 +1,199 @@
 import React, { useState, useEffect,useRef  } from 'react';
-import { View, Text, ScrollView,StyleSheet, TouchableOpacity } from 'react-native';
+import { View, Text, ScrollView,StyleSheet, TouchableOpacity,Linking  } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRoute } from '@react-navigation/native';
 
-const DetaProvard = () => {
+const DetaProcard = () => {
   const route = useRoute();
-  const { nro_doc, clase_tarjeta,nro_tarjeta } = route.params;
-  const [saldoDisponible, setSaldoDisponible] = useState(0); 
+  const { nro_doc, clase_tarjeta, nro_tarjeta } = route.params;
+
+  const mesesArray = [
+    { nombre: 'Enero', numero: 1 },
+    { nombre: 'Febrero', numero: 2 },
+    { nombre: 'Marzo', numero: 3 },
+    { nombre: 'Abril', numero: 4 },
+    { nombre: 'Mayo', numero: 5 },
+    { nombre: 'Junio', numero: 6 },
+    { nombre: 'Julio', numero: 7 },
+    { nombre: 'Agosto', numero: 8 },
+    { nombre: 'Septiembre', numero: 9 },
+    { nombre: 'Octubre', numero: 10 },
+    { nombre: 'Noviembre', numero: 11 },
+    { nombre: 'Diciembre', numero: 12 },
+  ];
+
+  const [saldoDisponible, setSaldoDisponible] = useState(0);
   const [tarjetaData, setTarjetaData] = useState([]);
   const [cantidadTotal, setCantidadTotal] = useState(0);
   const [montoTotal, setMontoTotal] = useState(0);
- useEffect(() => {
-    // API para obtener el saldo disponible
-    const urlSaldo = `https://api.progresarcorp.com.py/api/obtener_saldo_actual/${nro_tarjeta}`;
-    
-    fetch(urlSaldo)
-      .then((response) => {
-        if (!response.ok) {
+  const [error, setError] = useState(false);
+  const [mes, setMes] = useState(new Date().getMonth() + 1);
+  const [loading, setLoading] = useState(true);
+ 
+  useEffect(() => {
+    const fetchData = async (month, year) => {
+      setLoading(true); // Empieza la carga
+      try {
+        // Primero, obtenemos el saldo disponible
+        const urlSaldo = `https://api.progresarcorp.com.py/api/obtener_saldo_actual/${nro_tarjeta}`;
+        const saldoResponse = await fetch(urlSaldo);
+  
+        if (!saldoResponse.ok) {
           throw new Error('Error de respuesta al obtener saldo');
         }
-        return response.json();
-      })
-      .then((data) => {
-        if (data.cuenta && data.cuenta.disponi_adelanto) {
-          setSaldoDisponible(data.cuenta.disponi_adelanto);
+        const saldoData = await saldoResponse.json();
+        if (saldoData.cuenta && saldoData.cuenta.disponi_adelanto) {
+          setSaldoDisponible(saldoData.cuenta.disponi_adelanto);
         } else {
           setError(true);
         }
-      })
-      .catch((error) => {
-        console.error('Error al obtener saldo:', error);
-        setError(true);
-      });
-  }, [nro_tarjeta]); 
-  const fetchData = (month, year) => {
-    const monthNumber = getMonthNumber(month); // Convertimos el nombre del mes a número
-    const url = `https://api.progresarcorp.com.py/api/ver_moviminetos_procard/${nro_tarjeta}?mes=${mes}`;
-    console.log("URL solicitada:", url); // Verificar URL en consola y ver si manda la fecha correcta
   
-    fetch(url)
-      .then((response) => response.json())
-      .then((data) => {
-        setTarjetaData(data.detalles || []);
-        setCantidadTotal(data.cantidad_total || 0);
-        setMontoTotal(data.monto_total || 0);
-      })
-      .catch((error) => {
-        console.error('Error fetching data:', error);
-      });
-  };
+        // Luego, obtenemos los movimientos
+        const urlMovimientos = `https://api.progresarcorp.com.py/api/ver_moviminetos_procard/${nro_tarjeta}?mes=${mes}&year=2025`;
+        const movimientosResponse = await fetch(urlMovimientos);
+  
+        if (!movimientosResponse.ok) {
+          throw new Error('Error de respuesta al obtener movimientos');
+        }
+        const movimientosData = await movimientosResponse.json();
+  
+        // Actualizamos el estado con los datos de la API
+        setTarjetaData(movimientosData.movimientos || []);
+        setCantidadTotal(movimientosData.cantidad_total || 0);
+        setMontoTotal(movimientosData.monto_total || 0);
+      } catch (error) {
+        console.error('Error al obtener los datos:', error);
+        setError(true);
+      } finally {
+        setLoading(false); // Esto se ejecuta independientemente del éxito o error de la carga
+      }
+    };
+  
+    fetchData(mes, 2025); // Usamos el mes seleccionado
+  }, [nro_tarjeta, mes]);
+  
   return (
     <View style={styles.container}>
+      {/* Selector de meses */}
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthSelector}>
+        {mesesArray.map((item) => (
+          <TouchableOpacity 
+            key={item.numero} 
+            style={[styles.monthButton, mes === item.numero && styles.selectedMonth]}
+            onPress={() => setMes(item.numero)}  // Actualiza el mes seleccionado
+          >
+            <Text style={styles.monthButtonText}>{item.nombre} - 2025</Text>
+          </TouchableOpacity>
+        ))}
+      </ScrollView>
+  
+      {/* Card de Movimiento */}
       <ScrollView style={styles.scrollView}>
-        {/* Selector de meses */}
-        <View style={styles.monthSelector}>
-          
-        </View>
+        <View style={styles.movementCard}>
+          <Text style={styles.movementTitle}>Movimientos</Text>
+          <Text style={styles.movementAmount}>
+            {saldoDisponible !== null 
+              ? parseFloat(saldoDisponible).toLocaleString('es-ES') + ' ₲' 
+              : error 
+              ? 'Error al cargar el saldo' 
+              : 'Cargando...'}
+          </Text>
+          <Text style={styles.availableMoney}>Saldo disponible</Text>
+          </View>
+        
+        {/* Mostrar movimientos */}
+        {loading ? (
+          <View style={styles.card}>
+            <Text style={styles.generalHeader}>
+              <Icon name="refresh" color="#bf0404" size={20} /> Cargando...
+            </Text>
+          </View>
+        ) : tarjetaData.length === 0 ? (
+          <View style={styles.card}>
+            <View style={styles.detailsContainer}>
+              <Icon name="info-circle" size={30} color="grey" style={styles.icon} />
+              <Text style={styles.noMovementsText}>
+                Sin movimientos en{' '}
+                <Text style={{ fontWeight: 'bold' }}>
+                  {({
+                    '1': 'Enero',
+                    '2': 'Febrero',
+                    '3': 'Marzo',
+                    '4': 'Abril',
+                    '5': 'Mayo',
+                    '6': 'Junio',
+                    '7': 'Julio',
+                    '8': 'Agosto',
+                    '9': 'Septiembre',
+                    '10': 'Octubre',
+                    '11': 'Noviembre',
+                    '12': 'Diciembre'
+                  }[mes] || 'Mes desconocido')}
+                </Text>
+              </Text>
+            </View>
+          </View>
+        ) : (
+          tarjetaData.map((item, index) => (
+            <View key={index} style={styles.card}>
+              <View style={styles.detailsContainer}>
+                <View style={styles.qrWrapper}>
+                  <Icon name="money" size={30} color="#000" style={styles.qrIcon} />
+                </View>
+                <View style={styles.infoContainer}>
+                  <Text style={styles.description}>{item.des_transaccion}</Text>
+                </View>
+                <View style={styles.rightContainer}>
+                  <Text style={styles.date}>
+                    Fecha: {new Date(item.fec_proceso).toLocaleDateString('es-ES')}
+                  </Text>
+                  <Text
+                  style={[
+                    styles.amount,
+                    {
+                      color: parseFloat(item.imp_cupon) < 0 ? 'green' : 'red', // Verde si es negativo, rojo si es positivo
+                    },
+                  ]}
+                >
+                  {parseFloat(item.imp_cupon).toLocaleString('es-ES')} ₲
+                </Text>               
+                </View>
+              </View>
+              <View style={styles.footer}>
+                <Text style={styles.qrType}>Comercio: {item.desc_comercio}</Text>
+              </View>
+            </View>
+                           ))
+                         )}
+                {/* Footer con el mensaje adicional */}
 
-        {/* Card de Movimiento */}
-               <View style={styles.movementCard}>
-                 
-                 <Text style={styles.movementTitle}>Movimientos</Text>
-                 <Text style={styles.movementAmount}>{saldoDisponible !== null 
-                 ? parseFloat(saldoDisponible).toLocaleString('es-ES') + ' ₲' 
-                 : error 
-                   ? 'Error al cargar el saldo' 
-                   : 'Cargando...'}</Text>
-                 <Text style={styles.availableMoney}>Saldo disponible</Text>
-                 {/* Footer con el mensaje adicional */}
-               </View>
-                {/* Detalles de pagos individuales */}
-                {tarjetaData.length === 0 ? (
-                  <View style={styles.card}>
-                    <View style={styles.detailsContainer}>
-                      <Icon name="info-circle" size={30} color="grey" style={styles.icon} />
-                      <Text style={styles.noMovementsText}>Sin movimientos</Text>
-                    </View>
-                  </View>
-                ) : (
-                  tarjetaData.map((item, index) => (
-                    <View key={index} style={styles.card}>
-                      <View style={styles.detailsContainer}>
-                        <View style={styles.qrWrapper}>
-                          <Icon name='qrcode' size={30} color='#000' style={styles.qrIcon} />
+                    {/* Detalles generales de los pagos */}
+                    <View style={styles.card}>
+                      <Text style={styles.generalHeader}>
+                      <Icon name="info" color="#bf0404" size={20} /> Detalles generales
+                      </Text>
+                      </View>
+                      <View style={styles.card}>
+                      <View style={styles.generalDetailsContainer}>
+                        <View style={styles.generalDetailsColumn}>
+                          <Text style={styles.label}>N° de transacciones:</Text>
+                          <Text style={styles.label}>Monto total:</Text>
+                          <Text style={styles.label}>Saldo disponible:</Text>
                         </View>
-                        <View style={styles.infoContainer}>
-                          <Text style={styles.qrType}>Tipo de QR: {item.tipoqr}</Text>
-                          <Text style={styles.description}>{item.des_comercio}</Text>
-                        </View>
-                        <View style={styles.rightContainer}>
-                          <Text style={styles.date}>Fecha: {item.fec_proceso}</Text>
-                          <Text style={styles.amount}>-{parseFloat(item.imp_neto).toLocaleString('es-ES')} ₲</Text>
+                        <View style={styles.generalDetailsColumn}>
+                          <Text style={styles.value}>{cantidadTotal}</Text>
+                          <Text style={styles.value}>{parseFloat(montoTotal).toLocaleString('es-ES')} ₲</Text>
+                          <Text style={styles.value}>{parseFloat(saldoDisponible).toLocaleString('es-ES')} ₲</Text>
                         </View>
                       </View>
                       <View style={styles.footer}>
-                        <Text style={styles.footerText}>Comercio: {item.nombrecomercio}</Text>
-                      </View>
+                    <Text style={styles.footerText_importante}><Icon name="info-circle" size={22} color="#000" style={styles.iconStylemov} /> IMPORTANTE: Los movimientos visualizados son del día anterior.</Text>
+                  </View>
                     </View>
-                  ))
-                )}
-       
-    {/* Footer con el mensaje adicional */}
-
-        {/* Detalles generales de los pagos */}
-        <View style={styles.card}>
-          <Text style={styles.generalHeader}>
-          <Icon name="info" color="#bf0404" size={20} /> Detalles generales
-          </Text>
-          </View>
-          <View style={styles.card}>
-          <View style={styles.generalDetailsContainer}>
-            <View style={styles.generalDetailsColumn}>
-              <Text style={styles.label}>N° de pagos:</Text>
-              <Text style={styles.label}>Monto total:</Text>
-              <Text style={styles.label}>Saldo disponible:</Text>
-            </View>
-            <View style={styles.generalDetailsColumn}>
-              <Text style={styles.value}>--</Text>
-              <Text style={styles.value}>-- ₲</Text>
-              <Text style={styles.value}>{parseFloat(saldoDisponible).toLocaleString('es-ES')} ₲</Text>
-            </View>
-          </View>
-          <View style={styles.footer}>
-        <Text style={styles.footerText_importante}><Icon name="info-circle" size={22} color="#000" style={styles.iconStylemov} /> IMPORTANTE: En este apartado solo aparecerán las operaciones por QR.</Text>
-      </View>
-        </View>
-      </ScrollView>
-    </View>
-  );
-};
+                  </ScrollView>
+                </View>
+          );
+        };
 
 const styles = StyleSheet.create({
   container: {
@@ -261,7 +326,7 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 16,
     fontWeight: 'bold',
-    color: 'red', // Cambia el color del monto a rojo
+    //color: 'red', // Cambia el color del monto a rojo
   },
   footer: {
     marginTop: 10,
@@ -288,8 +353,8 @@ const styles = StyleSheet.create({
   icon: {
     marginRight: 10,
   },
-   scrollView: {
-    flex: 1,
+  scrollView: {
+    flexGrow: 120,
   },
   monthSelector: {
     marginBottom: 10,
@@ -318,6 +383,18 @@ const styles = StyleSheet.create({
     flexDirection: 'column',
     paddingVertical: 5,
   },
+  downloadButton: {
+    backgroundColor: '#F40000', // Rojo brillante
+    padding: 10,
+    borderRadius: 20,
+    marginTop: 10,
+    alignItems: 'center',
+  },  
+  downloadButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
 
-export default DetaProvard;
+export default DetaProcard;
