@@ -25,6 +25,7 @@ import { getToken } from '../recursos/Notificaciones.js';
 import { useNavigation } from '@react-navigation/native';
 import userCards from "../recursos/Vpos.js";
 import { Divider } from 'react-native-paper';
+import { Linking } from 'react-native';
 
 var md5 = require('md5');
 
@@ -494,7 +495,7 @@ export default class LoginScreen extends Component {
               
                     const formattedFlyers = data.map((item, index) => ({
                       id: index + 1,
-                      imagen: item.imagen ? `https://api.progresarcorp.com.py/flayers/${item.imagen}` : null,
+                      imagen: item.imagen ? `https://api.progresarcorp.com.py/imagenes/${item.imagen}` : null,
                     }));
               
                     setFlyers(formattedFlyers);
@@ -573,13 +574,93 @@ export default class LoginScreen extends Component {
               </View>
             );
           };
+          const Productos = () => {
+            const [productos, setProductos] = useState([]);
+            const [error, setError] = useState(false);
+          
+            useEffect(() => {
+              fetch('https://api.progresarcorp.com.py/api/ver_productos')
+                .then((res) => res.json())
+                .then((data) => {
+                  setProductos(data);
+                  console.log('DATA RECIBIDA:', data);
+                })
+                .catch((err) => {
+                  console.error('Error al obtener productos', err);
+                  setError(true);
+                });
+            }, []);
+          
+            return (
+                <View style={{ marginTop: 20 }}>
+                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                        {productos.map((item) => {
+                        // Determinar la imagen según la categoría
+                        let imageUrl = 'https://progresarcorp.com.py/wp-content/uploads/2025/04/Logo_nuevo_P-2.png'; // Imagen por defecto
+
+                        if (item.categoria === 'COCINA') {
+                            imageUrl = 'https://www.gonzalezgimenez.com.py/storage/sku/whirlpool-cocinas-cocina-a-gas-whirlpool-wf04ebr-4h-inox-2-1-1665749209.png';
+                        } else if (item.categoria === 'LAVARROPAS Y CENTRIFUGADORAS') {
+                            imageUrl = 'http://porter.com.py/image/cache/catalog/Consumer/Lavarropas/CR.789-a-500x500.jpg.webp';
+                        } else if (item.categoria === 'HORNOS Y MICROONDAS') {
+                            imageUrl = 'https://www.megared.com.py/storage/sku/tokyo-hornos-horno-elect-tokyo-listo-plus-46l-negro-1-1-1720042569.jpg';
+                        } else if (item.categoria === 'MUEBLES') {
+                            imageUrl = 'https://st4.depositphotos.com/1000451/28588/i/450/depositphotos_285884898-stock-photo-white-color-armchair-style-modern.jpg';
+                        } else if (item.categoria === 'ELECTRODOMESTICOS') {
+                            imageUrl = 'https://progresarcorp.com.py/wp-content/uploads/2025/04/ChatGPT-Image-14-abr-2025-14_47_50.png';
+                        } else if (item.categoria === 'TELEVISORES') {
+                            imageUrl = 'https://cdn.mercadodigital.com.py/images/televisor-50-jvc-lt50n940u2-4k-uhdhdrdigsmarthdmiusb-0.png';
+                        } else if (item.categoria === 'LICUADORAS Y PROCESADORAS') {
+                            imageUrl = 'https://www.britania.com.py/wp-content/uploads/sites/2/2024/06/33102203-1-1.jpg-1.webp';
+                        }
+                        
+
+                        return (
+                            <View key={item.cod_articulo} style={styles_productos.containerProducto}>
+                            <Image
+                                source={{ uri: imageUrl }}
+                                style={styles_productos.imageProducto}
+                                resizeMode="contain"
+                            />
+                            <Text style={styles_productos.marcaProducto}>Progresar Electrodomésticos</Text>
+                            <Text style={styles_productos.nombreProducto}>{item.producto}</Text>
+                            <Text style={styles_productos.precioProducto}>Precio: Gs. {parseInt(item.precio_fijo).toLocaleString()}</Text>
+                            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
+                                {/* Botón WhatsApp */}
+                                <TouchableOpacity
+                                onPress={() =>
+                                    Linking.openURL(
+                                    `https://api.whatsapp.com/send?phone=595984995582&text=Hola, estoy interesado en el producto ${encodeURIComponent(item.producto)}`
+                                    )
+                                }
+                                style={{ padding: 10, backgroundColor: '#25D366', borderRadius: 10 }}
+                                >
+                                <Icon name="whatsapp" size={13} color="#fff" />
+                                </TouchableOpacity>
+                                {/* Botón Añadir a carrito */}
+                                <TouchableOpacity
+                                style={styles_productos.botonProducto}
+                                onPress={() =>
+                                    Linking.openURL(`https://progresarelectrodomesticos.com/detalles${item.cod_articulo}`)
+                                }
+                                >
+                                <Text style={styles_productos.botonTextoProducto}>Añadir a carrito</Text>
+                                </TouchableOpacity>
+                            </View>
+                            </View>
+                        );
+                        })}
+                    </ScrollView>
+                </View>
+            );
+          };
           const TarjetaInfo = () => {
             const navigation = useNavigation();
             const [tarjetaData, setTarjetaData] = useState([]);
             const [saldos, setSaldos] = useState({});
             const [error, setError] = useState(false);
             const [showSaldo, setShowSaldo] = useState(true);
-        
+
             useEffect(() => {
                 const num_doc = global.num_doc;
                 const urlTarjetas = `https://api.progresarcorp.com.py/api/ver_tarjeta/${num_doc}`;
@@ -622,9 +703,8 @@ export default class LoginScreen extends Component {
             
                 fetchData();
             }, []);
-            
-        
-            // 🔹 Cargar saldo después de obtener tarjetas
+
+       
             useEffect(() => {
                 const tarjetasNoDinelco = tarjetaData.filter(item => item.tipo_tarjeta !== '1');
         
@@ -656,6 +736,8 @@ export default class LoginScreen extends Component {
                 if (numero.length <= 8) return numero;
                 return '*'.repeat(numero.length - 4) + numero.slice(-4);
             };
+           
+
             const renderItem = ({ item }) => {
                 return (
                     <TouchableOpacity
@@ -681,6 +763,7 @@ export default class LoginScreen extends Component {
                                     <Text style={styles.tipoCuenta}>
                                         {item.clase_tarjeta === 'JM' ? 'Clásica' :
                                             item.clase_tarjeta === 'V6' ? 'Visa' :
+                                            item.clase_tarjeta === 'RC' ? 'Rotary' :
                                             item.clase_tarjeta === '1' ? 'Dinelco' :
                                             item.clase_tarjeta === 'J7' ? 'Fep' :
                                             item.clase_tarjeta === 'RM' ? 'Rotary' :
@@ -694,7 +777,7 @@ export default class LoginScreen extends Component {
                                             item.clase_tarjeta}
                                     </Text>
                                     <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
-                                    <Text style={styles.nombre}>{item.nombre_usuario}</Text>
+                                    <Text style={styles.nombre_card}>{item.nombre_usuario}</Text>
                                 </View>
                                 <View style={styles.iconContainer}>
                                     <Icon name="credit-card" size={30} color="#FF0000" />
@@ -731,7 +814,9 @@ export default class LoginScreen extends Component {
             const handleRequestCard = () => {
                 WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
             };
-        
+           
+
+           
             return (
               <View style={styles.containertitulo}>
                 {/* Título y botón para mostrar/ocultar saldo */}
@@ -1145,7 +1230,7 @@ export default class LoginScreen extends Component {
                 if(item.activo != 'no'){
                     return (
                         <TouchableOpacity onPress={()=>{WebBrowser.openBrowserAsync(item.url)}} >
-                            <Image source={{uri: item.url_imagen}} style={styles.image}/>
+                            <Image source={{uri: item.url_imagen}} style={styles.image1}/>
                             <View style={styles.footer}>
                                 <Text style={styles.footerText}>{item.title}</Text>
                                 <Text style={styles.footerText}>{item.promo}</Text>
@@ -1228,7 +1313,7 @@ export default class LoginScreen extends Component {
 
                         {/* Bienvenida */}
                         <ImageBackground 
-                            source={{uri: 'https://api.progresarcorp.com.py/images/'+imageSal}}
+                            source={{uri: 'https://api.progresarcorp.com.py/imagenes/'+imageSal}}
                             resizeMode="cover" 
                             imageStyle={{width: '100%', borderRadius: 5}}
                             style={[styles.topSal, {width: '100%', height: 70, justifyContent: "center", borderRadius: 5}]}
@@ -1436,7 +1521,16 @@ export default class LoginScreen extends Component {
                                 </View>
                             </CollapseBody>
                         </Collapse>
+                        <ScrollView>
+                    {/* Para mostrar productos */}
+                    <Text style={{ fontSize: 20, fontWeight: 'bold', margin: 10, textAlign: 'center' }}>
+                    ProgreMarket
+                    </Text>
 
+                    <Productos />
+                    {/* Otras vistas abajo */}
+                    </ScrollView>
+                       {/* Para mostrar productos */}
                         <View style={{marginTop: 25, justifyContent: 'center'}}> 
                             <Text style={{textAlign: 'center', fontWeight: 'bold', fontSize: 18}}>Informaciones</Text>
                             <FlatList 
@@ -1465,10 +1559,15 @@ export default class LoginScreen extends Component {
                                 ))}
                             </View> : <View style={styles.dotView}><Text>No hay informaciones actualmente</Text></View>}
                         </View>
-                    </ScrollView>
+                    </ScrollView> 
+                   
 
                     {styleBotFo()}
+                  
                 </View>
+               
+        
+                                                    
 
                 <View style={{marginTop: 15 }}>
                     <BotFoo 
@@ -1574,17 +1673,18 @@ export const currencyFormat = (value, options) => {
 const styles = StyleSheet.create({
     
     card: {
-        borderWidth: 1,
-        borderColor: '#ddd',
-        borderRadius: 10,
-        padding: 17,
-        width: 360,
+        backgroundColor: '#fff',
+        borderRadius: 15,
+        padding: 15,
+        marginHorizontal: 10,
+        width: 410,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
-        position: 'relative', // Necesario para el posicionamiento absoluto del pie
-      },
+        elevation: 3,
+        position: 'relative',
+      },      
       contentContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -1605,7 +1705,7 @@ const styles = StyleSheet.create({
         color: '#555',
         marginBottom: 8,
       },
-      nombre: {
+      nombre_card: {
         fontSize: 14,
         color: '#333',
       },
@@ -1660,7 +1760,12 @@ const styles = StyleSheet.create({
         resizeMode: 'cover',
         marginTop: 10
     },
-
+    image1: {
+        width:CONTENEDOR-30,
+        height: 120,
+        resizeMode: 'cover',
+        marginTop: 10
+    },
     footer: {
         flexDirection: 'row',
         justifyContent: 'space-between',
@@ -1902,5 +2007,81 @@ const styles = StyleSheet.create({
         textAlign: 'center',
         marginTop: 10,
       },  
-      
+       image: {
+    width: 180,
+    height: 180,
+    marginBottom: 10,
+  },
+  marca: {
+    fontWeight: 'bold',
+    color: '#444',
+    marginBottom: 4,
+  },
+  nombre: {
+    textAlign: 'center',
+    fontWeight: '600',
+    marginBottom: 5,
+  },
+  precio: {
+    color: '#c00',
+    fontWeight: 'bold',
+    marginBottom: 10,
+  },
+  boton: {
+    borderWidth: 1,
+    borderColor: '#c00',
+    borderRadius: 5,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  botonTexto: {
+    color: '#c00',
+    fontWeight: '600',
+  },
+
 })
+const styles_productos = StyleSheet.create({
+    containerProducto: {
+      width: 280,
+      backgroundColor: '#fff',
+      marginHorizontal: 10,
+      borderRadius: 12,
+      padding: 15,
+      alignItems: 'center',
+      elevation: 3,
+      shadowColor: '#000',
+      shadowOpacity: 0.1,
+      shadowOffset: { width: 0, height: 2 },
+    },
+    imageProducto: {
+      width: 120,
+      height: 120,
+      marginBottom: 10,
+    },
+    marcaProducto: {
+      fontWeight: 'bold',
+      color: '#444',
+      marginBottom: 4,
+    },
+    nombreProducto: {
+      textAlign: 'center',
+      fontWeight: '600',
+      marginBottom: 5,
+    },
+    precioProducto: {
+      color: '#c00',
+      fontWeight: 'bold',
+      marginBottom: 10,
+    },
+    botonProducto: {
+      borderWidth: 1,
+      borderColor: '#c00',
+      borderRadius: 5,
+      paddingVertical: 5,
+      paddingHorizontal: 10,
+    },
+    botonTextoProducto: {
+      color: '#c00',
+      fontWeight: '600',
+    },
+  });

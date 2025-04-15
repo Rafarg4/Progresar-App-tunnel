@@ -1,4 +1,4 @@
-import React, {Component, useState, useEffect} from 'react'
+import React, {Component, useState, useEffect } from 'react'
 import {
   SafeAreaView,
   View, 
@@ -24,7 +24,7 @@ import {expo} from '../../app.json'
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native-elements';
-
+const { width } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
 
@@ -491,12 +491,19 @@ export default class LoginScreen extends Component{
                 showsVerticalScrollIndicator={false}
               >
                 {/* Logo de la empresa */}
-                <View style={{alignItems:'center'}}>
-                  <Image 
-                   style={{ width: 300, height: 100, resizeMode: 'contain' }}
-                    source={ require("../assets/logo-progre.png")}
-                  />
-                </View>
+                <View style={styles.container}>
+      {/* Imagen superior */}
+      <Image  
+        style={styles.headerImage}
+        source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/04/logo-nuevo-3.png' }}
+      />
+
+      {/* Aquí podrías continuar con tu formulario de login */}
+      <View style={styles.formContainer}>
+        {/* Inputs, botones, etc */}
+      </View>
+    </View>
+
                 
         
                 {/* Input del ci - user */ }
@@ -777,5 +784,21 @@ const styles = StyleSheet.create({
     alignContent: 'center',
     flex: 1
   },
+  container: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  headerImage: {
+    width: width,
+    height: 240,
+    resizeMode: 'cover',
+    
+  },
+  formContainer: {
+    paddingTop: 30,
+    paddingHorizontal: 20,
+    // Aquí irían los campos del formulario
 
+  },
+  
 });
