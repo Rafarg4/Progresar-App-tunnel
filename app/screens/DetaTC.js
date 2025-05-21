@@ -481,62 +481,74 @@ export default class DetaTC extends Component {
                         style={{ margin: 5, backgroundColor: 'white', padding: 5, borderRadius: 10, width: '100%' }}
                     >
                         <Image
-                            style={{ width: '100%', height: 190, marginBottom: 5, paddingRight:5, borderRadius:5 }}
-                            source={(imageTC(item.clase_tarjeta))}
+                        style={styles.cardImage}
+                        source={imageTC(item.clase_tarjeta)}
+                        resizeMode="cover"
                         />
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Tipo TC: </Text>
-                            <Text style={styles.textDeta}>{item.tipo_tarjeta}</Text>
+                       <View style={styles.card}>
+                        <Text style={styles.cardTitle}>Tarjeta: **** {item.nro_tarjeta_4}</Text>
+                        <Text style={styles.subText}>Tipo: {item.tipo_tarjeta}</Text>
+
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Línea Normal:</Text>
+                            <Text style={styles.green}>{currencyFormat(item.linea_normal)}</Text>
                         </View>
 
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>TC N°: </Text>
-                            <Text style={styles.textDeta}>**** {item.nro_tarjeta_4}</Text>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Disponible:</Text>
+                            <Text style={styles.green}>{currencyFormat(item.linea_normal - item.deuda_normal)}</Text>
                         </View>
 
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Línea Normal: </Text>
-                            <Text style={[styles.textDeta, styles.colorGreen]} >{currencyFormat(item.linea_normal)}</Text>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Días de Mora:</Text>
+                            <Text style={styles.orange}>{item.dias_mora}</Text>
                         </View>
 
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Deuda Normal: </Text>
-                            <Text style={[styles.textDeta, styles.colorRed]}>{currencyFormat(item.deuda_normal)}</Text>
+                        <View style={styles.row}>
+                            <Text style={styles.label}>Saldo en Mora:</Text>
+                            <Text style={styles.red}>{currencyFormat(item.saldo_mora)}</Text>
+                        </View>
+                           {/* Footer visual para vencimiento */}
+                        <View style={styles.footer}>
+                        <Text style={styles.footerLabel}>Próximo Vencimiento:</Text>
+                        <Text style={styles.footerValue}>{vencimiento}</Text>
+                        </View>
+                           {/* Footer visual para vencimiento */}
+                        <View style={styles.footer}>
                         </View>
 
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Disponible Normal: </Text>
-                            <Text style={[styles.textDeta, styles.colorGreen]}>{currencyFormat(item.linea_normal-item.deuda_normal)}</Text>
+                       {/* Botones lado a lado */}
+                        <View style={{ flexDirection: 'row', justifyContent: 'center', marginTop: 10, gap: 10 }}>
+                        <TouchableOpacity
+                            onPress={() => this.gotoScreen('Movimientos TC', codtar)}
+                            style={{
+                            paddingVertical: 10,
+                            paddingHorizontal: 20,
+                            backgroundColor: '#bf0404',
+                            borderRadius: 8,
+                            flex: 1,
+                            marginRight: 5
+                            }}
+                        >
+                            <Text style={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Ver Movimientos</Text>
+                        </TouchableOpacity>
+
+                        <TouchableOpacity
+                            onPress={() => this.setState({ modalOptions: true })}
+                            style={{
+                            paddingVertical: 10,
+                            paddingHorizontal: 20,
+                            backgroundColor: '#9c9c9c',
+                            borderRadius: 8,
+                            flex: 1,
+                            marginLeft: 5
+                            }}
+                        >
+                            <Text style={{ color: 'white', fontWeight: 'bold', textAlign: 'center' }}>Más opciones</Text>
+                        </TouchableOpacity>
                         </View>
 
-                        <View>{comprobarEspecial(item.linea_especial)}</View>
-                        <View>{comprobarDeudaEspecial(item.linea_especial, item.deuda_especial)}</View>
-
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Días de Mora: </Text>
-                            <Text style={[styles.textDeta, styles.colorOr]}>{item.dias_mora}</Text>
-                        </View>
-
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Saldo en Mora: </Text>
-                            <Text style={[styles.textDeta, styles.colorRed]}>{currencyFormat(item.saldo_mora)}</Text>
-                        </View>
-                        
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Deuda del Periodo: </Text>
-                            <Text style={[styles.textDeta, styles.colorRed]}>{currencyFormat(deuda_periodo)}</Text>
-                        </View>
-
-                        <View style={{ flexDirection: 'row' }}>
-                            <Text style={styles.textDeta}>Pago mínimo: </Text>
-                            <Text style={[styles.textDeta, styles.colorGreen]}>{currencyFormat(item.pago_min)}</Text>
-                        </View>
-
-                        <View style={{ flexDirection: 'row', marginBottom:5 }}>
-                            <Text style={styles.textDeta}>Deuda total: </Text>
-                            <Text style={[styles.textDeta, styles.colorRed]}>{currencyFormat(item.deuda_total)}</Text>
-                        </View>
-
+                    </View>
                         <View>{comprobarTCBloqueado(item.adm_usu)}</View>
                     </View>
                 );
@@ -1196,54 +1208,70 @@ export default class DetaTC extends Component {
                         showsVerticalScrollIndicator={false}
                     >
                         <View style={styles.box2}>
-                            { vencimiento ? <Text style={styles.textVenc}>Próximo Vencimiento: {vencimiento}<IndicadorTCMini /> </Text> : null }
+                          
                             {detTC()}
 
                             {puntos_total > 0 ? 
                                 <View
-                                    style={{marginLeft:15, backgroundColor: 'white', marginTop:10, width: '100%', borderRadius: 10, padding: 10}}
+                                   style={{ margin: 5, backgroundColor: 'white', padding: 5, borderRadius: 10, width: '100%' }}
                                 >
-                                    <Text style={{textAlign: 'center', fontSize: 16, fontWeight:'bold'}}> <Icon name='database' color='#bf0404' /> Progre Puntos</Text>
+                                <Image
+                                    style={styles.cardImage}
+                                    source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/05/progrepuntos.png' }}
+                                    resizeMode="cover"
+                                />
 
-                                    <View style={{ flexDirection: 'row', marginBottom:5}}>
-                                        <Text style={styles.textDeta}>Puntos Anteriores: </Text>
-                                        <Text style={styles.textDeta}>{puntos_ant}</Text>
+                                   <View style={styles.pointsCard}>
+                                    <Text style={styles.cardTitle}>Resumen de Puntos</Text>
+
+                                    <View style={styles.row}>
+                                        <Text style={styles.label}>Puntos Anteriores:</Text>
+                                        <Text style={styles.value}>{puntos_ant}</Text>
                                     </View>
 
-                                    <View style={{ flexDirection: 'row', marginBottom:5}}>
-                                        <Text style={styles.textDeta}>Puntos del Mes: </Text>
-                                        <Text style={styles.textDeta}>{puntos_mes}</Text>
+                                    <View style={styles.row}>
+                                        <Text style={styles.label}>Puntos del Mes:</Text>
+                                        <Text style={styles.value}>{puntos_mes}</Text>
                                     </View>
 
-                                    <View style={{ flexDirection: 'row', marginBottom:5}}>
-                                        <Text style={styles.textDeta}>Puntos Usados: </Text>
-                                        <Text style={styles.textDeta}>{puntos_usados}</Text>
+                                    <View style={styles.row}>
+                                        <Text style={styles.label}>Puntos Usados:</Text>
+                                        <Text style={styles.value}>{puntos_usados}</Text>
                                     </View>
 
-                                    <View style={{ flexDirection: 'row', marginBottom:5}}>
-                                        <Text style={styles.textDeta}>Total Puntos: </Text>
-                                        <Text style={styles.textDeta}>{puntos_total}</Text>
+                                    <View style={styles.row}>
+                                        <Text style={styles.label}>Total Puntos:</Text>
+                                        <Text style={styles.value}>{puntos_total}</Text>
                                     </View>
 
-                                    <View style={{ flexDirection: 'row', marginBottom:5}}>
-                                        <Text style={styles.textDeta}>Equivalentes a: </Text>
-                                        <Text style={styles.textDeta}>{currencyFormat(puntos_total*50)} gs</Text>
+                                   <View style={styles.footer}>
+                                        <Text style={styles.footerLabel}>Equivalentes a:</Text>
+                                        <Text style={[styles.value, styles.green]}>{currencyFormat(puntos_total * 50)} Gs</Text>
                                     </View>
-
-                                    <View style={{ flexDirection: 'row', marginBottom:5, marginTop: 10}}>
+                                     {/* Footer visual para canje de puntos */}
+                                    <View style={[styles.footer, { alignItems: 'center', marginTop: 10 }]}>
+                                    <View style={{ width: '100%', alignItems: 'center' }}>
                                         <TouchableOpacity
-                                            onPress={()=> this.setState({showCanje: true})}
-                                            style={{backgroundColor: '#bf0404', width: '100%', padding:5, borderRadius: 5}}
+                                        onPress={() => this.setState({ showCanje: true })}
+                                        style={{
+                                            backgroundColor: '#bf0404',
+                                            paddingVertical: 10,
+                                            paddingHorizontal: 25,
+                                            borderRadius: 8,
+                                        }}
                                         >
-                                            <Text style={{textAlign: 'center', color: 'white'}}>Canjear puntos</Text>
+                                        <Text style={{ textAlign: 'center', color: 'white', fontWeight: 'bold' }}>
+                                            Canjear puntos
+                                        </Text>
                                         </TouchableOpacity>
                                     </View>
-
+                                    </View>
+                                    </View>
                                     {clase_tc == 'LE' ?
                                         <View style={{ flexDirection: 'row', marginBottom:5, marginTop: 10}}>
                                             <TouchableOpacity
                                                 onPress={()=> {Linking.openURL('https://progresarcorp.com.py/canje-de-puntos-linalu');}}
-                                                style={{backgroundColor: '#9c9c9c', width: '100%', padding:5, borderRadius: 5}}
+                                                style={{backgroundColor: '#9c9c9c', width: '50%', padding:5, borderRadius: 5}}
                                             >
                                                 <Text style={{textAlign: 'center', color: 'white'}}>Canje de puntos LINALU</Text>
                                             </TouchableOpacity>
@@ -1259,21 +1287,11 @@ export default class DetaTC extends Component {
                         : 
                             <View>
                                 <View style={styles.box2}>
-                                    <TouchableOpacity
-                                        onPress={() => this.gotoScreen('Movimientos TC', codtar)}
-                                        style={{padding: 10, width: '100%', backgroundColor: '#bf0404', borderRadius:5, marginBottom:10}}
-                                    >
-                                        <Text style={{color: 'white', textAlign: 'center'}}>Ver Movimientos</Text>    
-                                    </TouchableOpacity>
+                                   
                                 </View>
                                 {clientetar != '' ? 
                                     <View style={styles.box3}>
-                                        <TouchableOpacity
-                                            onPress={() => this.setState({modalOptions: true})}
-                                            style={{padding: 10, width: '100%', backgroundColor: '#9c9c9c', borderRadius:5, marginBottom:10}}
-                                        >
-                                            <Text style={{color: 'white', textAlign: 'center'}}>Más opciones</Text>
-                                        </TouchableOpacity>
+                                
                                     </View>
                                 : null }
                             </View>
@@ -1430,6 +1448,98 @@ const styles = StyleSheet.create({
         borderWidth: 1, 
         padding: 5, 
     }, 
+    cardImage: {
+  width: '100%',
+  height: 150,
+  borderRadius: 10,
+},
+
+    card: {
+  backgroundColor: '#fff',
+  padding: 15,
+  marginVertical: 8,
+  borderRadius: 10,
+  shadowColor: '#000',
+  shadowOpacity: 0.1,
+  shadowRadius: 5,
+  elevation: 3,
+},
+pointsCard: {
+  backgroundColor: '#fff',
+  padding: 12,
+  marginTop: 10,
+  marginBottom: 15,
+  borderRadius: 12,
+  shadowColor: '#000',
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.1,
+  shadowRadius: 4,
+  elevation: 2,
+},
+
+cardTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginBottom: 10,
+  color: '#333',
+},
+footer: {
+  borderTopWidth: 1,
+  borderTopColor: '#eee',
+  marginTop: 10,
+  paddingTop: 8,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
+
+footerLabel: {
+  fontSize: 13,
+  color: '#888',
+  fontWeight: 'bold',
+},
+
+footerValue: {
+  fontSize: 13,
+  fontWeight: '600',
+  color: '#444',
+},
+row: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginBottom: 6,
+},
+
+label: {
+  fontSize: 14,
+  color: '#555',
+},
+
+value: {
+  fontSize: 14,
+  fontWeight: '600',
+  color: '#111',
+},
+
+green: {
+  color: 'green',
+},
+
+cardTitle: {
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginBottom: 6,
+},
+row: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginVertical: 2,
+},
+label: { color: '#555' },
+green: { color: 'green', fontWeight: 'bold' },
+red: { color: 'red', fontWeight: 'bold' },
+orange: { color: 'orange', fontWeight: 'bold' },
+
 
     //estilos para los TextInput
     input: {
@@ -1442,6 +1552,7 @@ const styles = StyleSheet.create({
         borderWidth: 0.8,
         borderColor: "#bf0404",
     },
+    
     
     inputStyle: { fontSize: 14 },
 

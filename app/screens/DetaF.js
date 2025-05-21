@@ -230,67 +230,75 @@ export default class DetaTC extends Component {
                 return (
                     <View style={{borderRadius: 10, width: '100%', }}>
                         
-                        {/* Detalles generales de la OP */}
-                        <View style={styles.box3}>
+                       <View style={styles.box3}>
+                        <Image
+                         style={styles.cardImage}
+                         source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/05/operaciones.png' }}
+                         resizeMode="cover"
+                        />
+                        <Text style={styles.title}>
+                           
+                        </Text>
 
-                            <Text style={{textAlign: 'center', fontSize: 16}}> <Icon name='certificate' color='#bf0404' size={20} /> N° Préstamo: {num_op}</Text>
-
-                            <View style={{ flexDirection: 'row', width: '100%', marginTop: 10}}>
-                                
-                                <View style={{width: '60%'}}>
-
-                                    <Text>Tipo:</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>N° Cuotas:</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>Monto Cuota:</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>Total Préstamo:</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>Total a Pagar:</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>Total Intereses:</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>Saldo Total:</Text>
+                        <View style={styles.rowContainer}>
+                            {/* Etiquetas */}
+                            <View style={styles.leftColumn}>
+                            {[
+                                'Tipo:',
+                                'N° Cuotas:',
+                                'Monto Cuota:',
+                                'Total Préstamo:',
+                                'Total a Pagar:',
+                                'Motivo:',
+                                'Saldo Total:'
+                            ].map((label, index) => (
+                                <View key={index} style={styles.labelRow}>
+                                <Text style={styles.labelText}>{label}</Text>
+                              
                                 </View>
-
-                                <View style={{width: '40%'}}>
-                                    <Text> {comprobTipo(tip_op)} {comprobSector(cod_sector)}</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-                                    
-                                    <Text> {cant_cuotas}</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>{currencyFormat(clienteFin[0].monto_cuota)}</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-                                    
-                                    <Text>{currencyFormat(sum_monto)}</Text>                                    
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <Text>{currencyFormat(total_pagado)}</Text>
-                                    <Divider style={{marginBottom: 5 }} />
-
-                                    <View>{motivoPre()}</View>
-                                    <Divider style={{marginBottom: 5 }} />
-                                    
-                                    <Text style={{color: 'red'}}>{currencyFormat(sum_saldo)}</Text>
-                                </View>
+                            ))}
                             </View>
-
-                            <Divider style={{marginBottom: 5, marginTop: 5 }} />
-                            
+                          
+                            {/* Valores */}
+                            <View style={styles.rightColumn}>
+                            {[
+                                `${comprobTipo(tip_op)} ${comprobSector(cod_sector)}`,
+                                cant_cuotas,
+                                currencyFormat(clienteFin[0].monto_cuota),
+                                currencyFormat(sum_monto),
+                                currencyFormat(total_pagado),
+                                motivoPre(),
+                                currencyFormat(sum_saldo)
+                            ].map((value, index) => (
+                                <View key={index} style={styles.valueRow}>
+                                <Text
+                                    style={[
+                                    styles.valueText,
+                                    index === 6 && { color: '#bf0404', fontWeight: 'bold' }
+                                    ]}
+                                >
+                                    {value}
+                                </Text>
+                                
+                                </View>
+                            ))}
+                            </View>
                         </View>
-
+                        <View style={{ width: '100%' }}>
+                            <View style={styles.footer}>
+                                <Text style={styles.footerLabel}>N° Préstamo:</Text>
+                                <Text style={styles.footerValue}>{num_op}</Text>
+                            </View>
+                            </View>
+                        </View>
                         {/* datos de las cuotas pendientes y pagadas */}
                         <View style={styles.box3}>
-
-                            <Text style={{textAlign: 'center', fontSize: 16, marginBottom: 5}}> <Icon name='info-circle' color='#bf0404' size={20} /> Detalles</Text>
+                        <Image
+                         style={styles.cardImage}
+                         source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/05/detalles.png' }}
+                         resizeMode="cover"
+                        />
+                            <Text style={{textAlign: 'center', fontSize: 16, marginBottom: 5}}></Text>
 
                             <View style={{ flexDirection: 'row', width: '100%'}}>
                                 <View style={{ marginRight: 5, width: '10%',  alignItems: 'center'}}>
@@ -309,19 +317,17 @@ export default class DetaTC extends Component {
                             </View>
 
                             <Divider style={{marginBottom: 5 }}/>
-
                             <FlatList
                                 data={clienteFin}
-                                keyExtractor={(item) => item.nro_cuota}
-                                renderItem={({ item, index }) => {
-                                    return (
-                                        <View>{cuotasF(item)}</View>
-                                    )
-                                }
-                                }
-                            />
+                                keyExtractor={(item) => item.nro_cuota.toString()}
+                                renderItem={({ item }) => (
+                                    <View>
+                                    {cuotasF(item)}
+                                    <Divider style={{ marginVertical: 4, backgroundColor: '#e0e0e0' }} />
+                                    </View>
+                                )}
+                                />
                         </View>
-
                         <View style={styles.box3}>
                             <View style={{ flexDirection: 'row', width: '100%'}}>
                                 
@@ -436,4 +442,95 @@ const styles = StyleSheet.create({
         color: 'orange',
         fontWeight: 'bold',
     },
+    box3: {
+    backgroundColor: '#fff',
+    borderRadius: 10,
+    padding: 15,
+    marginVertical: 10,
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2
+  },
+  title: {
+    textAlign: 'center',
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12
+  },
+  rowContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between'
+  },
+  leftColumn: {
+    width: '55%',
+    paddingRight: 10
+  },
+  rightColumn: {
+    width: '45%'
+  },
+  labelRow: {
+    marginBottom: 6
+  },
+  labelText: {
+    fontWeight: 'bold',
+    color: '#333'
+  },
+  valueRow: {
+    marginBottom: 6
+  },
+  valueText: {
+    textAlign: 'right',
+    color: '#444'
+  },
+
+cardImage: {
+  width: '100%',
+  height: 150,
+  borderRadius: 10,
+},
+buttonRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  marginTop: 20,
+  paddingHorizontal: 10,
+},
+
+button: {
+  flex: 1,
+  backgroundColor: '#bf0404',
+  padding: 10,
+  borderRadius: 8,
+  marginHorizontal: 5,
+  alignItems: 'center',
+},
+
+buttonText: {
+  color: '#fff',
+  fontWeight: 'bold',
+  fontSize: 16,
+},
+footer: {
+  borderTopWidth: 1,
+  borderTopColor: '#eee',
+  marginTop: 10,
+  paddingTop: 8,
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  width: '100%', // 👈 Agregá esto
+},
+footerLabel: {
+  fontSize: 15,
+  //color: '#888',
+  //fontWeight: 'bold',
+},
+
+footerValue: {
+  fontSize: 14,
+  fontWeight: '600',
+  //color: '#888',
+  //fontWeight: 'bold',
+},
 })

@@ -593,65 +593,67 @@ export default class LoginScreen extends Component {
           
             return (
                 <View style={{ marginTop: 20 }}>
-                    <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                        {productos.map((item) => {
+                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+                    {productos.map((item) => {
                         // Determinar la imagen según la categoría
-                        let imageUrl = 'https://progresarcorp.com.py/wp-content/uploads/2025/04/Logo_nuevo_P-2.png'; // Imagen por defecto
-
-                        if (item.categoria === 'COCINA') {
-                            imageUrl = 'https://www.gonzalezgimenez.com.py/storage/sku/whirlpool-cocinas-cocina-a-gas-whirlpool-wf04ebr-4h-inox-2-1-1665749209.png';
-                        } else if (item.categoria === 'LAVARROPAS Y CENTRIFUGADORAS') {
-                            imageUrl = 'http://porter.com.py/image/cache/catalog/Consumer/Lavarropas/CR.789-a-500x500.jpg.webp';
-                        } else if (item.categoria === 'HORNOS Y MICROONDAS') {
-                            imageUrl = 'https://www.megared.com.py/storage/sku/tokyo-hornos-horno-elect-tokyo-listo-plus-46l-negro-1-1-1720042569.jpg';
-                        } else if (item.categoria === 'MUEBLES') {
-                            imageUrl = 'https://st4.depositphotos.com/1000451/28588/i/450/depositphotos_285884898-stock-photo-white-color-armchair-style-modern.jpg';
-                        } else if (item.categoria === 'ELECTRODOMESTICOS') {
-                            imageUrl = 'https://progresarcorp.com.py/wp-content/uploads/2025/04/ChatGPT-Image-14-abr-2025-14_47_50.png';
-                        } else if (item.categoria === 'TELEVISORES') {
-                            imageUrl = 'https://cdn.mercadodigital.com.py/images/televisor-50-jvc-lt50n940u2-4k-uhdhdrdigsmarthdmiusb-0.png';
-                        } else if (item.categoria === 'LICUADORAS Y PROCESADORAS') {
-                            imageUrl = 'https://www.britania.com.py/wp-content/uploads/sites/2/2024/06/33102203-1-1.jpg-1.webp';
-                        }
-                        
-
+                        let imageUrl = item.ruta_foto 
+                        ? `https://progresarelectrodomesticos.com/img/producto/${item.ruta_foto}`
+                        : 'https://progresarcorp.com.py/wp-content/uploads/2025/04/Logo_nuevo_P-2.png';
                         return (
                             <View key={item.cod_articulo} style={styles_productos.containerProducto}>
+    
+                            {/* Badge NUEVO */}
+                            <View style={{
+                                position: 'absolute',
+                                top: 10,
+                                left: 10,
+                                backgroundColor: 'red',
+                                paddingHorizontal: 8,
+                                paddingVertical: 4,
+                                borderRadius: 6,
+                                zIndex: 1
+                            }}>
+                                <Text style={{ color: 'white', fontWeight: 'bold', fontSize: 10 }}>NUEVO</Text>
+                            </View>
+                        
+                            {/* Imagen del producto */}
                             <Image
                                 source={{ uri: imageUrl }}
                                 style={styles_productos.imageProducto}
                                 resizeMode="contain"
                             />
+                            
                             <Text style={styles_productos.marcaProducto}>Progresar Electrodomésticos</Text>
                             <Text style={styles_productos.nombreProducto}>{item.producto}</Text>
                             <Text style={styles_productos.precioProducto}>Precio: Gs. {parseInt(item.precio_fijo).toLocaleString()}</Text>
+                        
+                            {/* Botones */}
                             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 12 }}>
-                                {/* Botón WhatsApp */}
                                 <TouchableOpacity
-                                onPress={() =>
-                                    Linking.openURL(
-                                    `https://api.whatsapp.com/send?phone=595984995582&text=Hola, estoy interesado en el producto ${encodeURIComponent(item.producto)}`
-                                    )
-                                }
-                                style={{ padding: 10, backgroundColor: '#25D366', borderRadius: 10 }}
+                                    onPress={() =>
+                                        Linking.openURL(
+                                            `https://api.whatsapp.com/send?phone=595984995582&text=Hola, estoy interesado en el producto ${encodeURIComponent(item.producto)}`
+                                        )
+                                    }
+                                    style={{ padding: 10, backgroundColor: '#25D366', borderRadius: 10 }}
                                 >
-                                <Icon name="whatsapp" size={13} color="#fff" />
+                                    <Icon name="whatsapp" size={13} color="#fff" />
                                 </TouchableOpacity>
-                                {/* Botón Añadir a carrito */}
                                 <TouchableOpacity
-                                style={styles_productos.botonProducto}
-                                onPress={() =>
-                                    Linking.openURL(`https://progresarelectrodomesticos.com/detalles${item.cod_articulo}`)
-                                }
+                                    style={styles_productos.botonProducto}
+                                    onPress={() =>
+                                        Linking.openURL(`https://progresarelectrodomesticos.com/detalles${item.cod_articulo}`)
+                                    }
                                 >
-                                <Text style={styles_productos.botonTextoProducto}>Añadir a carrito</Text>
+                                    <Text style={styles_productos.botonTextoProducto}>Añadir a carrito</Text>
                                 </TouchableOpacity>
                             </View>
-                            </View>
+                        </View>
+                        
                         );
-                        })}
-                    </ScrollView>
-                </View>
+                    })}
+                </ScrollView>
+            </View>
             );
           };
           const TarjetaInfo = () => {
