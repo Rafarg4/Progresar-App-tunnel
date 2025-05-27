@@ -50,6 +50,9 @@ export default class LoginScreen extends Component{
             onpress: '',
             optBio: '',
             secureText: true,
+            mostrarBotonBiometrico: true, 
+            biometriaCompatible: false,
+            metodoLogin: 'password',
             iconShow: 'eye-slash',
             bioAvaliable: false
         }
@@ -97,17 +100,60 @@ export default class LoginScreen extends Component{
         }
       }
     };
-  
-    componentDidMount() {
-      this.backHandler = BackHandler.addEventListener(
-        "hardwareBackPress",
-        this.backAction
-      );
-      this.comprobActualization();
-      //this.getEnabledSwitch();
-      //this.getUserDoc();
+ handleBiometria = async () => {
+  try {
+    const compatible = await LocalAuthentication.hasHardwareAsync();
+    const enrolled = await LocalAuthentication.isEnrolledAsync();
+
+    console.log('Tiene lector biométrico:', compatible);
+    console.log('Tiene huella/FaceID configurada:', enrolled);
+
+    if (!compatible) {
+      Alert.alert('Biometría no disponible', 'Tu dispositivo no tiene lector biométrico');
+      return;
     }
-  
+
+    if (!enrolled) {
+      Alert.alert('Biometría no configurada', 'Debes registrar una huella o rostro en tu dispositivo');
+      return;
+    }
+
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Autenticarse',
+      fallbackLabel: 'Usar contraseña', // iOS
+      cancelLabel: 'Cancelar', // Android
+      disableDeviceFallback: true, // Para que no muestre pin/patrón en Android
+    });
+
+    if (result.success) {
+      Alert.alert('Autenticación exitosa');
+      this.getUsuario(); // Aquí llamás a tu login
+    } else {
+      Alert.alert('Falló la autenticación');
+    }
+  } catch (error) {
+    console.error('Error al autenticar:', error);
+    Alert.alert('Error', 'Hubo un error al intentar autenticarte');
+  }
+};
+  async componentDidMount() {
+  const compatible = await LocalAuthentication.hasHardwareAsync();
+  const enrolled = await LocalAuthentication.isEnrolledAsync();
+  const tieneSoporte = compatible && enrolled;
+  this.verificarDatosBiometricos();
+  this.comprobActualization();
+  this.cargarDatosBiometricos();  
+  this.loginConBiometria();
+  this.setState({
+    mostrarBotonBiometrico: true, // SIEMPRE se muestra el botón
+    biometriaCompatible: tieneSoporte,
+    metodoLogin: this.state.user !== '' && tieneSoporte ? 'biometria' : 'password',
+  });
+  const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
+  if (nombreGuardado) {
+    this.setState({ nombre: nombreGuardado });
+  }
+}
     componentWillUnmount() {
       this.backHandler.remove();
     }
@@ -140,17 +186,35 @@ export default class LoginScreen extends Component{
         }
         
       });
-    }
+    } 
+//Para mostrar datos de usuario autenticado
+cargarDatosBiometricos = async () => {
+  try {
+    const user = await AsyncStorage.getItem('usuarioGuardado');
+    const clave = await AsyncStorage.getItem('claveGuardada');
 
+    if (user !== null && clave !== null) {
+      this.setState({ user: user, pass: clave }, () => {
+        // Luego de actualizar el estado, llamamos a la API
+        this.getUsuario();
+      });
+    } else {
+      Alert.alert('Error', 'No hay datos guardados para autenticación biométrica');
+    }
+  } catch (error) {
+    console.log('Error cargando datos biométricos:', error);
+  }
+};
+//Consulta para la api
     getUsuario = () => {
-        this.setState({loading: true})
+        this.setState({loading: true}) 
 
         var data = {
           valid: this.state.valid,
           user: this.state.user,
           clave: this.state.pass,
         };
-
+        console.log('📤 Enviando a la API:', data); 
         fetch(this.state.url,{
           method: 'POST',
           body: JSON.stringify(data), 
@@ -161,29 +225,30 @@ export default class LoginScreen extends Component{
         .then(response => response.json())
         .then(data => {
             //ver si la respuesta del servidor es success
-            if(data.status=='success'){
-
+           if(data.status == 'success') {
               this.setState({
-                clave : data.clave,
-                num_usu : data.num_usu,
-                cod_cliente : data.cod_cliente,
+                clave: data.clave,
+                pass: data.clave,   // <== Asegúrate de actualizar pass aquí también
+                num_usu: data.num_usu,
+                cod_cliente: data.cod_cliente,
                 mensaje: data.mensaje,
                 nombre: data.nombre,
-              })
-              //verificar si las contraseñas coinciden
-              if(this.state.pass===data.clave){
-                global.num_doc=this.state.user
-                global.nombre=data.nombre
-                global.num_usuario=data.num_usu
-                global.user_perfil = data.user_perfil
-                this.setState({
-                  pass: '',
-                })
-                this.getEmailVerified();
-              }
+              }, () => {
+                // Ahora que pass está actualizado, guarda los datos
+                if (this.state.pass === data.clave) {
+                  global.num_doc = this.state.user;
+                  global.nombre = data.nombre;
+                  global.num_usuario = data.num_usu;
+                  global.user_perfil = data.user_perfil;
+
+                  this.guardarDatosBiometricos(); // guardará el pass actualizado
+                  this.setState({ pass: '' });
+                  this.getEmailVerified();
+                }
+              });
             }
-            else{
-              this.setState({loading: false,})
+            else{ 
+              this.setState({loading: false,}) 
               Alert.alert('Error', data.mensaje)
             }
         })
@@ -191,53 +256,180 @@ export default class LoginScreen extends Component{
           Alert.alert('Error', 'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde')
           this.setState({loading: false})
         })
-    };
+    };  
+    cerrarSesion = async () => {
+  try {
+    const biometricoHabilitado = await AsyncStorage.getItem('biometricoHabilitado');
 
-    getUserBio = (value) => {
-      this.setState({loading: true})
+    // Si la biometría NO está habilitada, borra todo
+    if (biometricoHabilitado !== 'true') {
+      await AsyncStorage.clear();
+    } else {
+      // Si la biometría está habilitada, solo borra la sesión actual
+      await AsyncStorage.removeItem('token');
+      await AsyncStorage.removeItem('sesionActiva');
+      await AsyncStorage.removeItem('nombreUsuario');
+    }
 
-      var data = {
-        valid: this.state.valid,
-        user: this.state.user,
-        success: value
-      };
+    this.setState({ user: '', pass: '' });
+    this.props.navigation.navigate('Login');
+  } catch (error) {
+    console.log('Error al cerrar sesión:', error);
+  }
+};
 
-      fetch('https://api.progresarcorp.com.py/api/ConsultarBioAcceso',{
-        method: 'POST',
-        body: JSON.stringify(data), 
-        headers:{
-            'Content-Type': 'application/json'
+  //Guarda lo ingresado en los campos
+guardarDatosBiometricos = async () => {
+  try {
+    const { user, pass, nombre } = this.state;
+
+    if (!user || !pass) {
+      Alert.alert('Error', 'Usuario o contraseña no válidos para guardar');
+      return;
+    }
+
+    await AsyncStorage.setItem('biometricoHabilitado', 'true');
+    await AsyncStorage.setItem('usuarioGuardado', user.toString());
+    await AsyncStorage.setItem('claveGuardada', pass.toString());
+    await AsyncStorage.setItem('nombreUsuario', nombre || 'Usuario');
+
+    console.log('Datos guardados para biometría');
+  } catch (error) {
+    console.log('Error al guardar datos biométricos:', error);
+    Alert.alert('Error', 'No se pudieron guardar los datos para biometría');
+  }
+};
+ 
+//Para loguearse
+loginConBiometria = async () => {
+  try {
+    const usuario = await AsyncStorage.getItem('usuarioGuardado');
+    const clave = await AsyncStorage.getItem('claveGuardada');
+    const nombre = await AsyncStorage.getItem('nombreUsuario');
+
+    if (usuario && clave) {
+      // Actualizo estado con los datos guardados
+      this.setState(
+        {
+          user: usuario, 
+          pass: clave,
+          nombre: nombre || 'Usuario',
+        },
+        () => {
+          // Llamo a la API directamente con datos recuperados
+          this.getUsuario();
         }
-      })
-      .then(response => response.json())
-      .then(data => {
-          //ver si la respuesta del servidor es success
-          if(data.status=='success'){
-            this.setState({
-              num_usu : data.num_usu,
-              cod_cliente : data.cod_cliente,
-              mensaje: data.mensaje,
-              nombre: data.nombre,
-            })
-            //verificar si las contraseñas coinciden
-            global.num_doc=this.state.user
-            global.nombre=data.nombre
-            global.codigo_cliente=data.cod_cliente
-            global.num_usuario=data.num_usu
-            this.getEmailVerified();
-          }
-          else{
-            this.setState({loading: false,})
-            Alert.alert('Error', data.mensaje)
-          }
-      })
-      .catch((error)=>{
-        Alert.alert('Error', 'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde')
-        this.setState({loading: false})
-      })
-    };
-    
-    changeUser(user){
+      );
+    } else {
+      Alert.alert('Error', 'No hay datos guardados para usar la biometría');
+    }
+  } catch (error) {
+    console.log('Error al leer datos guardados:', error);
+    Alert.alert('Error', 'No se pudieron recuperar los datos de usuario');
+  }
+}; 
+//Valida si esta configurado la contraseña 
+intentarLoginBiometrico = async () => {
+  try {
+    const tieneHardware = await LocalAuthentication.hasHardwareAsync();
+    const soportado = await LocalAuthentication.supportedAuthenticationTypesAsync();
+    const estaRegistrado = await LocalAuthentication.isEnrolledAsync();
+
+    console.log("Tiene hardware:", tieneHardware);
+    console.log("Tipos soportados:", soportado);
+    console.log("Tiene biometría registrada:", estaRegistrado);
+
+    if (!tieneHardware || !estaRegistrado) {
+      Alert.alert('Biometría no disponible', 'Tu dispositivo no tiene biometría o no está configurada.');
+      return;
+    }
+
+    const resultado = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Escanea tu huella o usa Face ID',
+      fallbackLabel: 'Usar código',
+      disableDeviceFallback: true,
+    });
+
+    console.log('Resultado autenticación:', resultado);
+
+    if (resultado.success) {
+      Alert.alert('✅ Autenticación exitosa', 'Bienvenido');
+
+      // Obtener user/pass guardados y llamar al login
+      const usuario = await AsyncStorage.getItem('usuarioGuardado');
+      const clave = await AsyncStorage.getItem('claveGuardada');
+
+      if (usuario && clave) {
+        this.setState({ user: usuario, pass: clave }, () => {
+          this.getUsuario(); // método de login con fetch
+        });
+      } else {
+        Alert.alert('Error', 'No hay datos guardados para iniciar sesión');
+      }
+    } else {
+      Alert.alert('❌ Falló la autenticación', resultado.error || 'Intenta de nuevo');
+    }
+  } catch (error) {
+    console.error('Error al autenticar:', error);
+    Alert.alert('Error', 'Ocurrió un error durante la autenticación biométrica');
+  }
+};
+//Para ver lo que se guardo
+verDatosGuardados = async () => {
+  try {
+    const bio = await AsyncStorage.getItem('biometricoHabilitado');
+    const user = await AsyncStorage.getItem('usuarioGuardado');
+    const pass = await AsyncStorage.getItem('claveGuardada');
+    console.log('biometricoHabilitado:', bio);
+    console.log('usuarioGuardado:', user);
+    console.log('claveGuardada:', pass);
+  } catch (error) {
+    console.log('Error al leer datos guardados:', error);
+  }
+}
+//Verifica si tiene las opciones para el biometrico
+verificarDatosBiometricos = async () => {
+  try {
+    const biometricoHabilitado = await AsyncStorage.getItem('biometricoHabilitado');
+    const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
+    const claveGuardada = await AsyncStorage.getItem('claveGuardada');
+    const nombreUsuario = await AsyncStorage.getItem('nombreUsuario');
+
+    const tieneHardware = await LocalAuthentication.hasHardwareAsync();
+    const estaRegistrado = await LocalAuthentication.isEnrolledAsync();
+
+    console.log('Tiene lector biométrico:', tieneHardware);
+    console.log('Tiene huella/FaceID configurada:', estaRegistrado);
+
+    if (
+      biometricoHabilitado === 'true' &&
+      usuarioGuardado &&
+      claveGuardada &&
+      tieneHardware &&
+      estaRegistrado
+    ) {
+      this.setState({
+        metodoLogin: 'biometria',
+        user: usuarioGuardado,
+        pass: claveGuardada,
+        nombre: nombreUsuario,
+        mostrarBotonBiometrico: true,
+      });
+
+      // Llamar directamente a la autenticación biométrica
+      this.intentarLoginBiometrico();
+    } else {
+      this.setState({
+        metodoLogin: 'password',
+        mostrarBotonBiometrico: false,
+      });
+    }
+  } catch (error) {
+    console.log('Error al verificar datos biométricos:', error);
+  }
+};
+
+changeUser(user){
       this.setState({user})
 
       const jsonValue = JSON.stringify(user)
@@ -359,7 +551,7 @@ export default class LoginScreen extends Component{
                 <TouchableOpacity 
                   style={buttonStyle}
                   onPress={()=> this.onPresComprob()}
-                  disabled = {disabledButton}
+                
                 >
                   <Text style={styles.botText}> Ingresar</Text>
                 </TouchableOpacity>
@@ -484,6 +676,14 @@ export default class LoginScreen extends Component{
 
           return year.getFullYear();
         }
+        const getIniciales = () => {
+          const { nombre } = this.state;
+          if (!nombre || nombre.trim() === '') return 'U'; 
+          const nombres = this.state.nombre.trim().split(' ');
+          if (nombres.length === 1) return nombres[0].charAt(0).toUpperCase();
+          return nombres[0].charAt(0).toUpperCase() + '|' + nombres[1].charAt(0).toUpperCase();
+        }
+        const saludoNombre = this.state.nombre ? this.state.nombre : 'Usuario';
 
         return(
             <SafeAreaView style={styles.box}>
@@ -492,69 +692,96 @@ export default class LoginScreen extends Component{
               >
                 {/* Logo de la empresa */}
                 <View style={styles.container}>
-      {/* Imagen superior */}
-      <Image  
-        style={styles.headerImage}
-        source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/04/logo-nuevo-3.png' }}
-      />
-
-      {/* Aquí podrías continuar con tu formulario de login */}
-      <View style={styles.formContainer}>
-        {/* Inputs, botones, etc */}
-      </View>
-    </View>
-
-                
-        
-                {/* Input del ci - user */ }
-                <View style={{paddingHorizontal: 15}}>
-                  <Text style={styles.loginText}>N° de Cédula</Text> 
+                <Image  
+                  style={styles.headerImage}
+                  source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/04/logo-nuevo-3.png' }}
+                />
+                <View style={styles.avatarContainer}>
+                  <Text style={styles.avatarText}>{getIniciales()}</Text>
                 </View>
-                <View style={{paddingHorizontal: 15, alignItems: 'center'}}>
-                  <TextInput
+
+                {/* Texto de saludo debajo */}
+                <Text style={styles.greetingText}>Hola, {saludoNombre}</Text>
+
+                {/* Vista blanca con borde redondeado invertido para crear la curva hacia abajo */}
+                <View style={styles.curvedWhite} />
+
+                <View style={styles.formContainer}>
+                  {/* Aquí iría tu formulario */}
+                </View>
+
+              </View>
+             <View style={{flexDirection: 'row', justifyContent: 'center', marginVertical: 10}}>
+                <TouchableOpacity
+                  style={[
+                    styles.selectorButton,
+                    this.state.metodoLogin === 'password' && styles.selectorButtonSelected,
+                  ]}
+                  onPress={() => this.setState({ metodoLogin: 'password' })}
+                >
+                  <Text style={styles.selectorText}>Contraseña</Text>
+                </TouchableOpacity>
+
+                <TouchableOpacity  
+                  style={[
+                    styles.selectorButton,
+                    this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
+                  ]}
+                  onPress={() => this.setState({ metodoLogin: 'biometria' })}
+                >
+                  <Text style={styles.selectorText}>Biometría</Text>
+                </TouchableOpacity>
+                {this.state.mostrarBotonBiometrico && (
+                  <TouchableOpacity
+                    style={[
+                      styles.selectorButton,
+                      this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
+                    ]}
+                    onPress={() => this.setState({ metodoLogin: 'biometria' })}
+                  >
+                    <Text style={styles.selectorText}>Biometría</Text>
+                  </TouchableOpacity>
+                )} 
+              </View>
+              {this.state.metodoLogin === 'password' && (
+                <>
+                  {/* Campo Cédula */}
+                  <View style={{paddingHorizontal: 15}}>
+                    <Text style={styles.loginText}>N° de Cédula</Text> 
+                  </View>
+                  <View style={{paddingHorizontal: 15, alignItems: 'center'}}>
+                    <TextInput
                       value={this.state.user}
                       style={styles.input}
-                      inputStyle={styles.inputStyle}
-                      placeholderStyle={styles.placeholderStyle}
-                      textErrorStyle={styles.textErrorStyle}
                       placeholder='1234567'
                       keyboardType="numeric"
                       placeholderTextColor="gray"
                       onChangeText={(user) => this.changeUser(user)}
-                      selectionColor='rgba(156, 156, 156, 0.7)'
-                      showIcon={false}
-                  />
-                </View>
+                    />
+                  </View>
 
-                {/* Input del password*/ }
-                {bioAvaliable ? null :<View><View style={{paddingHorizontal: 15, marginTop: 10}}>
-                  <Text style={styles.loginText}>Contraseña</Text> 
+                  {/* Campo Contraseña */}
+                  <View style={{paddingHorizontal: 15, marginTop: 10}}>
+                    <Text style={styles.loginText}>Contraseña</Text> 
+                  </View>
+                  <View style={{paddingHorizontal: 15, alignItems: 'center'}}>
+                    <TextInput
+                      value={this.state.pass}
+                      style={styles.input}
+                      onChangeText={(pass) => this.changePass(pass)}
+                      secureTextEntry={this.state.secureText}
+                    />
+                  </View>
+                </>
+              )}
+
+              {this.state.metodoLogin === 'biometria' && (
+                <View style={{ padding: 20 }}>
+                  <TouchableOpacity onPress={this.handleBiometria} style={styles.botonBiometrico}>
+                    <Text style={{ color: 'white', textAlign: 'center' }}> Autenticarse con biometría</Text>
+                  </TouchableOpacity>
                 </View>
-                
-                <View style={{paddingHorizontal: 15, alignItems: 'center'}}>
-                  <TextInput
-                    value={this.state.pass}
-                    style={styles.input}
-                    inputStyle={styles.inputStyle}
-                    textErrorStyle={styles.textErrorStyle}
-                    onChangeText={(pass) => this.changePass(pass)}
-                    onChange={ pass => this.changeContra(pass)}
-                    selectionColor='rgba(156, 156, 156, 0.5)'
-                    secureTextEntry={secureText}
-                    renderRightIcon={ () =>
-                      <TouchableOpacity
-                        onPress={() => this.changeSecureText()}
-                      >
-                        <Icon
-                          name={iconShow}
-                          color={'black'}
-                          size={16}
-                          style={{padding: 5}}
-                        />
-                      </TouchableOpacity>
-                    }
-                  />
-                </View></View>}
+              )}
 
                 {/* Switch para recorar contraseña */}
                 {/* <View style={{flexDirection: 'row', paddingHorizontal: 15}}>
@@ -788,17 +1015,86 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
   },
-  headerImage: {
+headerImage: {
     width: width,
     height: 240,
     resizeMode: 'cover',
-    
+  },
+  curvedWhite: {
+    position: 'absolute',
+    top: 240 - 40, // 200
+    left: 0,
+    right: 0,
+    height: 40,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 40,
+    borderTopRightRadius: 40,
+    // Aseguramos que la vista esté por encima de la imagen
+    zIndex: 10,
   },
   formContainer: {
-    paddingTop: 30,
+    flex: 1,
+    paddingTop: 17,
     paddingHorizontal: 20,
-    // Aquí irían los campos del formulario
-
   },
-  
+avatarContainer: {
+  width: 80,
+  height: 80,
+  borderRadius: 40, // círculo perfecto
+  backgroundColor: '#e0e0e0',
+  justifyContent: 'center',  // centra verticalmente
+  alignItems: 'center',      // centra horizontalmente
+  alignSelf: 'center',
+  marginBottom: 10,
+},
+avatarText: {
+  fontSize: 26,
+  fontWeight: 'bold',
+  color: '#333',
+},
+greetingText: {
+  fontSize: 15,
+  textAlign: 'center',
+  fontWeight: '900',
+  color: '#333',
+  marginBottom: 20,
+},
+biometricsButton: {
+  marginTop: 20,
+  alignItems: 'center',
+  backgroundColor: '#007bff',
+  paddingVertical: 12,
+  borderRadius: 10,
+  marginHorizontal: 40,
+},
+
+biometricsButtonText: {
+  color: '#fff',
+  fontSize: 16,
+  fontWeight: 'bold',
+},
+selectorButton: {
+  flex: 1,
+  padding: 10,
+  borderWidth: 1,
+  borderColor: '#ccc',
+  alignItems: 'center',
+  borderRadius: 5,
+  marginHorizontal: 5,
+},
+selectorButtonSelected: {
+  backgroundColor: '#E53935', // Rojo más suave
+  borderColor: '#E53935',
+},
+selectorText: {
+  color: '#000',
+},
+botonBiometrico: {
+  backgroundColor: '#2e86de',
+  paddingVertical: 12,
+  paddingHorizontal: 20,
+  borderRadius: 10,
+  marginTop: 10,
+  alignItems: 'center',
+},
 });

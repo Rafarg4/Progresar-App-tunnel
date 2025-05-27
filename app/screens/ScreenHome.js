@@ -583,7 +583,7 @@ export default class LoginScreen extends Component {
                 .then((res) => res.json())
                 .then((data) => {
                   setProductos(data);
-                  console.log('DATA RECIBIDA:', data);
+                  //console.log('DATA RECIBIDA:', data);
                 })
                 .catch((err) => {
                   console.error('Error al obtener productos', err);
@@ -759,56 +759,59 @@ export default class LoginScreen extends Component {
                             }
                         }}
                     >
-                        <View style={styles.card}>
-                            <View style={styles.contentContainer}>
-                                <View style={styles.infoContainer}>
-                                    <Text style={styles.tipoCuenta}>
-                                        {item.clase_tarjeta === 'JM' ? 'Clásica' :
-                                            item.clase_tarjeta === 'V6' ? 'Visa' :
-                                            item.clase_tarjeta === 'RC' ? 'Rotary' :
-                                            item.clase_tarjeta === '1' ? 'Dinelco' :
-                                            item.clase_tarjeta === 'J7' ? 'Fep' :
-                                            item.clase_tarjeta === 'RM' ? 'Rotary' :
-                                            item.clase_tarjeta === 'EV' ? 'El viajero' :
-                                            item.clase_tarjeta === 'TS' ? 'Comedi' :
-                                            item.clase_tarjeta === 'JW' ? 'Mujer' :
-                                            item.clase_tarjeta === 'FR' ? 'Afuni' :
-                                            item.clase_tarjeta === 'J0' ? 'Empresarial' :
-                                            item.clase_tarjeta === 'EI' ? 'Visa Empresarial' :
-                                            item.clase_tarjeta === 'TR' ? 'La Trinidad' :
-                                            item.clase_tarjeta}
-                                    </Text>
-                                    <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
-                                    <Text style={styles.nombre_card}>{item.nombre_usuario}</Text>
-                                </View>
-                                <View style={styles.iconContainer}>
-                                    <Icon name="credit-card" size={30} color="#FF0000" />
-                                </View>
-                            </View>
-                            
-                            {/* 🔹 Separamos el saldo para tarjetas Dinelco y las demás */}
-                            <View style={styles.footer1}>
-                                <Text style={styles.saldoLabel}>Saldo disponible:</Text>
-                                
-                                {item.tipo_tarjeta === '1' ? (
-                                    <Text style={styles.saldo_dinelco}>
-                                        {showSaldo ? (
-                                            item.limite_credito && item.deuda_total
-                                                ? `${currencyFormat(item.limite_credito - item.deuda_total)} Gs.`
-                                                : 'No disponible'
-                                        ) : '******'}
-                                    </Text>
-                                ) : (
-                                    <Text style={styles.saldo}>
-                                        {showSaldo ? (
-                                            saldos[item.nro_tarjeta] === null || saldos[item.nro_tarjeta] === undefined
-                                                ? 'Cargando...'
-                                                : `${currencyFormat(saldos[item.nro_tarjeta])} Gs.`
-                                        ) : '******'}
-                                    </Text>
-                                )}
-                            </View>
+                    <View style={styles.card}>
+                        <View style={styles.contentContainer}>
+                        <View style={styles.infoContainer}>
+                            <Text style={styles.tipoCuenta}>
+                            {item.clase_tarjeta === 'JM' ? 'Clásica' :
+                                item.clase_tarjeta === 'V6' ? 'Visa' :
+                                item.clase_tarjeta === 'RC' ? 'Rotary' :
+                                item.clase_tarjeta === '1' ? 'Dinelco' :
+                                item.clase_tarjeta === 'J7' ? 'Fep' :
+                                item.clase_tarjeta === 'RM' ? 'Rotary' :
+                                item.clase_tarjeta === 'EV' ? 'El viajero' :
+                                item.clase_tarjeta === 'TS' ? 'Comedi' :
+                                item.clase_tarjeta === 'JW' ? 'Mujer' :
+                                item.clase_tarjeta === 'FR' ? 'Afuni' :
+                                item.clase_tarjeta === 'J0' ? 'Empresarial' :
+                                item.clase_tarjeta === 'EI' ? 'Visa Empresarial' :
+                                item.clase_tarjeta === 'TR' ? 'La Trinidad' :
+                                item.clase_tarjeta}
+                            </Text>
+                            <Text style={styles.numeroCuenta}>{enmascararTarjeta(item.nro_tarjeta)}</Text>
+                            <Text style={styles.nombre_card}>{item.nombre_usuario}</Text>
                         </View>
+                        <View style={styles.iconContainer}>
+                            <Icon name="credit-card" size={30} color="#FF0000" />
+                        </View>
+                        </View>
+
+                        {/* Saldo disponible */}
+                        <View style={styles.footer1}>
+                        <Text style={styles.saldoLabel}>Saldo disponible:</Text>
+                        {item.tipo_tarjeta === '1' ? (
+                            <Text style={styles.saldo_dinelco}>
+                            {showSaldo ? (
+                                item.limite_credito && item.deuda_total
+                                ? `${currencyFormat(item.limite_credito - item.deuda_total)} Gs.`
+                                : 'No disponible'
+                            ) : '******'}
+                            </Text>
+                        ) : (
+                            <Text style={styles.saldo}>
+                            {showSaldo ? (
+                                saldos[item.nro_tarjeta] === null || saldos[item.nro_tarjeta] === undefined
+                                ? 'Cargando...'
+                                : `${currencyFormat(saldos[item.nro_tarjeta])} Gs.`
+                            ) : '******'}
+                            </Text>     
+                        )}
+                        </View>
+                        {/* Footer del botón */}
+                        <View style={styles.footerBoton}>
+                        
+                        </View>
+                    </View>
                     </TouchableOpacity>
                 );
             };
@@ -1677,16 +1680,17 @@ const styles = StyleSheet.create({
     card: {
         backgroundColor: '#fff',
         borderRadius: 15,
-        padding: 15,
-        marginHorizontal: 10,
-        width: 410,
+        padding: 16,
+        marginHorizontal: 13,
+        width: 335,
         shadowColor: '#000',
         shadowOffset: { width: 0, height: 2 },
         shadowOpacity: 0.1,
         shadowRadius: 4,
         elevation: 3,
         position: 'relative',
-      },      
+        flexDirection: 'column', // 🔸 asegúrate de esto
+        },
       contentContainer: {
         flexDirection: 'row',
         alignItems: 'center',
@@ -2040,6 +2044,13 @@ const styles = StyleSheet.create({
     color: '#c00',
     fontWeight: '600',
   },
+  footerBoton: {
+  marginTop: 16, // 🔸 Aumenta este valor si es necesario
+  paddingVertical: 12,
+  alignItems: 'center',
+  borderTopWidth: 1,
+  borderTopColor: '#E0E0E0',
+},
 
 })
 const styles_productos = StyleSheet.create({

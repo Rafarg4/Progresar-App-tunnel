@@ -481,10 +481,10 @@ export default class DetaTC extends Component {
                         style={{ margin: 5, backgroundColor: 'white', padding: 5, borderRadius: 10, width: '100%' }}
                     >
                         <Image
-                        style={styles.cardImage}
-                        source={imageTC(item.clase_tarjeta)}
-                        resizeMode="cover"
-                        />
+                            style={styles.cardImage}
+                            source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/05/Tarjetas.png' }}
+                            resizeMode="cover"
+                            />
                        <View style={styles.card}>
                         <Text style={styles.cardTitle}>Tarjeta: **** {item.nro_tarjeta_4}</Text>
                         <Text style={styles.subText}>Tipo: {item.tipo_tarjeta}</Text>
