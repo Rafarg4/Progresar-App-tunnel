@@ -50,8 +50,6 @@ export default class LoginScreen extends Component{
             onpress: '',
             optBio: '',
             secureText: true,
-            mostrarBotonBiometrico: true, 
-            biometriaCompatible: false,
             metodoLogin: 'password',
             iconShow: 'eye-slash',
             bioAvaliable: false
@@ -100,63 +98,6 @@ export default class LoginScreen extends Component{
         }
       }
     };
- handleBiometria = async () => {
-  try {
-    const compatible = await LocalAuthentication.hasHardwareAsync();
-    const enrolled = await LocalAuthentication.isEnrolledAsync();
-
-    console.log('Tiene lector biométrico:', compatible);
-    console.log('Tiene huella/FaceID configurada:', enrolled);
-
-    if (!compatible) {
-      Alert.alert('Biometría no disponible', 'Tu dispositivo no tiene lector biométrico');
-      return;
-    }
-
-    if (!enrolled) {
-      Alert.alert('Biometría no configurada', 'Debes registrar una huella o rostro en tu dispositivo');
-      return;
-    }
-
-    const result = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Autenticarse',
-      fallbackLabel: 'Usar contraseña', // iOS
-      cancelLabel: 'Cancelar', // Android
-      disableDeviceFallback: true, // Para que no muestre pin/patrón en Android
-    });
-
-    if (result.success) {
-      Alert.alert('Autenticación exitosa');
-      this.getUsuario(); // Aquí llamás a tu login
-    } else {
-      Alert.alert('Falló la autenticación');
-    }
-  } catch (error) {
-    console.error('Error al autenticar:', error);
-    Alert.alert('Error', 'Hubo un error al intentar autenticarte');
-  }
-};
-  async componentDidMount() {
-  const compatible = await LocalAuthentication.hasHardwareAsync();
-  const enrolled = await LocalAuthentication.isEnrolledAsync();
-  const tieneSoporte = compatible && enrolled;
-  this.verificarDatosBiometricos();
-  this.comprobActualization();
-  this.cargarDatosBiometricos();  
-  this.loginConBiometria();
-  this.setState({
-    mostrarBotonBiometrico: true, // SIEMPRE se muestra el botón
-    biometriaCompatible: tieneSoporte,
-    metodoLogin: this.state.user !== '' && tieneSoporte ? 'biometria' : 'password',
-  });
-  const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
-  if (nombreGuardado) {
-    this.setState({ nombre: nombreGuardado });
-  }
-}
-    componentWillUnmount() {
-      this.backHandler.remove();
-    }
     
     gotoSreen(routeName, nombre, dominio, mail){
       if(routeName=='Back'){
@@ -187,147 +128,76 @@ export default class LoginScreen extends Component{
         
       });
     } 
-//Para mostrar datos de usuario autenticado
-cargarDatosBiometricos = async () => {
-  try {
-    const user = await AsyncStorage.getItem('usuarioGuardado');
-    const clave = await AsyncStorage.getItem('claveGuardada');
 
-    if (user !== null && clave !== null) {
-      this.setState({ user: user, pass: clave }, () => {
-        // Luego de actualizar el estado, llamamos a la API
-        this.getUsuario();
-      });
-    } else {
-      Alert.alert('Error', 'No hay datos guardados para autenticación biométrica');
-    }
-  } catch (error) {
-    console.log('Error cargando datos biométricos:', error);
-  }
-};
 //Consulta para la api
-    getUsuario = () => {
-        this.setState({loading: true}) 
+  getUsuario = () => {
+  this.setState({ loading: true });
 
-        var data = {
-          valid: this.state.valid,
-          user: this.state.user,
-          clave: this.state.pass,
-        };
-        console.log('📤 Enviando a la API:', data); 
-        fetch(this.state.url,{
-          method: 'POST',
-          body: JSON.stringify(data), 
-          headers:{
-              'Content-Type': 'application/json'
+  const data = {
+    valid: this.state.valid,
+    user: this.state.user,
+    clave: this.state.pass,
+  };
+
+  console.log('📤 Enviando a la API:', data);
+
+  fetch(this.state.url, {
+    method: 'POST',
+    body: JSON.stringify(data),
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  })
+    .then((response) => response.json())
+    .then((dataResponse) => {
+      if (dataResponse.status === 'success') {
+        this.setState(
+          {
+            clave: dataResponse.clave,
+            pass: dataResponse.clave,
+            num_usu: dataResponse.num_usu,
+            cod_cliente: dataResponse.cod_cliente,
+            mensaje: dataResponse.mensaje,
+            nombre: dataResponse.nombre,
+          },
+          () => {
+            if (this.state.pass === dataResponse.clave) {
+              global.num_doc = this.state.user;
+              global.nombre = dataResponse.nombre;
+              global.num_usuario = dataResponse.num_usu;
+              global.user_perfil = dataResponse.user_perfil;
+
+              // Guardar datos en AsyncStorage, sin await ni callback
+              AsyncStorage.setItem('usuarioGuardado', this.state.user)
+                .catch((e) => console.log('Error guardando usuario:', e));
+              AsyncStorage.setItem('claveGuardada', this.state.pass)
+                .catch((e) => console.log('Error guardando clave:', e));
+              AsyncStorage.setItem('nombreUsuario', dataResponse.nombre)
+                .catch((e) => console.log('Error guardando nombre:', e));
+
+              this.guardarDatosBiometricos();
+
+              // No limpiar pass acá, para evitar pérdida
+              // this.setState({ pass: '' });
+
+              this.getEmailVerified();
+            }
           }
-        })
-        .then(response => response.json())
-        .then(data => {
-            //ver si la respuesta del servidor es success
-           if(data.status == 'success') {
-              this.setState({
-                clave: data.clave,
-                pass: data.clave,   // <== Asegúrate de actualizar pass aquí también
-                num_usu: data.num_usu,
-                cod_cliente: data.cod_cliente,
-                mensaje: data.mensaje,
-                nombre: data.nombre,
-              }, () => {
-                // Ahora que pass está actualizado, guarda los datos
-                if (this.state.pass === data.clave) {
-                  global.num_doc = this.state.user;
-                  global.nombre = data.nombre;
-                  global.num_usuario = data.num_usu;
-                  global.user_perfil = data.user_perfil;
-
-                  this.guardarDatosBiometricos(); // guardará el pass actualizado
-                  this.setState({ pass: '' });
-                  this.getEmailVerified();
-                }
-              });
-            }
-            else{ 
-              this.setState({loading: false,}) 
-              Alert.alert('Error', data.mensaje)
-            }
-        })
-        .catch((error)=>{
-          Alert.alert('Error', 'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde')
-          this.setState({loading: false})
-        })
-    };  
-    cerrarSesion = async () => {
-  try {
-    const biometricoHabilitado = await AsyncStorage.getItem('biometricoHabilitado');
-
-    // Si la biometría NO está habilitada, borra todo
-    if (biometricoHabilitado !== 'true') {
-      await AsyncStorage.clear();
-    } else {
-      // Si la biometría está habilitada, solo borra la sesión actual
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('sesionActiva');
-      await AsyncStorage.removeItem('nombreUsuario');
-    }
-
-    this.setState({ user: '', pass: '' });
-    this.props.navigation.navigate('Login');
-  } catch (error) {
-    console.log('Error al cerrar sesión:', error);
-  }
-};
-
-  //Guarda lo ingresado en los campos
-guardarDatosBiometricos = async () => {
-  try {
-    const { user, pass, nombre } = this.state;
-
-    if (!user || !pass) {
-      Alert.alert('Error', 'Usuario o contraseña no válidos para guardar');
-      return;
-    }
-
-    await AsyncStorage.setItem('biometricoHabilitado', 'true');
-    await AsyncStorage.setItem('usuarioGuardado', user.toString());
-    await AsyncStorage.setItem('claveGuardada', pass.toString());
-    await AsyncStorage.setItem('nombreUsuario', nombre || 'Usuario');
-
-    console.log('Datos guardados para biometría');
-  } catch (error) {
-    console.log('Error al guardar datos biométricos:', error);
-    Alert.alert('Error', 'No se pudieron guardar los datos para biometría');
-  }
-};
- 
-//Para loguearse
-loginConBiometria = async () => {
-  try {
-    const usuario = await AsyncStorage.getItem('usuarioGuardado');
-    const clave = await AsyncStorage.getItem('claveGuardada');
-    const nombre = await AsyncStorage.getItem('nombreUsuario');
-
-    if (usuario && clave) {
-      // Actualizo estado con los datos guardados
-      this.setState(
-        {
-          user: usuario, 
-          pass: clave,
-          nombre: nombre || 'Usuario',
-        },
-        () => {
-          // Llamo a la API directamente con datos recuperados
-          this.getUsuario();
-        }
+        );
+      } else {
+        this.setState({ loading: false });
+        Alert.alert('Error', dataResponse.mensaje);
+      }
+    })
+    .catch((error) => {
+      Alert.alert(
+        'Error',
+        'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde'
       );
-    } else {
-      Alert.alert('Error', 'No hay datos guardados para usar la biometría');
-    }
-  } catch (error) {
-    console.log('Error al leer datos guardados:', error);
-    Alert.alert('Error', 'No se pudieron recuperar los datos de usuario');
-  }
-}; 
+      this.setState({ loading: false });
+    });
+};
+
 //Valida si esta configurado la contraseña 
 intentarLoginBiometrico = async () => {
   try {
@@ -374,19 +244,6 @@ intentarLoginBiometrico = async () => {
     Alert.alert('Error', 'Ocurrió un error durante la autenticación biométrica');
   }
 };
-//Para ver lo que se guardo
-verDatosGuardados = async () => {
-  try {
-    const bio = await AsyncStorage.getItem('biometricoHabilitado');
-    const user = await AsyncStorage.getItem('usuarioGuardado');
-    const pass = await AsyncStorage.getItem('claveGuardada');
-    console.log('biometricoHabilitado:', bio);
-    console.log('usuarioGuardado:', user);
-    console.log('claveGuardada:', pass);
-  } catch (error) {
-    console.log('Error al leer datos guardados:', error);
-  }
-}
 //Verifica si tiene las opciones para el biometrico
 verificarDatosBiometricos = async () => {
   try {
