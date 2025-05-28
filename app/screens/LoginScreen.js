@@ -41,6 +41,7 @@ export default class LoginScreen extends Component{
             clave:'',
             num_usu:'',
             nombre:'',
+            token: '',
             cod_cliente:'',
             mensaje:'',
             loading:false,
@@ -64,7 +65,7 @@ export default class LoginScreen extends Component{
       global.codigo_cliente= null
       global.user_perfil=null
       global.cod_carrito= null
-      global.items_carrito= '0'
+      global.items_carrito= '0' 
       global.total_carrito= '0'
       this.props.navigation.navigate('Login');
     }
@@ -128,7 +129,36 @@ export default class LoginScreen extends Component{
         
       });
     } 
+verificarBiometria = async () => {
+  const tipos = await LocalAuthentication.supportedAuthenticationTypesAsync();
+  const disponible = await LocalAuthentication.hasHardwareAsync();
+  const guardado = await LocalAuthentication.isEnrolledAsync();
 
+  if (!disponible || !guardado) {
+    Alert.alert('Biometría no disponible', 'No se detectó autenticación biométrica configurada.');
+    return;
+  }
+
+  // Elegir tipo
+  let tipoBiometria = 'biometría';
+  if (tipos.includes(1)) tipoBiometria = 'Huella Digital';
+  if (tipos.includes(2)) tipoBiometria = 'Reconocimiento Facial';
+
+  Alert.alert(
+    `¿Usar ${tipoBiometria}?`,
+    `Se detectó ${tipoBiometria} en este dispositivo.`,
+    [
+      {
+        text: 'Cancelar',
+        style: 'cancel',
+      },
+      {
+        text: 'Sí',
+        onPress: () => this.intentarLoginBiometrico(),
+      },
+    ]
+  );
+};
 //Consulta para la api
   getUsuario = () => {
   this.setState({ loading: true });
@@ -159,14 +189,16 @@ export default class LoginScreen extends Component{
             cod_cliente: dataResponse.cod_cliente,
             mensaje: dataResponse.mensaje,
             nombre: dataResponse.nombre,
+             token: dataResponse.token,
           },
           () => {
             if (this.state.pass === dataResponse.clave) {
               global.num_doc = this.state.user;
               global.nombre = dataResponse.nombre;
+              global.token = dataResponse.token;
               global.num_usuario = dataResponse.num_usu;
               global.user_perfil = dataResponse.user_perfil;
-
+ 
               // Guardar datos en AsyncStorage, sin await ni callback
               AsyncStorage.setItem('usuarioGuardado', this.state.user)
                 .catch((e) => console.log('Error guardando usuario:', e));
@@ -174,11 +206,11 @@ export default class LoginScreen extends Component{
                 .catch((e) => console.log('Error guardando clave:', e));
               AsyncStorage.setItem('nombreUsuario', dataResponse.nombre)
                 .catch((e) => console.log('Error guardando nombre:', e));
-
-              this.guardarDatosBiometricos();
+              AsyncStorage.setItem('nombreToken', dataResponse.token)
+                .catch((e) => console.log('Error guardando token:', e));
 
               // No limpiar pass acá, para evitar pérdida
-              // this.setState({ pass: '' });
+               this.setState({ pass: '' });
 
               this.getEmailVerified();
             }
@@ -198,52 +230,94 @@ export default class LoginScreen extends Component{
     });
 };
 
+componentDidMount() {
+this.cargarNombreGuardado(); // Solo el nombre
+}
+ 
 //Valida si esta configurado la contraseña 
 intentarLoginBiometrico = async () => {
   try {
-    const tieneHardware = await LocalAuthentication.hasHardwareAsync();
-    const soportado = await LocalAuthentication.supportedAuthenticationTypesAsync();
-    const estaRegistrado = await LocalAuthentication.isEnrolledAsync();
-
-    console.log("Tiene hardware:", tieneHardware);
-    console.log("Tipos soportados:", soportado);
-    console.log("Tiene biometría registrada:", estaRegistrado);
-
-    if (!tieneHardware || !estaRegistrado) {
-      Alert.alert('Biometría no disponible', 'Tu dispositivo no tiene biometría o no está configurada.');
-      return;
-    }
-
-    const resultado = await LocalAuthentication.authenticateAsync({
-      promptMessage: 'Escanea tu huella o usa Face ID',
-      fallbackLabel: 'Usar código',
-      disableDeviceFallback: true,
+    // Aquí haces la llamada a tu método de autenticación biométrica
+    const resultadoBiometrico = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Autentícate con biometría',
     });
 
-    console.log('Resultado autenticación:', resultado);
+    if (resultadoBiometrico.success) {
+      // Si autenticación OK, cargo user y clave guardados
+      const userGuardado = await AsyncStorage.getItem('usuarioGuardado');
+      const claveGuardada = await AsyncStorage.getItem('claveGuardada');
 
-    if (resultado.success) {
-      Alert.alert('✅ Autenticación exitosa', 'Bienvenido');
-
-      // Obtener user/pass guardados y llamar al login
-      const usuario = await AsyncStorage.getItem('usuarioGuardado');
-      const clave = await AsyncStorage.getItem('claveGuardada');
-
-      if (usuario && clave) {
-        this.setState({ user: usuario, pass: clave }, () => {
-          this.getUsuario(); // método de login con fetch
-        });
+      if (userGuardado && claveGuardada) {
+        // Actualizo el estado con esos datos para usarlos en getUsuario
+        this.setState(
+          { user: userGuardado, pass: claveGuardada, valid: true },
+          () => {
+            // Llamo a getUsuario para validar en la API con esos datos
+            this.getUsuario();
+          }
+        );
       } else {
-        Alert.alert('Error', 'No hay datos guardados para iniciar sesión');
+        Alert.alert('Error', 'No se encontraron credenciales guardadas');
       }
     } else {
-      Alert.alert('❌ Falló la autenticación', resultado.error || 'Intenta de nuevo');
+      Alert.alert('Error', 'Autenticación biométrica fallida');
     }
   } catch (error) {
-    console.error('Error al autenticar:', error);
-    Alert.alert('Error', 'Ocurrió un error durante la autenticación biométrica');
+    console.log('Error en autenticación biométrica:', error);
+    Alert.alert('Error', 'Ocurrió un problema con la autenticación biométrica');
   }
 };
+//Para mostrar datos en el avatar
+ cargarNombreGuardado = async () => {
+  try {
+    const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
+    if (nombreGuardado) {
+      this.setState({ nombre: nombreGuardado });
+    }
+  } catch (error) {
+    console.log('Error al cargar el nombre:', error);
+  }
+};
+
+//Para cargar los datos
+cargarDatosBiometria = async () => {
+  try {
+    const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
+    const claveGuardada = await AsyncStorage.getItem('claveGuardada');
+    const nombreGuardado = await AsyncStorage.getItem('nombreUsuario'); // ⬅️ nuevo
+    if (usuarioGuardado && claveGuardada) {
+      this.setState({
+        user: usuarioGuardado,
+        pass: claveGuardada,
+        nombre: nombreGuardado || '',
+      });
+    }
+  } catch (error) {
+    console.log('Error al cargar datos biométricos:', error);
+  }
+};
+//Muestra la opcion para huella y demas
+handleBiometria = async () => {
+  try {
+    const result = await LocalAuthentication.authenticateAsync({
+      promptMessage: 'Confirma tu identidad',
+      fallbackLabel: 'Usar contraseña',
+    });
+
+    if (result.success) {
+      console.log('Biometría OK');
+      
+      // Aquí llama a getUsuario para enviar usuario y clave a la API
+      this.getUsuario();
+    } else {
+      Alert.alert('Error', 'No se pudo autenticar con biometría');
+    }
+  } catch (error) {
+    console.log('Error en autenticación biométrica:', error);
+    Alert.alert('Error', 'Hubo un problema con la autenticación biométrica');
+  }
+};
+
 //Verifica si tiene las opciones para el biometrico
 verificarDatosBiometricos = async () => {
   try {
@@ -251,6 +325,7 @@ verificarDatosBiometricos = async () => {
     const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
     const claveGuardada = await AsyncStorage.getItem('claveGuardada');
     const nombreUsuario = await AsyncStorage.getItem('nombreUsuario');
+    const nombreToken = await AsyncStorage.getItem('nombreToken');
 
     const tieneHardware = await LocalAuthentication.hasHardwareAsync();
     const estaRegistrado = await LocalAuthentication.isEnrolledAsync();
@@ -270,6 +345,7 @@ verificarDatosBiometricos = async () => {
         user: usuarioGuardado,
         pass: claveGuardada,
         nombre: nombreUsuario,
+        token: nombreToken,
         mostrarBotonBiometrico: true,
       });
 
@@ -283,6 +359,23 @@ verificarDatosBiometricos = async () => {
     }
   } catch (error) {
     console.log('Error al verificar datos biométricos:', error);
+  }
+};
+//Para que complete los campos para mandar a la api
+activarModoBiometrico = async () => {
+  try {
+    const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
+    const claveGuardada = await AsyncStorage.getItem('claveGuardada');
+
+    this.setState({
+      metodoLogin: 'biometria',
+      user: usuarioGuardado || '',
+      pass: claveGuardada || '',
+    });
+
+    console.log('📥 Cargado desde storage:', usuarioGuardado, claveGuardada);
+  } catch (error) {
+    console.log('⚠️ Error al cargar datos del storage:', error);
   }
 };
 
@@ -472,7 +565,29 @@ changeUser(user){
           }
         }
 
+      const verDatosGuardados = async () => {
+        try {
+          const usuario = await AsyncStorage.getItem('usuarioGuardado');
+          const clave = await AsyncStorage.getItem('claveGuardada');
+          const nombre = await AsyncStorage.getItem('nombreUsuario');
+          const token = await AsyncStorage.getItem('nombreToken');
+          const cliente = await AsyncStorage.getItem('cliente'); // si usaste autenticarCliente()
 
+          console.log('📦 Usuario:', usuario);
+          console.log('🔑 Clave:', clave);
+          console.log('🙋‍♂️ Nombre:', nombre);
+            console.log('🙋‍♂️ Token:', token);
+
+          if (cliente) {
+            const clienteParsed = JSON.parse(cliente);
+            console.log('🧾 Cliente completo:', clienteParsed);
+          } else {
+            console.log('❌ No hay cliente guardado');
+          }
+        } catch (error) {
+          console.error('❌ Error al leer AsyncStorage:', error);
+        } 
+      }; 
         const SwitchNumDoc = () => {
 
           const [isEnabled, setIsEnabled] = useState( optBio );
@@ -539,7 +654,7 @@ changeUser(user){
           const nombres = this.state.nombre.trim().split(' ');
           if (nombres.length === 1) return nombres[0].charAt(0).toUpperCase();
           return nombres[0].charAt(0).toUpperCase() + '|' + nombres[1].charAt(0).toUpperCase();
-        }
+        } 
         const saludoNombre = this.state.nombre ? this.state.nombre : 'Usuario';
 
         return(
@@ -569,69 +684,86 @@ changeUser(user){
 
               </View>
              <View style={{flexDirection: 'row', justifyContent: 'center', marginVertical: 10}}>
-                <TouchableOpacity
-                  style={[
-                    styles.selectorButton,
-                    this.state.metodoLogin === 'password' && styles.selectorButtonSelected,
-                  ]}
-                  onPress={() => this.setState({ metodoLogin: 'password' })}
-                >
-                  <Text style={styles.selectorText}>Contraseña</Text>
-                </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  this.state.metodoLogin === 'password' && styles.selectorButtonSelected,
+                ]}
+                onPress={() => {
+                  this.setState({ metodoLogin: 'password' }, () => {
+                    this.setState({ user: '', pass: '' }); // Limpiar solo al cambiar a password
+                  });
+                }}
+              >
+                <Text style={styles.selectorText}>Contraseña</Text>
+              </TouchableOpacity>
 
-                <TouchableOpacity  
-                  style={[
-                    styles.selectorButton,
-                    this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
-                  ]}
-                  onPress={() => this.setState({ metodoLogin: 'biometria' })}
-                >
-                  <Text style={styles.selectorText}>Biometría</Text>
-                </TouchableOpacity>
-                {this.state.mostrarBotonBiometrico && (
-                  <TouchableOpacity
-                    style={[
-                      styles.selectorButton,
-                      this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
-                    ]}
-                    onPress={() => this.setState({ metodoLogin: 'biometria' })}
-                  >
-                    <Text style={styles.selectorText}>Biometría</Text>
-                  </TouchableOpacity>
-                )} 
+              <TouchableOpacity
+                style={[
+                  styles.selectorButton,
+                  this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
+                ]}
+                onPress={() => {
+                  this.setState({ metodoLogin: 'biometria' }, () => {
+                    this.cargarDatosBiometria(); // Cargar datos solo al cambiar a biometría
+                  });
+                }}
+              >
+                <Text style={styles.selectorText}>Biometría</Text>
+              </TouchableOpacity>
               </View>
               {this.state.metodoLogin === 'password' && (
                 <>
-                  {/* Campo Cédula */}
-                  <View style={{paddingHorizontal: 15}}>
-                    <Text style={styles.loginText}>N° de Cédula</Text> 
-                  </View>
-                  <View style={{paddingHorizontal: 15, alignItems: 'center'}}>
-                    <TextInput
-                      value={this.state.user}
-                      style={styles.input}
-                      placeholder='1234567'
-                      keyboardType="numeric"
-                      placeholderTextColor="gray"
-                      onChangeText={(user) => this.changeUser(user)}
-                    />
-                  </View>
+                 {/* Campo Cédula */}
+                <View style={{ paddingHorizontal: 15 }}>
+                  <Text style={styles.loginText}>N° de Cédula</Text>
+                </View>
+                <View style={{ paddingHorizontal: 15, alignItems: 'center' }}>
+                  <TextInput
+                    value={this.state.user}
+                    style={styles.input}
+                    placeholder='1234567'
+                    keyboardType="numeric"
+                    placeholderTextColor="gray"
+                    onChangeText={(user) => this.changeUser(user)}
+                  />
+                </View>
 
-                  {/* Campo Contraseña */}
-                  <View style={{paddingHorizontal: 15, marginTop: 10}}>
-                    <Text style={styles.loginText}>Contraseña</Text> 
-                  </View>
-                  <View style={{paddingHorizontal: 15, alignItems: 'center'}}>
+                {/* Campo Contraseña */}
+                <View style={{ paddingHorizontal: 15, marginTop: 10 }}>
+                  <Text style={styles.loginText}>Contraseña</Text>
+                </View>
+                <View style={{ paddingHorizontal: 15, alignItems: 'center' }}>
+                  <View style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    height: 55,
+                     borderColor: "#bf0404",
+                    width: '100%',
+                    backgroundColor: 'white',
+                  }}>
                     <TextInput
                       value={this.state.pass}
-                      style={styles.input}
+                      style={{ flex: 1, color: '#000' }}
                       onChangeText={(pass) => this.changePass(pass)}
                       secureTextEntry={this.state.secureText}
+                      placeholder="Contraseña"
+                      placeholderTextColor="gray"
                     />
+                    <TouchableOpacity onPress={() => this.setState({ secureText: !this.state.secureText })}>
+                      <Text style={{ fontSize: 18, color: 'gray' }}>
+                        {this.state.secureText ? '🙈' : '👁️'}
+                      </Text>
+                    </TouchableOpacity>
                   </View>
+                </View>
                 </>
               )}
-
+              
               {this.state.metodoLogin === 'biometria' && (
                 <View style={{ padding: 20 }}>
                   <TouchableOpacity onPress={this.handleBiometria} style={styles.botonBiometrico}>
@@ -756,7 +888,6 @@ changeUser(user){
         ); 
     }
 };
-
 const styles = StyleSheet.create({
   background: {
     position: 'absolute',
@@ -766,13 +897,10 @@ const styles = StyleSheet.create({
     height: 300,
   },
 
-  box: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: 'white',
-    paddingHorizontal: 15
-  },
-
+ box: {
+  flex: 1,
+  backgroundColor: 'white',
+},
   //estilos para los TextInput
   input: {
     height: 50,
