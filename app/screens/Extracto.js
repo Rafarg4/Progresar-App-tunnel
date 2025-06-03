@@ -531,7 +531,7 @@ actionButton: {
 buttonText: {
   color: '#fff',
   fontWeight: 'bold',
-  fontSize: 16,
+  fontSize: 13,
 },
 
 });

@@ -95,14 +95,17 @@ export default class DetaTC extends Component {
                     loadingTC: false
                 })
 
-                data.clientetar.forEach( (e) => { 
-                    if(e.cod_tarjeta == this.state.codtar){
+                data.clientetar.forEach((e) => {
+                    if (e.cod_tarjeta == this.state.codtar) {
                         this.getProgrePuntos(e.nro_tarjeta, e.nombre);
                         this.getDeudaPeriodo(e.nro_tarjeta);
                         this.setState({
                             nro_tc: e.nro_tarjeta,
                             clase_tc: e.clase_tarjeta
-                        })
+                        });
+
+                        // Nueva llamada a la API externa
+                        this.getSaldoActualTarjeta(e.nro_tarjeta);
                     }
                 });
             })
@@ -113,6 +116,32 @@ export default class DetaTC extends Component {
                 Alert.alert('Error', 'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde')
             })
     };
+    getSaldoActualTarjeta(nroTarjeta) {
+    const url = `https://api.progresarcorp.com.py/api/obtener_saldo_actual/${nroTarjeta}`;
+
+    fetch(url)
+        .then(response => {
+            if (!response.ok) throw new Error("Respuesta no OK");
+            return response.json();
+        })
+        .then(data => {
+            const cuenta = data.cuenta;
+
+            const resultado = {
+                saldo_en_mora: cuenta.saldo_en_mora,
+                disponible_contado: cuenta.disponible_contado,
+                linea_de_credito: cuenta.linea_de_credito,
+            };
+
+            console.log("Datos filtrados:", resultado);
+
+            // Si querés guardarlo en el estado:
+            this.setState({ saldoTC: resultado });
+        })
+        .catch(error => {
+            console.error("Error al obtener saldo actual:", error);
+        });
+}
 
     //traer deuda del periodo
     getDeudaPeriodo(numtc){
@@ -491,12 +520,20 @@ export default class DetaTC extends Component {
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Línea Normal:</Text>
-                            <Text style={styles.green}>{currencyFormat(item.linea_normal)}</Text>
+                            <Text style={styles.green}>
+                                {this.state.saldoTC
+                                    ? currencyFormat(this.state.saldoTC.linea_de_credito)
+                                    : currencyFormat(item.linea_normal)}
+                            </Text>
                         </View>
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Disponible:</Text>
-                            <Text style={styles.green}>{currencyFormat(item.linea_normal - item.deuda_normal)}</Text>
+                            <Text style={styles.green}>
+                                {this.state.saldoTC
+                                    ? currencyFormat(this.state.saldoTC.disponible_contado)
+                                    : currencyFormat(item.linea_normal - item.deuda_normal)}
+                            </Text>
                         </View>
 
                         <View style={styles.row}>
@@ -506,7 +543,11 @@ export default class DetaTC extends Component {
 
                         <View style={styles.row}>
                             <Text style={styles.label}>Saldo en Mora:</Text>
-                            <Text style={styles.red}>{currencyFormat(item.saldo_mora)}</Text>
+                            <Text style={styles.red}>
+                                {this.state.saldoTC
+                                    ? currencyFormat(this.state.saldoTC.saldo_en_mora)
+                                    : currencyFormat(item.saldo_mora)}
+                            </Text>
                         </View>
                            {/* Footer visual para vencimiento */}
                         <View style={styles.footer}>

@@ -75,6 +75,48 @@ export default class UsuarioScreen extends Component {
             Alert.alert('Error', 'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde')
         })
     }
+    bloquearAccesoApp = () => {
+    Alert.alert(
+        'Confirmar bloqueo',
+        '¿Estás seguro que querés bloquear el acceso? Esta acción encriptará tu contraseña.',
+        [
+            {
+                text: 'Cancelar',
+                style: 'cancel'
+            },
+            {
+                text: 'Bloquear',
+                onPress: () => {
+                    const data = {
+                        num_doc: global.num_doc
+                    };
+
+                    fetch('https://api.progresarcorp.com.py/api/bloquear_acceso', {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    })
+                    .then(res => res.json())
+                    .then(response => {
+                        // Validación segura, en caso de que Laravel devuelva "status" o algún mensaje
+                        if (response.success || response.status === 'ok') {
+                            Alert.alert('Éxito', 'Tu acceso ha sido bloqueado correctamente.');
+                        } else {
+                            Alert.alert('Error', response.message || 'No se pudo bloquear el acceso.');
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error:', error);
+                        Alert.alert('Error', 'Ocurrió un problema de conexión.');
+                    });
+                }
+            }
+        ]
+    );
+}
 
     //enviar clave nueva
     claveNuevo(ant, clave) {
@@ -512,22 +554,46 @@ export default class UsuarioScreen extends Component {
                 <ScrollView
                     showsVerticalScrollIndicator={false}
                 >
-                    <View style={styles.topSal}>
+                   <View style={styles.topSal}>
                         <PerfilUser />
-                        <Text
-                            style={styles.textNom}
-                        >
+                        <Text style={styles.textNom}>
                             {nombre}
                         </Text>
 
-                        {/* Boton para Cambiar Contraseña */}
-                        <TouchableOpacity
-                            onPress={() => this.setState({ModalShow: true})}
-                            style={{ backgroundColor: '#bf0404', padding: 5, borderRadius: 5 }}
-                        >
-                            <Text style={{ color: 'white' }}><Icon name='key' color='white' /> Cambiar Contraseña</Text>
-                        </TouchableOpacity>
+                        {/* Contenedor de los dos botones lado a lado */}
+                        <View style={{ flexDirection: 'row', gap: 10, marginTop: 10 }}>
+                            {/* Botón Cambiar Contraseña */}
+                            <TouchableOpacity
+                                onPress={() => this.setState({ ModalShow: true })}
+                                style={{
+                                    backgroundColor: '#bf0404',
+                                    padding: 5,
+                                    borderRadius: 5,
+                                    flex: 1
+                                }}
+                            >
+                                <Text style={{ color: 'white', textAlign: 'center' }}>
+                                    <Icon name='key' color='white' /> Cambiar Contraseña
+                                </Text>
+                            </TouchableOpacity>
+
+                            {/* Botón Bloquear acceso */}
+                            <TouchableOpacity
+                                onPress={() => this.bloquearAccesoApp()} // <-- definí esta función
+                                style={{
+                                    backgroundColor: '#bf0404',
+                                    padding: 5,
+                                    borderRadius: 5,
+                                    flex: 1
+                                }}
+                            >
+                                <Text style={{ color: 'white', textAlign: 'center' }}>
+                                    <Icon name='lock' color='white' /> Bloquear acceso
+                                </Text>
+                            </TouchableOpacity>
+                        </View>
                     </View>
+
 
                     {cambioClave()}
 
