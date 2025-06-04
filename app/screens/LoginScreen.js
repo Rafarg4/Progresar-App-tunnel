@@ -24,6 +24,7 @@ import {expo} from '../../app.json'
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native-elements';
+
 const { width } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
@@ -315,6 +316,21 @@ handleBiometria = async () => {
   } catch (error) {
     console.log('Error en autenticación biométrica:', error);
     Alert.alert('Error', 'Hubo un problema con la autenticación biométrica');
+  }
+};
+//Para borrar lo del storage
+ handleLogout = async () => {
+  try {
+    await AsyncStorage.removeItem('usuarioGuardado');
+    await AsyncStorage.removeItem('claveGuardada');
+    await AsyncStorage.removeItem('nombreUsuario');
+
+    Alert.alert('Atención', 'Se ha cerrado sesión correctamente');
+
+    this.props.navigation.replace('Login');
+  } catch (error) {
+    console.log('Error al cerrar sesión:', error);
+    Alert.alert('Error', 'Ocurrió un problema al cerrar sesión');
   }
 };
 
@@ -659,6 +675,11 @@ changeUser(user){
 
         return(
             <SafeAreaView style={styles.box}>
+            <View style={{ position: 'absolute', top: 240, left: 25, zIndex: 10 }}>
+                <TouchableOpacity onPress={this.handleLogout}>
+                  <Icon name="sign-out" size={28} color="#bf0404" />
+                </TouchableOpacity>
+              </View>
               <ScrollView
                 showsVerticalScrollIndicator={false}
               >
@@ -756,7 +777,7 @@ changeUser(user){
                     />
                     <TouchableOpacity onPress={() => this.setState({ secureText: !this.state.secureText })}>
                       <Text style={{ fontSize: 18, color: 'gray' }}>
-                        {this.state.secureText ? '🙈' : '👁️'}
+                        {this.state.secureText ? '🙈' : '🙉'}
                       </Text>
                     </TouchableOpacity>
                   </View>
