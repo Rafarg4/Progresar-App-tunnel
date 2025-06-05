@@ -12,7 +12,8 @@ import {
   Alert,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
-
+import * as FileSystem from 'expo-file-system';
+import * as Sharing from "expo-sharing";
 const Extracto = () => {
   const route = useRoute();
   const { num_doc } = route.params || {};
@@ -78,8 +79,29 @@ const Extracto = () => {
     };
     return meses[mes];
   };
+const descargarPDF = async (url, nombreArchivo) => {
+  try {
+    const fileUri = FileSystem.documentDirectory + nombreArchivo;
+    console.log("📦 URL a descargar:", url);
+    console.log("📦 Nombre de archivo:", nombreArchivo);
+    console.log("📁 Se guardará en:", fileUri);
 
-  const handleDownload = () => {
+    const download = await FileSystem.downloadAsync(url, fileUri);
+    console.log('✅ Archivo descargado en:', download.uri);
+
+    // Compartir o alertar ubicación
+    if (await Sharing.isAvailableAsync()) {
+      await Sharing.shareAsync(download.uri);
+    } else {
+      Alert.alert("Descargado", "El archivo se guardó en: " + download.uri);
+    }
+  } catch (error) {
+    console.error("❌ Error al descargar:", error);
+    Alert.alert("Error", "No se pudo descargar el archivo.");
+  }
+};
+
+const handleDownload = async () => {
   if (
     !tarjetaCompletaSeleccionada ||
     mesSeleccionado === "Seleccione un mes" ||
@@ -92,25 +114,64 @@ const Extracto = () => {
   const nroTarjeta = tarjetaCompletaSeleccionada.nro_tarjeta;
   const clase = tarjetaCompletaSeleccionada.clase_tarjeta || "";
   const tipo_tc = clase === "1" ? "Bepsa" : "Otra";
-  const mes = obtenerNumeroMes(mesSeleccionado);
+  const mes = obtenerNumeroMes(mesSeleccionado); // Ej: "05"
   const anho = anyoSeleccionado;
 
-  const params = new URLSearchParams({
-    nro_tarjeta: nroTarjeta,
-    mes,
-    anho,
-    tipo_tc,
-  });
+  try {
+    const response = await fetch("https://api.progresarcorp.com.py/generar_extracto", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        nro_tarjeta: nroTarjeta,
+        tipo_tc: tipo_tc,
+        mes: mes,
+        anho: anho,
+      }),
+    });
 
-  const url = `https://api.progresarcorp.com.py/descargar_extracto_app?${params.toString()}`;
+    const rawResponseText = await response.text();
+    console.log("📄 Respuesta cruda del servidor:", rawResponseText);
 
-  console.log("URL generada:", url); // <-- útil para debug
+    let data;
+    try {
+      data = JSON.parse(rawResponseText);
+    } catch (parseError) {
+      console.error("❌ Error al parsear JSON:", parseError);
+      throw new Error("La respuesta no es un JSON válido.");
+    }
 
-  Linking.openURL(url).catch(err => {
-    console.error("Error al abrir la URL:", err);
-    Alert.alert("Error", "No se pudo abrir el enlace para descargar el extracto.");
-  });
+    if (response.ok) {
+      console.log("✅ Respuesta OK:", data);
+
+      // Si Laravel no devuelve la URL, la armamos manualmente:
+      const urlDescarga = data?.url_pdf || 
+        `https://api.progresarcorp.com.py/extractos_generados/extracto_${nroTarjeta}_${mes}_${anho}.pdf`;
+
+      Alert.alert(
+        "¡Éxito!",
+        "El extracto fue generado correctamente.",
+        [
+          { text: "Cancelar", style: "cancel" },
+          {
+            text: "Descargar PDF",
+            onPress: () => descargarPDF(urlDescarga, `extracto_${nroTarjeta}_${mes}_${anho}.pdf`),
+          },
+        ]
+      );
+
+    } else {
+      console.log("❌ Error del servidor:", data);
+      Alert.alert("Error", data.error || "No se pudo generar el extracto.");
+    }
+
+  } catch (error) {
+    console.error("💥 Error general:", error);
+    Alert.alert("Error", error.message || "Ocurrió un error inesperado.");
+  }
 };
+
 const handleRequestByEmail = async () => {
   if (!tarjetaCompletaSeleccionada || !mesSeleccionado || !anyoSeleccionado) {
     Alert.alert("Faltan datos", "Debe seleccionar tarjeta, mes y año antes de continuar.");

@@ -52,6 +52,8 @@
     "react-native-dropdown-picker": "^5.4.4",
     "react-native-element-textinput": "^2.0.1",
     "react-native-elements": "^3.4.2",
+    "react-native-file-viewer": "^2.1.5",
+    "react-native-fs": "^2.20.0",
     "react-native-gesture-handler": "~2.16.1",
     "react-native-material-menu": "^2.0.0",
     "react-native-paper": "^4.12.4",
