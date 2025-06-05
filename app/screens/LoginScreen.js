@@ -47,7 +47,13 @@ export default class LoginScreen extends Component{
             mensaje:'',
             loading:false,
             disabledButton: true,
-            buttonStyle: {backgroundColor: 'rgba(191, 4, 4, 0.5)', padding: 15, borderRadius: 5, width: '90%', marginBottom: 15},
+            buttonStyle: {
+                backgroundColor: 'rgba(191, 4, 4, 1)', // 👈 Totalmente opaco
+                padding: 15,
+                borderRadius: 5,
+                width: '90%',
+                marginBottom: 15
+              },
             actRuta: 'Login',
             onpress: '',
             optBio: '',
@@ -782,13 +788,27 @@ changeUser(user){
                     </TouchableOpacity>
                   </View>
                 </View>
+                {/* Boton de ¿Olvidó su contraseña? */}
+                <View style={{alignItems: 'center', marginBottom: 5, paddingHorizontal: 15}}>
+                  <TouchableOpacity
+                    onPress={() => {WebBrowser.openBrowserAsync('https://secure.progresarcorp.com.py/auth/forgot-password');}}
+                  >
+                    <Text style={styles.botOlv}>¿Olvidó su contraseña?</Text>
+                  </TouchableOpacity>
+                </View>
+        
+                {/* Aqui se agrega el boton de login*/}
+                <View style={{alignItems: 'center'}}>
+                  {/* bioAvaliable ? <ButLogin/> : <Buton /> */}
+                  <Buton />
+                </View>
                 </>
               )}
               
               {this.state.metodoLogin === 'biometria' && (
                 <View style={{ padding: 20 }}>
                   <TouchableOpacity onPress={this.handleBiometria} style={styles.botonBiometrico}>
-                    <Text style={{ color: 'white', textAlign: 'center' }}> Autenticarse con biometría</Text>
+                    <Text style={{ color: 'white', textAlign: 'center' }}><Icon name="lock" size={18} color="white" style={{ marginRight: 8 }} /> Autenticarse con biometría</Text>
                   </TouchableOpacity>
                 </View>
               )}
@@ -804,21 +824,6 @@ changeUser(user){
                     <SwitchNumDoc/>
                   </View>
                 </View> */}
-
-                {/* Boton de ¿Olvidó su contraseña? */}
-                <View style={{alignItems: 'center', marginBottom: 5, paddingHorizontal: 15}}>
-                  <TouchableOpacity
-                    onPress={() => {WebBrowser.openBrowserAsync('https://secure.progresarcorp.com.py/auth/forgot-password');}}
-                  >
-                    <Text style={styles.botOlv}>¿Olvidó su contraseña?</Text>
-                  </TouchableOpacity>
-                </View>
-        
-                {/* Aqui se agrega el boton de login*/}
-                <View style={{alignItems: 'center'}}>
-                  {/* bioAvaliable ? <ButLogin/> : <Buton /> */}
-                  <Buton />
-                </View>
                 
                 {/* Solicitar Accesso */}
                 <View style={{marginTop: 10, alignItems: 'flex-end', marginRight: 20}}>
@@ -1089,8 +1094,7 @@ selectorButton: {
   marginHorizontal: 5,
 },
 selectorButtonSelected: {
-  backgroundColor: '#E53935', // Rojo más suave
-  borderColor: '#E53935',
+  backgroundColor: 'rgba(191, 4, 4, 1)',
 },
 selectorText: {
   color: '#000',
@@ -1103,4 +1107,10 @@ botonBiometrico: {
   marginTop: 10,
   alignItems: 'center',
 },
+button: {
+    backgroundColor: '#0066cc',
+    padding: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
 });

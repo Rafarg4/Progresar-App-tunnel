@@ -114,7 +114,6 @@ const Qr = ({ route, navigation }) => {
         setIsLoading(false);
     }
 };
-
   const handleBarCodeScanned = async ({ type, data }) => {
     setScanned(true);
     setQrCode(data);
