@@ -229,13 +229,12 @@ export default class DetaTC extends Component {
             if (clienteFin != '') {
                 return (
                     <View style={{borderRadius: 10, width: '100%', }}>
-                        
-                       <View style={styles.box3}>
                         <Image
                          style={styles.cardImage}
                          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/05/operaciones.png' }}
                          resizeMode="cover"
                         />
+                        <View style={styles.box3}>
                         <Text style={styles.title}>
                            
                         </Text>
@@ -292,12 +291,12 @@ export default class DetaTC extends Component {
                             </View>
                         </View>
                         {/* datos de las cuotas pendientes y pagadas */}
-                        <View style={styles.box3}>
-                        <Image
+                         <Image
                          style={styles.cardImage}
                          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/05/detalles.png' }}
                          resizeMode="cover"
                         />
+                        <View style={styles.box3}>
                             <Text style={{textAlign: 'center', fontSize: 16, marginBottom: 5}}></Text>
 
                             <View style={{ flexDirection: 'row', width: '100%'}}>

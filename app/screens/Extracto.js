@@ -228,8 +228,8 @@ const handleRequestByEmail = async () => {
   return (
     <View style={styles.container}>
       <ScrollView style={styles.scrollView}>
+
         {/* Imagen de encabezado */}
-        <View style={styles.card}>
           <Image
             style={styles.headerImage}
             source={{
@@ -238,8 +238,7 @@ const handleRequestByEmail = async () => {
             }}
             resizeMode="cover"
           />
-        </View>
-
+          <View style={{ height: 10 }} /> 
         {/* Card de campos y botones */}
         <View style={styles.card}>
           {/* Campo: Tarjeta */}
@@ -416,6 +415,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#f8f8f8",
   },
   scrollView: {
+    
     flex: 1,
   },
   fieldTitle: {
@@ -427,7 +427,7 @@ const styles = StyleSheet.create({
 
   card: {
     padding: 10,
-    marginBottom: 10,
+    marginBottom: 20,
     backgroundColor: "#ffffff",
     borderRadius: 5,
     shadowColor: "#000",

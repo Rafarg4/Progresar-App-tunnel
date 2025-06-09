@@ -81,6 +81,7 @@ separator: {
     backgroundColor: '#fff', // Fondo blanco para la tarjeta
     borderRadius: 10,
     padding: 0,
+    marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: {
       width: 1,

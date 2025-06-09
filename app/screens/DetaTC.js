@@ -507,7 +507,7 @@ export default class DetaTC extends Component {
                 return (
                     
                     <View
-                        style={{ margin: 5, backgroundColor: 'white', padding: 5, borderRadius: 10, width: '100%' }}
+                        style={{  width: '100%' }}
                     >
                         <Image
                             style={styles.cardImage}
@@ -1254,7 +1254,7 @@ export default class DetaTC extends Component {
 
                             {puntos_total > 0 ? 
                                 <View
-                                   style={{ margin: 5, backgroundColor: 'white', padding: 5, borderRadius: 10, width: '100%' }}
+                                   style={{  width: '100%' }}
                                 >
                                 <Image
                                     style={styles.cardImage}
