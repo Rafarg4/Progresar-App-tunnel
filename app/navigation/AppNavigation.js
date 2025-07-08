@@ -27,6 +27,8 @@ import DetaBepsa from '../screens/DetaBepsa'
 import DetaProcard from '../screens/DetaProcard'
 import AtmQr from '../screens/AtmQr'
 import Extracto from '../screens/Extracto'
+import ActualizarPerfil from '../screens/ActualizarPerfil'
+import SolicitarAcceso from '../screens/SolicitarAcceso'
 import Checkout from '../screens/Checkout';
 import ConfirmarCompra from '../screens/ConfirmarCompra';
 import ConfirmarVenta from '../screens/ConfirmarVenta';
@@ -35,6 +37,7 @@ import MisPagos from '../screens/MisPagos';
 import VerificarEmail from '../screens/VerificarEmail';
 import PagoTC from '../screens/PagoTC';
 import Qr from '../screens/Qr';
+
 import AdelantoQr from '../screens/AdelantoQr';
 
 const Stack = createNativeStackNavigator();
@@ -163,6 +166,20 @@ function App() {
                 }
             }/> 
 
+            <Stack.Screen name="SolicitarAcceso" component={SolicitarAcceso} options={
+                {
+                    headerTintColor: "white",
+                    headerStyle: { backgroundColor: '#bf0404' },
+                }
+            }/> 
+
+             <Stack.Screen name="ActualizarPerfil" component={ActualizarPerfil} options={
+                {
+                    headerTintColor: "white",
+                    headerStyle: { backgroundColor: '#bf0404' },
+                }
+            }/> 
+
             <Stack.Screen name="DetaF" component={DetaF} options={
                 {
                     headerTintColor: "white",
@@ -263,6 +280,7 @@ function App() {
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
+            
             
         </Stack.Navigator>
         </NavigationContainer>

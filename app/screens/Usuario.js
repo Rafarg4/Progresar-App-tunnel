@@ -7,6 +7,9 @@ import { Divider } from 'react-native-elements';
 import { TextInput } from 'react-native-element-textinput';
 
 export default class UsuarioScreen extends Component {
+    gotoSreen = (screenName) => {
+    this.props.navigation.navigate(screenName);
+  }
     constructor(props) {
         super(props);
 
@@ -716,9 +719,9 @@ export default class UsuarioScreen extends Component {
                         <Text>Si desea cambiar su información, presione el siguiente botón.</Text>
                     </View>
 
-                    <TouchableOpacity
-                        style={[styles.boton, {marginBottom: 30} ]}
-                        onPress={() => { WebBrowser.openBrowserAsync('https://secure.progresarcorp.com.py'); }}
+                     <TouchableOpacity
+                        style={[styles.boton, { marginBottom: 30 }]}
+                        onPress={() => this.gotoSreen('ActualizarPerfil')}
                     >
                         <Text style={{ color: 'white', textAlign: 'center' }}>Actualizar mis datos</Text>
                     </TouchableOpacity>

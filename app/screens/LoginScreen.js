@@ -830,7 +830,7 @@ changeUser(user){
                   <View style={{flexDirection:'row'}}>
                     <Text>¿No puedes ingresar? </Text>
                     <TouchableOpacity 
-                      onPress={() => {WebBrowser.openBrowserAsync('https://progresarcorp.com.py/tarjetas/#solicitud');}}
+                      onPress={() => this.gotoSreen('SolicitarAcceso')}
                     >
                       <Text style={styles.textAcces}>Solicitar Acceso</Text>
                     </TouchableOpacity>

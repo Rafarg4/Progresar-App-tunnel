@@ -3,10 +3,14 @@ import { View, Text, StyleSheet, Alert, Modal, TouchableOpacity, ScrollView, Tex
 import { BarCodeScanner } from 'expo-barcode-scanner';
 import { useNavigation } from '@react-navigation/native'; // Importar useNavigation
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { Button } from 'react-native';
+import { Image } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 const Qr = ({ route, navigation }) => {
   const [hasPermission, setHasPermission] = useState(null);
   const [scanned, setScanned] = useState(false);
   const [qrCode, setQrCode] = useState('');
+  const [selectedImage, setSelectedImage] = useState(null);
   const [modalVisible, setModalVisible] = useState(false);
   const [passwordModalVisible, setPasswordModalVisible] = useState(false);
   const [tarjetaData, setTarjetaData] = useState([]);
@@ -16,12 +20,49 @@ const Qr = ({ route, navigation }) => {
   const [password, setPassword] = useState('');
   const [clientPassword, setClientPassword] = useState('');
   const [decodedData, setDecodedData] = useState(null);
+  
   useEffect(() => {
     (async () => {
       const { status } = await BarCodeScanner.requestPermissionsAsync();
       setHasPermission(status === 'granted');
     })();
   }, []);
+const pickImageFromGallery = async () => {
+  let result = await ImagePicker.launchImageLibraryAsync({
+    mediaTypes: ImagePicker.MediaTypeOptions.Images,
+    allowsEditing: false,
+    quality: 1,
+    base64: true, // necesario para enviar a la API
+  });
+
+  if (!result.canceled) {
+    const base64Image = result.assets[0].base64;
+    setSelectedImage(result.assets[0].uri);
+
+    try {
+      // Enviar imagen a tu API de decodificación
+      const response = await fetch('https://api.progresarcorp.com.py/api/decodeQr', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ image_base64: base64Image }),
+      });
+
+      const responseData = await response.json();
+      console.log('QR decodificado desde imagen:', responseData);
+
+      setQrCode('desde-imagen');
+      setDecodedData(responseData);
+      setModalVisible(true);
+      await fetchClientData(num_doc);
+      await fetchClientPassword(num_doc);
+    } catch (error) {
+      console.error('Error al procesar imagen:', error.message);
+      Alert.alert('Error', 'No se pudo decodificar el QR desde la imagen');
+    }
+  }
+};
 
   const fetchClientData = async (num_doc) => {
     setIsLoading(true);
@@ -114,6 +155,7 @@ const Qr = ({ route, navigation }) => {
         setIsLoading(false);
     }
 };
+
   const handleBarCodeScanned = async ({ type, data }) => {
     setScanned(true);
     setQrCode(data);
@@ -391,6 +433,30 @@ ${responseData.fechaTransaccion || 'N/A'}
           </View>
         </>
       )}
+      <View style={{ position: 'absolute', top: 650, alignSelf: 'center', zIndex: 10 }}>
+      <TouchableOpacity
+        onPress={pickImageFromGallery}
+        disabled={true} // ← Desactiva el botón
+        style={{
+          flexDirection: 'row',
+          alignItems: 'center',
+          backgroundColor: '#bf0404',
+          paddingVertical: 12,
+          paddingHorizontal: 25,
+          borderRadius: 5,
+        }}
+      >
+        <Icon name="image" size={20} color="white" style={{ marginRight: 8 }} />
+        <Text style={{ color: 'white', fontSize: 16 }}>Seleccionar imagen</Text>
+      </TouchableOpacity>
+
+      {selectedImage && (
+        <Image
+          source={{ uri: selectedImage }}
+          style={{ width: 200, height: 200, marginTop: 20 }}
+        />
+      )}
+    </View>
 <Modal
   visible={modalVisible}
   animationType="slide"
