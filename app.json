@@ -43,7 +43,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#BF0404"
       },
-      "versionCode": 18,
+      "versionCode": 19,
       "permissions": [
         "USER_FACING_NOTIFICATIONS",
         "USER_FACING_NOTIFICATIONS"

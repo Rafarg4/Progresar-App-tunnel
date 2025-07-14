@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView,Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ScrollView, Image } from 'react-native';
 
 export default function ActualizarPerfil() {
   const [formData, setFormData] = useState({
@@ -10,29 +10,24 @@ export default function ActualizarPerfil() {
     antiguedad: '',
   });
 
-  const handleChange = (name, value) => {
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
   const handleSubmit = () => {
-    // Aquí podés enviar los datos al servidor o hacer lo que necesites
-    Alert.alert('Datos enviados', JSON.stringify(formData, null, 2));
+    Alert.alert('¡Atención!', 'Esta opción estará disponible próximamente.');
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
-       <Image
-              style={styles.cardImage}
-              source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/07/actualizar-datos.png' }}
-              resizeMode="cover"
-        />
-      
+      <Image
+        style={styles.cardImage}
+        source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/07/actualizar-datos.png' }}
+        resizeMode="cover"
+      />
+
       <Text style={styles.label}>Lugar de trabajo</Text>
       <TextInput
         style={styles.input}
         placeholder="Ingrese su lugar de trabajo"
         value={formData.lugarTrabajo}
-        onChangeText={text => handleChange('lugarTrabajo', text)}
+        editable={false}
       />
 
       <Text style={styles.label}>Teléfono</Text>
@@ -40,8 +35,8 @@ export default function ActualizarPerfil() {
         style={styles.input}
         placeholder="Ingrese su teléfono"
         value={formData.telefono}
-        onChangeText={text => handleChange('telefono', text)}
         keyboardType="phone-pad"
+        editable={false}
       />
 
       <Text style={styles.label}>Dirección laboral</Text>
@@ -49,7 +44,7 @@ export default function ActualizarPerfil() {
         style={styles.input}
         placeholder="Ingrese su dirección laboral"
         value={formData.direccionLaboral}
-        onChangeText={text => handleChange('direccionLaboral', text)}
+        editable={false}
       />
 
       <Text style={styles.label}>Dirección particular</Text>
@@ -57,7 +52,7 @@ export default function ActualizarPerfil() {
         style={styles.input}
         placeholder="Ingrese su dirección particular"
         value={formData.direccionParticular}
-        onChangeText={text => handleChange('direccionParticular', text)}
+        editable={false}
       />
 
       <Text style={styles.label}>Antigüedad</Text>
@@ -65,12 +60,12 @@ export default function ActualizarPerfil() {
         style={styles.input}
         placeholder="Ingrese su antigüedad (en años)"
         value={formData.antiguedad}
-        onChangeText={text => handleChange('antiguedad', text)}
         keyboardType="numeric"
+        editable={false}
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>¡Proximamente!</Text>
+        <Text style={styles.buttonText}>¡Próximamente!</Text>
       </TouchableOpacity>
     </ScrollView>
   );
@@ -97,6 +92,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginBottom: 15,
+    backgroundColor: '#f0f0f0', // para mostrar visualmente que está deshabilitado
   },
   button: {
     backgroundColor: '#bf0404',
@@ -109,9 +105,9 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   cardImage: {
-  width: '100%',
-  height: 150,
-  marginBottom: 20,
-  borderRadius: 10,
-},
+    width: '100%',
+    height: 150,
+    marginBottom: 20,
+    borderRadius: 10,
+  },
 });
