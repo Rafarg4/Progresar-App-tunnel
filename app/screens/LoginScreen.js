@@ -82,8 +82,8 @@ export default class LoginScreen extends Component{
       var index = this.props.navigation.getState().index;
       var routeNameStack = this.props.navigation.getState().routes[index].name;
 
-      if(routeNameStack == 'Home' || routeNameStack == 'Login'){
-        if(routeNameStack == 'Home'){
+      if(routeNameStack == 'InicioApp' || routeNameStack == 'Login'){
+        if(routeNameStack == 'InicioApp'){
           Alert.alert("¡Aguarda!", "¿Estás seguro de que quieres salir de la aplicación?", [
             {
               text: "Cancelar",
@@ -453,7 +453,7 @@ changeUser(user){
           }
         }else{
           this.setState({loading: false})
-          this.gotoSreen('Home');
+          this.gotoSreen('InicioApp');
         }
       })
     }
@@ -783,7 +783,7 @@ changeUser(user){
                     />
                     <TouchableOpacity onPress={() => this.setState({ secureText: !this.state.secureText })}>
                       <Text style={{ fontSize: 18, color: 'gray' }}>
-                        {this.state.secureText ? '🙈' : '🙉'}
+                        {this.state.secureText ? '🔒' : '🔓'}
                       </Text>
                     </TouchableOpacity>
                   </View>

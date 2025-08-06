@@ -27,6 +27,9 @@ import DetaBepsa from '../screens/DetaBepsa'
 import DetaProcard from '../screens/DetaProcard'
 import AtmQr from '../screens/AtmQr'
 import Extracto from '../screens/Extracto'
+import InicioApp from '../screens/InicioApp'
+import MisTarjetas from '../screens/MisTarjetas'
+import MisSeguros from '../screens/MisSeguros'
 import ActualizarPerfil from '../screens/ActualizarPerfil'
 import SolicitarAcceso from '../screens/SolicitarAcceso'
 import Checkout from '../screens/Checkout';
@@ -166,6 +169,30 @@ function App() {
                 }
             }/> 
 
+           <Stack.Screen
+                    name="InicioApp"
+                    component={InicioApp}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="MisTarjetas"
+                    component={MisTarjetas}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+             <Stack.Screen
+                    name="MisSeguros"
+                    component={MisSeguros}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
             <Stack.Screen name="SolicitarAcceso" component={SolicitarAcceso} options={
                 {
                     headerTintColor: "white",
