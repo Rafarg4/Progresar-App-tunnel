@@ -8,12 +8,14 @@ import {
   Modal,
   Image,
   Linking,
+  Dimensions,
   ActivityIndicator,
   Alert,
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from "expo-sharing";
+import AsyncStorage from '@react-native-async-storage/async-storage';
 const Extracto = () => {
   const route = useRoute();
   const { num_doc } = route.params || {};
@@ -28,13 +30,29 @@ const Extracto = () => {
   const [tarjetas, setTarjetas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [nombre, setNombre] = useState('');
+  const [usuario, setUsuario] = useState('');
+  useEffect(() => {
+  const obtenerDatos = async () => {
+    try {
+      const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
+      const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
 
+      if (nombreGuardado) setNombre(nombreGuardado);
+      if (usuarioGuardado) setUsuario(usuarioGuardado);
+    } catch (error) {
+      console.log('Error al obtener datos de AsyncStorage:', error);
+    }
+  };
+
+  obtenerDatos();
+}, []);
   const fetchTarjetas = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await fetch(
-        `https://api.progresarcorp.com.py/api/ver_tarjetas_bepsa/${num_doc}`
+        `https://api.progresarcorp.com.py/api/ver_tarjetas_bepsa/${usuario}`
       );
       if (!response.ok) throw new Error("Error en la respuesta del servidor");
       const data = await response.json();
@@ -47,10 +65,10 @@ const Extracto = () => {
   };
 
   useEffect(() => {
-    if (num_doc) {
+    if (usuario) {
       fetchTarjetas();
     }
-  }, [num_doc]);
+  }, [usuario]);
 
   const nombreClaseTarjeta = (clase) => {
     switch (clase) {
@@ -226,18 +244,18 @@ const handleRequestByEmail = async () => {
 };
 
   return (
+    
     <View style={styles.container}>
-      <ScrollView style={styles.scrollView}>
-
-        {/* Imagen de encabezado */}
+    {/* Cabecera con imagen */}
+        <View style={[styles.headerContainer, { width: '100%' }]}>
           <Image
+            source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
             style={styles.headerImage}
-            source={{
-              uri:
-                "https://progresarcorp.com.py/wp-content/uploads/2025/05/extracto.png",
-            }}
             resizeMode="cover"
-          />
+          /> 
+          <Text style={styles.headerText}>Extractos</Text>
+        </View> 
+      <ScrollView style={styles.scrollView}>
           <View style={{ height: 10 }} /> 
         {/* Card de campos y botones */}
         <View style={styles.card}>
@@ -411,8 +429,10 @@ const handleRequestByEmail = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 10,
-    backgroundColor: "#f8f8f8",
+    backgroundColor: '#fff', // si querés color de fondo
+    paddingHorizontal: 0,    // evita que el padding lo achique
+    margin: 0,
+    width: '100%'            // asegura que ocupe todo el ancho de pantalla
   },
   scrollView: {
     
@@ -423,10 +443,34 @@ const styles = StyleSheet.create({
   fontWeight: 'bold',
   color: '#333',
   marginBottom: 8,
+}, 
+ headerImage: {
+      width: Dimensions.get('window').width,
+      height: 180,
+    },
+    headerText: {
+      position: 'absolute',
+      bottom: 20,
+      left: 20,
+      color: '#fff',
+      fontSize: 26,
+      fontWeight: 'bold',
+      textShadowColor: 'rgba(0,0,0,0.6)',
+      textShadowOffset: { width: 1, height: 1 },
+      textShadowRadius: 3
+    },
+   headerContainer: {
+  position: 'relative',
+  overflow: 'hidden',
+  borderBottomLeftRadius: 25,
+  borderBottomRightRadius: 25,
+  marginBottom: 10, // 👈 agrega este espacio entre imagen y lo demás
 },
-
+   scrollContainer: {
+      padding: 20
+    },
   card: {
-    padding: 10,
+    padding: 30,
     marginBottom: 20,
     backgroundColor: "#ffffff",
     borderRadius: 5,
@@ -555,18 +599,18 @@ tarjetaText: {
 selectButton: {
   backgroundColor: '#ffffff',
   borderWidth: 1,
-  borderColor: '#bf0404',
+  borderColor: '#FF6F61',
   padding: 12,
   borderRadius: 10,
   marginBottom: 10,
 },
 selectButtonText: {
-  color: '#bf0404',
+  color: '#FF6F61',
   fontWeight: 'bold',
   textAlign: 'center',
 },
 closeButton: { 
-  backgroundColor: '#bf0404',
+  backgroundColor: '#FF6F61',
   padding: 10,
   borderRadius: 8,
   marginTop: 10,
@@ -585,7 +629,7 @@ footerButtons: {
 actionButton: {
   flex: 1,
   padding: 12,
-  backgroundColor: '#bf0404',
+  backgroundColor: '#FF6F61',
   borderRadius: 8,
   alignItems: 'center',
 },

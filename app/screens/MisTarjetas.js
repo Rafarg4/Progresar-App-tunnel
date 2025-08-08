@@ -9,12 +9,32 @@ import {
   ActivityIndicator
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { TouchableOpacity } from 'react-native';
 export default function MisTarjetas() {
   const [tarjetas, setTarjetas] = useState([]);
   const [loading, setLoading] = useState(true);
   const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
-
+  const nombresTarjeta = {
+    JM: 'CLÁSICA',
+    '1': 'DINELCO',
+    TR: 'LA TRINIDAD',
+    M2: 'PROGAR',
+    J5: 'EDT',
+    J0: 'EMPRESARIAL',
+    JW: 'MUJER',
+    FR: 'AFUNI',
+    J7: 'FEP',
+    RC: 'ROTARY',
+    RM: 'ROTARY',
+    V6: 'VISA',
+    TS: 'COMEDI',
+    LE: 'LINALU',
+    EV: 'EL VIAJERO',
+    EI: 'VISA EMPRESARIAL'
+  };
+const navigation = useNavigation();
   useEffect(() => {
     const obtenerTarjetas = async () => {
       try {
@@ -67,28 +87,44 @@ export default function MisTarjetas() {
           const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
 
           return (
-            <View key={index} style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}>
-              <FontAwesome5
-                name="credit-card"
-                size={120}
-                color="#fff"
-                style={styles.cardBackgroundIcon}
-              />
+           <View key={index} style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}>
+              <TouchableOpacity
+                activeOpacity={0.9}
+               onPress={() =>
+                  navigation.navigate('DetalleTarjetas', { tarjeta })
+                }
+              >
+                <FontAwesome5
+                  name="credit-card"
+                  size={120}
+                  color="#fff"
+                  style={styles.cardBackgroundIcon}
+                />
 
-              <View style={styles.cardIconContainer}>
-                <FontAwesome5 name="credit-card" size={28} color="#fff" />
-              </View>
+                <View style={styles.cardIconContainer}>
+                  <FontAwesome5 name="credit-card" size={28} color="#fff" />
+                </View>
 
-              <Text style={styles.cardBrand}>{tarjeta.clase_tarjeta}</Text>
-              <Text style={styles.cardNumber}>{formatearNumero(tarjeta.nro_tarjeta)}</Text>
-              <Text style={styles.cardHolder}>{tarjeta.nombre_usuario}</Text>
+                <Text style={styles.cardBrand}>
+                  {nombresTarjeta[tarjeta.clase_tarjeta] || 'Desconocido'}
+                </Text>
+                <Text style={styles.cardNumber}>{formatearNumero(tarjeta.nro_tarjeta)}</Text>
+                <Text style={styles.cardHolder}>{tarjeta.nombre_usuario}</Text>
+              </TouchableOpacity>
 
-              <View style={styles.cardFooter}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
-                  <FontAwesome5 name="list" size={14} color="#fff" style={{ marginRight: 5 }} />
+              {/* Footer: botón de movimientos */}
+              <TouchableOpacity
+                style={styles.cardFooter}
+                onPress={() =>
+                  navigation.navigate('DetaProcard', { nro_tarjeta: tarjeta.nro_tarjeta })
+                }
+              >
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <FontAwesome5 name="exchange-alt" size={14} color="#fff" style={{ marginRight: 5 }} />
                   <Text style={styles.cardFooterText}>Mis movimientos</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
+
             </View>
           );
         })}

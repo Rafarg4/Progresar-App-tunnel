@@ -27,9 +27,15 @@ import DetaBepsa from '../screens/DetaBepsa'
 import DetaProcard from '../screens/DetaProcard'
 import AtmQr from '../screens/AtmQr'
 import Extracto from '../screens/Extracto'
+import Electrodomesticos from '../screens/Electrodomesticos'
 import InicioApp from '../screens/InicioApp'
 import MisTarjetas from '../screens/MisTarjetas'
+import MisOperaciones from '../screens/MisOperaciones'
+import DetalleTarjetas from '../screens/DetalleTarjetas'
+import DetalleOperaciones from '../screens/DetalleOperaciones'
 import MisSeguros from '../screens/MisSeguros'
+import MisElectrodomesticos from '../screens/MisElectrodomesticos'
+import DetalleElectro from '../screens/DetalleElectro'
 import ActualizarPerfil from '../screens/ActualizarPerfil'
 import SolicitarAcceso from '../screens/SolicitarAcceso'
 import Checkout from '../screens/Checkout';
@@ -162,12 +168,22 @@ function App() {
                 }
             }/> 
 
-            <Stack.Screen name="Extracto" component={Extracto} options={
-                {
-                    headerTintColor: "white",
-                    headerStyle: { backgroundColor: '#bf0404' },
-                }
-            }/> 
+            <Stack.Screen
+                    name="Extracto"
+                    component={Extracto}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="Electrodomesticos"
+                    component={Electrodomesticos}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
 
            <Stack.Screen
                     name="InicioApp"
@@ -188,6 +204,46 @@ function App() {
              <Stack.Screen
                     name="MisSeguros"
                     component={MisSeguros}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="MisElectrodomesticos"
+                    component={MisElectrodomesticos}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="MisOperaciones"
+                    component={MisOperaciones}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="DetalleOperaciones"
+                    component={DetalleOperaciones}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="DetalleElectro"
+                    component={DetalleElectro}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="DetalleTarjetas"
+                    component={DetalleTarjetas}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
                         gestureEnabled: false
@@ -242,13 +298,14 @@ function App() {
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
-            <Stack.Screen name="DetaProcard" component={DetaProcard} options={
-                {
-                    headerTintColor: "white",
-                    headerTitle:"Movimientos Credicard",
-                    headerStyle: { backgroundColor: '#bf0404' },
-                }
-            }/>
+            <Stack.Screen
+                    name="DetaProcard"
+                    component={DetaProcard}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
             <Stack.Screen name="DetaE" component={DetaE} options={
                 {
                     headerTintColor: "white",

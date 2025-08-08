@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { ImageBackground } from 'react-native';
+import { Linking, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 // Categorías fijas
@@ -45,7 +46,7 @@ const categories = [
   },
   {
     id: 4,
-    name: 'Electrodomésticos',
+    name: 'Electrodoméstico',
     icon: <MaterialIcons name="tv" size={38} color="#fff" />,
     backgroundIcon: <MaterialIcons name="tv" size={100} color="#fff" />,
     color: '#FFA726',
@@ -70,12 +71,54 @@ export default function HomeScreen() {
   const [flyers, setFlyers] = useState([]);
   const [historiaSeleccionada, setHistoriaSeleccionada] = useState(null);
   const [error, setError] = useState(null);
-  const [productos, setProductos] = useState([]);
-  const [errorProductos, setErrorProductos] = useState(false);
   const navigation = useNavigation();
   const [nombre, setNombre] = useState('');
   const [usuario, setUsuario] = useState('');
+  const [showOptions, setShowOptions] = useState(false);
+  const { width } = Dimensions.get('window');
+  const [promos, setPromos] = useState([]);
+  const [loadingPromos, setLoadingPromos] = useState(true);
+  const [errorPromos, setErrorPromos] = useState(null);
 
+  useEffect(() => {
+    const fetchPromos = async () => {
+      try {
+        setLoadingPromos(true);
+        setErrorPromos(null);
+
+        const res = await fetch('https://api.progresarcorp.com.py/api/promos-app', {
+          method: 'GET',
+          headers: {
+            Accept: 'application/json',
+            'X-Requested-With': 'XMLHttpRequest',
+            'Cache-Control': 'no-cache'
+          }
+        });
+
+        if (!res.ok) throw new Error(`Error ${res.status}: No se pudo obtener promos`);
+
+        const data = await res.json();
+
+        // Normalizo y filtro: solo activos y con imagen
+        const items = (Array.isArray(data) ? data : [])
+          .filter(p => (p.activo || '').toLowerCase() === 'si' && p.url_imagen)
+          .map(p => ({
+            id: String(p.id),
+            title: p.title,
+            url: p.url,
+            image: p.url_imagen
+          }));
+
+        setPromos(items);
+      } catch (e) {
+        setErrorPromos(e.message);
+      } finally {
+        setLoadingPromos(false);
+      }
+    };
+
+    fetchPromos();
+  }, []);
 useEffect(() => {
   const obtenerDatos = async () => {
     try {
@@ -100,17 +143,6 @@ const obtenerIniciales = (nombreCompleto) => {
 
   return `${primera}|${segunda}`;
 };
-  useEffect(() => {
-    fetch('https://api.progresarcorp.com.py/api/ver_productos')
-      .then((res) => res.json())
-      .then((data) => {
-        setProductos(data);
-      })
-      .catch((err) => {
-        console.error('Error al obtener productos', err);
-        setErrorProductos(true);
-      });
-  }, []);
 
   useEffect(() => {
     const fetchFlyers = async () => {
@@ -233,7 +265,11 @@ const obtenerIniciales = (nombreCompleto) => {
                 navigation.navigate('MisTarjetas');
                 } else if (cat.name === 'Seguros') {
                 navigation.navigate('MisSeguros');
-              } else {
+                } else if (cat.name === 'Operaciones') {
+                navigation.navigate('MisOperaciones');
+                } else if (cat.name === 'Electrodoméstico') {
+                navigation.navigate('MisElectrodomesticos');
+                } else {
                 console.log(cat.name);
               }
             }}
@@ -247,53 +283,67 @@ const obtenerIniciales = (nombreCompleto) => {
           </TouchableOpacity>
         ))}
       </View>
-      {/* Productos */}
-      <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginTop: 10, marginBottom: 5 }}>
-          ProgreMarket
+      {/* Carrusel de Promos */}
+       <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginTop: 10, marginBottom: 5 }}>
+          Promos
         </Text>
-      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ paddingHorizontal: 20 }}>
-        {productos.map((item) => {
-          const imageUrl = item.ruta_foto
-            ? `https://progresarelectrodomesticos.com/img/producto/${item.ruta_foto}`
-            : 'https://progresarcorp.com.py/wp-content/uploads/2025/04/Logo_nuevo_P-2.png';
+      {/* Carrusel de Promos */}
+    <View style={styles.carouselWrapper}>
+      <View style={styles.carouselContainer}>
+        {loadingPromos ? (
+          <ActivityIndicator size="large" color="#bf0404" />
+        ) : errorPromos ? (
+          <Text style={{ color: 'red', textAlign: 'center' }}>{errorPromos}</Text>
+        ) : (
+          <FlatList
+            data={promos}
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            keyExtractor={(item) => item.id}
+            renderItem={({ item }) => (
+              <TouchableOpacity
+                activeOpacity={0.9}
+                onPress={() => item.url && Linking.openURL(item.url)}
+              >
+               <Image
+                source={{ uri: item.image }}
+                style={[styles.carouselImage, { width: width * 0.9 }]} // mismo porcentaje que el contenedor
+              />
+              </TouchableOpacity>
+            )}
+          />
+        )}
+      </View>
+    </View>
 
-          return (
-            <View key={item.cod_articulo} style={styles.productCard}>
-              {/* Badge NUEVO */}
-              <View style={styles.badgeNuevo}>
-                <Text style={styles.badgeText}>NUEVO</Text>
-              </View>
-
-              <Image source={{ uri: imageUrl }} style={styles.productImage} resizeMode="contain" />
-              <Text style={styles.productBrand}>Progresar Electrodomésticos</Text>
-              <Text style={styles.productName}>{item.producto}</Text>
-              <Text style={styles.productPrice}>Precio: Gs. {parseInt(item.precio_fijo).toLocaleString()}</Text>
-
-              {/* Botones */}
-              <View style={styles.productButtons}>
-                <TouchableOpacity
-                  onPress={() =>
-                    Linking.openURL(`https://api.whatsapp.com/send?phone=595984995582&text=Hola, estoy interesado en el producto ${encodeURIComponent(item.producto)}`)
-                  }
-                  style={styles.whatsappButton}
-                >
-                  <Text style={{ color: '#fff', fontSize: 12 }}>Whatsapp</Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  onPress={() =>
-                    Linking.openURL(`https://progresarelectrodomesticos.com/detalles${item.cod_articulo}`)
-                  }
-                  style={styles.cartButton}
-                >
-                  <Text style={styles.cartButtonText}>Añadir a carrito</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          );
-        })}
       </ScrollView>
-      </ScrollView>
+      {/* Opciones flotantes */}
+      {showOptions && (
+        <View style={styles.optionsContainer}>
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => {
+              setShowOptions(false);
+              navigation.navigate('Electrodomesticos');
+            }}
+          >
+            <Ionicons name="pricetag-outline" size={20} color="#fff" />
+            <Text style={styles.optionText}>Electrodomésticos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => {
+              setShowOptions(false);
+              navigation.navigate('Pagos');
+            }}
+          >
+            <Ionicons name="card-outline" size={20} color="#fff" />
+            <Text style={styles.optionText}>Solicitar Tarjeta</Text>
+          </TouchableOpacity>
+        </View>
+      )}
       {/* Barra de navegación inferior */}
       <View style={styles.bottomNavContainer}>
         <View style={styles.bottomNavStyled}>
@@ -301,11 +351,14 @@ const obtenerIniciales = (nombreCompleto) => {
             <Ionicons name="qr-code" size={24} color="#fff" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.centerButton}>
-            <Ionicons name="add" size={28} color="#fff" />
+          <TouchableOpacity
+            style={styles.centerButton}
+            onPress={() => setShowOptions(!showOptions)}
+          >
+            <Ionicons name={showOptions ? 'close' : 'add'} size={28} color="#fff" />
           </TouchableOpacity>
 
-          <TouchableOpacity>
+          <TouchableOpacity onPress={() => navigation.navigate('Extracto')}>
             <Ionicons name="document-text-outline" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
@@ -314,12 +367,81 @@ const obtenerIniciales = (nombreCompleto) => {
     
   );
 }
-
 // Estilos
 const styles = StyleSheet.create({
+  bottomNavContainer: {
+    position: 'absolute',
+    bottom: 20,
+    left: 20,
+    right: 20,
+    alignItems: 'center'
+  },
+  bottomNavStyled: {
+    flexDirection: 'row',
+    backgroundColor: '#333',
+    borderRadius: 40,
+    paddingVertical: 14,
+    paddingHorizontal: 40,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    elevation: 8
+  },
+  centerButton: {
+    backgroundColor: '#F50057',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: -30,
+    elevation: 10
+  },
+  optionsContainer: {
+    position: 'absolute',
+    bottom: 100, // arriba de la barra
+    alignSelf: 'center',
+    alignItems: 'center',
+    gap: 10
+  },
+  optionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F50057',
+    borderRadius: 20,
+    paddingVertical: 8,
+    paddingHorizontal: 14,
+    elevation: 5
+  },
+  optionText: {
+    color: '#fff',
+    marginLeft: 8
+  },
   container: {
     flex: 1,
     backgroundColor: '#fff'
+  },
+    carouselWrapper: {
+    width: '100%',
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 8,
+  },
+  carouselContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    overflow: 'hidden',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    width: '90%',    // o '85%' / '80%'
+    maxWidth: 435,
+  },
+  carouselImage: {
+    height: 160,
+    resizeMode: 'cover',
   },
   scrollContainer: {
     paddingBottom: 140
@@ -344,12 +466,13 @@ headerContent: {
   name: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 26
+    fontSize: 19
   },
   avatarCircle: {
     width: 44,
     height: 44,
     borderRadius: 22,
+    marginTop: -90,
     backgroundColor: '#fff',
     justifyContent: 'center',
     alignItems: 'center'
@@ -583,5 +706,4 @@ botonTextoProducto: {
   color: '#c00',
   fontWeight: '600'
 }
-
 });

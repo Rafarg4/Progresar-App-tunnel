@@ -10,15 +10,23 @@ import {
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-export default function MisSeguros() {
-  const [seguros, setSeguros] = useState([]);
+import { TouchableOpacity } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
+export default function MisOperaciones() {
+  const [operaciones, setOperaciones] = useState([]);
   const [loading, setLoading] = useState(true);
+  const navigation = useNavigation();
 
   const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
+    const sectores = {
+    FRC: 'Francés',
+    AME: 'Americano',
+    FIS: 'Fisalco',
+    DIR: 'Directo'
+    };
 
   useEffect(() => {
-    const obtenerSeguros = async () => {
+    const obtenerOperaciones = async () => {
       try {
         const usuario = await AsyncStorage.getItem('usuarioGuardado');
         if (!usuario) {
@@ -27,23 +35,23 @@ export default function MisSeguros() {
           return;
         }
 
-        const response = await fetch(`https://api.progresarcorp.com.py/api/ver_seguros/${usuario}`);
+        const response = await fetch(`https://api.progresarcorp.com.py/api/ver_operaciones/${usuario}`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
-          setSeguros(data);
-        } else if (data && data.id) {
-          setSeguros([data]);
+          setOperaciones(data);
+        } else if (data && data.nro_comprobante) {
+          setOperaciones([data]);
         }
 
       } catch (error) {
-        console.log('Error al obtener seguros:', error);
+        console.log('Error al obtener operaciones:', error);
       } finally {
         setLoading(false);
       }
     };
 
-    obtenerSeguros();
+    obtenerOperaciones();
   }, []);
 
   return (
@@ -54,7 +62,7 @@ export default function MisSeguros() {
           style={styles.headerImage}
           resizeMode="cover"
         />
-        <Text style={styles.headerText}>Mis Seguros</Text>
+        <Text style={styles.headerText}>Mis Operaciones</Text>
       </View>
 
       {loading ? (
@@ -63,34 +71,36 @@ export default function MisSeguros() {
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {seguros.map((seguro, index) => {
+          {operaciones.map((op, index) => {
             const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
 
             return (
-              <View key={index} style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}>
-                {/* Ícono de fondo grande */}
+              <TouchableOpacity
+                key={index}
+                style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}
+                onPress={() =>
+                    navigation.navigate('DetalleOperaciones', {
+                    cod_cliente: op.cod_cliente,
+                    nro_comprobante: op.nro_comprobante
+                    })
+                }
+                >
                 <FontAwesome5
-                  name="shield-alt"
-                  size={120}
-                  color="#fff"
-                  style={styles.cardBackgroundIcon}
+                    name="file-invoice-dollar"
+                    size={120}
+                    color="#fff"
+                    style={styles.cardBackgroundIcon}
                 />
-
-                {/* Ícono pequeño arriba */}
                 <View style={styles.cardIconContainer}>
-                  <FontAwesome5 name="shield-alt" size={28} color="#fff" />
+                    <FontAwesome5 name="file-invoice-dollar" size={28} color="#fff" />
                 </View>
-
-                <Text style={styles.cardBrand}>{seguro.tipo_seguro}</Text>
-                <Text style={styles.cardNumber}>Nro. Documento: {seguro.numero}</Text>
-                <Text style={styles.cardHolder}>Asegurado: {seguro.aseguradora}</Text>
-                <Text style={styles.cardDetail}>Desde: {seguro.fec_inicial} - Hasta: {seguro.vencimiento}</Text>
-                <Text style={styles.cardDetail}>Monto: {Number(seguro.monto_seguro).toLocaleString()} Gs</Text>
-                <Text style={styles.cardDetail}>Prima: {Number(seguro.prima_seguro).toLocaleString()} Gs</Text>
-                <Text style={[styles.cardEstado, { color: seguro.vencido === 'V' ? '#FFD54F' : '#C8E6C9' }]}>
-                  Estado: {seguro.vencido === 'V' ? 'Vencido' : 'Activo'}
-                </Text>
-              </View>
+                <Text style={styles.cardBrand}>Operación #{op.nro_comprobante}</Text>
+                <Text style={styles.cardDetail}>Metodo: {sectores[op.cod_sector] || op.cod_sector}</Text>
+                <Text style={styles.cardDetail}>Cantidad de cuota: {op.nro_cuota}</Text>
+                <Text style={styles.cardDetail}>Fecha de operación: {op.fec_origen}</Text>
+                <Text style={styles.cardDetail}>Total operación: {Number(op.monto_cuota).toLocaleString()} Gs</Text>
+                <Text style={styles.cardDetail}>Saldo pendiente: {Number(op.saldo_cuota).toLocaleString()} Gs</Text>
+                </TouchableOpacity>
             );
           })}
         </ScrollView>
@@ -156,25 +166,9 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginBottom: 10
   },
-  cardNumber: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 4
-  },
-  cardHolder: {
-    fontSize: 16,
-    color: '#fff',
-    marginBottom: 4
-  },
   cardDetail: {
     fontSize: 14,
     color: '#fff',
-    marginBottom: 2
-  },
-  cardEstado: {
-    marginTop: 10,
-    fontSize: 14,
-    fontWeight: 'bold'
+    marginBottom: 4
   }
 });
