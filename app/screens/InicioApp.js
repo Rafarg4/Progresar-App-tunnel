@@ -18,6 +18,8 @@ import { ImageBackground } from 'react-native';
 import { Linking, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome5 } from '@expo/vector-icons';
+
 // Categorías fijas
 const categories = [
   {
@@ -345,24 +347,38 @@ const obtenerIniciales = (nombreCompleto) => {
         </View>
       )}
       {/* Barra de navegación inferior */}
-      <View style={styles.bottomNavContainer}>
-        <View style={styles.bottomNavStyled}>
-          <TouchableOpacity>
-            <Ionicons name="qr-code" size={24} color="#fff" />
-          </TouchableOpacity>
+    <View style={styles.bottomNavContainer}>
+      <View style={styles.bottomNavStyled}>
 
-          <TouchableOpacity
-            style={styles.centerButton}
-            onPress={() => setShowOptions(!showOptions)}
-          >
-            <Ionicons name={showOptions ? 'close' : 'add'} size={28} color="#fff" />
-          </TouchableOpacity>
+         {/* Icono QR */}
+        <TouchableOpacity>
+          <Ionicons name="qr-code" size={24} color="#fff" />
+        </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => navigation.navigate('Extracto')}>
-            <Ionicons name="document-text-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-        </View>
+        {/* Icono University */}
+        <TouchableOpacity onPress={() => navigation.navigate('AtmQr')}>
+          <FontAwesome5 name="university" size={24} color="#fff" />
+        </TouchableOpacity>
+
+        {/* Botón central */}
+        <TouchableOpacity
+          style={styles.centerButton}
+          onPress={() => setShowOptions(!showOptions)}
+        >
+          <Ionicons name={showOptions ? 'close' : 'add'} size={28} color="#fff" />
+        </TouchableOpacity>
+
+        {/* Icono Usuario */}
+        <TouchableOpacity onPress={() => navigation.navigate('Usuario')}>
+          <FontAwesome5 name="user" size={24} color="#fff" />
+        </TouchableOpacity>
+        {/* Icono Documento */}
+        <TouchableOpacity onPress={() => navigation.navigate('Extracto')}>
+          <Ionicons name="document-text-outline" size={24} color="#fff" />
+        </TouchableOpacity>
+
       </View>
+    </View>
     </SafeAreaView>
     
   );

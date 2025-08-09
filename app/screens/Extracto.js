@@ -444,42 +444,47 @@ const styles = StyleSheet.create({
   color: '#333',
   marginBottom: 8,
 }, 
- headerImage: {
-      width: Dimensions.get('window').width,
-      height: 180,
-    },
-    headerText: {
-      position: 'absolute',
-      bottom: 20,
-      left: 20,
-      color: '#fff',
-      fontSize: 26,
-      fontWeight: 'bold',
-      textShadowColor: 'rgba(0,0,0,0.6)',
-      textShadowOffset: { width: 1, height: 1 },
-      textShadowRadius: 3
-    },
-   headerContainer: {
+ // ✅ deja SOLO una versión de estos estilos
+headerContainer: {
   position: 'relative',
   overflow: 'hidden',
   borderBottomLeftRadius: 25,
   borderBottomRightRadius: 25,
-  marginBottom: 10, // 👈 agrega este espacio entre imagen y lo demás
+  marginBottom: 10,
 },
+headerImage: {
+  width: Dimensions.get('window').width, // ancho real de pantalla
+  height: 180,
+},
+headerText: {
+  position: 'absolute',
+  bottom: 20,
+  left: 20,
+  color: '#fff',
+  fontSize: 26,
+  fontWeight: 'bold',
+  textShadowColor: 'rgba(0,0,0,0.6)',
+  textShadowOffset: { width: 1, height: 1 },
+  textShadowRadius: 3,
+},
+
    scrollContainer: {
       padding: 20
     },
   card: {
-    padding: 30,
-    marginBottom: 20,
-    backgroundColor: "#ffffff",
-    borderRadius: 5,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
-  },
+  width: '92%',          // 👈 no ocupa 100%
+  maxWidth: 520,         // 👈 tope lindo en tablets
+  alignSelf: 'center',   // 👈 centrado
+  padding: 20,           // (puedes bajar de 30 a 20 para que respire)
+  marginBottom: 20,
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  shadowColor: '#000',
+  shadowOpacity: 0.1,
+  shadowRadius: 5,
+  shadowOffset: { width: 0, height: 2 },
+  elevation: 3,
+},
   generalHeader: {
     textAlign: "center",
     fontSize: 18,

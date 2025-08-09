@@ -249,12 +249,14 @@ function App() {
                         gestureEnabled: false
                     }}
                     />
-            <Stack.Screen name="SolicitarAcceso" component={SolicitarAcceso} options={
-                {
-                    headerTintColor: "white",
-                    headerStyle: { backgroundColor: '#bf0404' },
-                }
-            }/> 
+             <Stack.Screen
+                    name="SolicitarAcceso"
+                    component={SolicitarAcceso}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
 
              <Stack.Screen name="ActualizarPerfil" component={ActualizarPerfil} options={
                 {
