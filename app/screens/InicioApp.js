@@ -146,22 +146,39 @@ const obtenerIniciales = (nombreCompleto) => {
   return `${primera}|${segunda}`;
 };
 
-  useEffect(() => {
-    const fetchFlyers = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+ useEffect(() => {
+  const controller = new AbortController();
+  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
 
-        const response = await fetch('https://api.progresarcorp.com.py/api/ver_comercios_adheridos', {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Cache-Control': 'no-cache'
-          }
-        });
+  const fetchFlyers = async () => { 
+    setLoading(true);
+    setError(null);
+
+    const url = 'https://api.progresarcorp.com.py/api/ver_comercios_adheridos';
+    const options = {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        'X-Requested-With': 'XMLHttpRequest',
+        'Cache-Control': 'no-cache'
+      },
+      signal: controller.signal,
+    };
+
+    const maxRetries = 1;     // reintenta 1 vez extra si es 500
+    let attempt = 0;
+
+    while (attempt <= maxRetries) {
+      try {
+        const response = await fetch(url, options);
 
         if (!response.ok) {
+          // Si es 500 y aún podemos reintentar, espera (backoff) y reintenta
+          if (response.status === 500 && attempt < maxRetries) {
+            attempt++;
+            await sleep(800 * attempt); // backoff simple
+            continue;
+          }
           throw new Error(`Error ${response.status}: No se pudo obtener los datos`);
         }
 
@@ -172,21 +189,38 @@ const obtenerIniciales = (nombreCompleto) => {
         }
 
         const formattedFlyers = data.map((item, index) => ({
-          id: index + 1,
+          id: String(item.id ?? index + 1),
           imagen: item.imagen ? `https://api.progresarcorp.com.py/imagenes/${item.imagen}` : null
         }));
 
         setFlyers(formattedFlyers);
+        break; // éxito: salimos del while
       } catch (error) {
-        setError(error.message);
-        console.error('Error al obtener los datos:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
+        // Si fue cancelado por unmount, salimos silenciosamente
+        if (error?.name === 'AbortError') return;
 
-    fetchFlyers();
-  }, []);
+        // Si no es 500, o ya no quedan reintentos, setea el error y corta
+        if (!String(error?.message || '').includes('Error 500') || attempt >= maxRetries) {
+          setError(error.message);
+          console.error('Error al obtener los datos:', error);
+          break;
+        }
+        // Si llegó acá es porque es 500 y aún hay reintento: el loop continúa
+        attempt++;
+        await sleep(800 * attempt);
+      } finally {
+        // setLoading(false) se hace al salir del bucle (éxito o error final)
+      }
+    }
+
+    setLoading(false);
+  };
+
+  fetchFlyers();
+
+  return () => controller.abort();
+}, []);
+
 
   const mostrarHistoria = (item) => setHistoriaSeleccionada(item);
   const cerrarModal = () => setHistoriaSeleccionada(null);

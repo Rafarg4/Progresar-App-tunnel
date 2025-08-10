@@ -75,7 +75,7 @@ export default function MisElectrodomesticos() {
           {electros.length === 0 ? (
             <View style={styles.emptyCard}>
               <FontAwesome5 name="inbox" size={40} color="#FF6F61" style={{ marginBottom: 10 }} />
-              <Text style={styles.emptyTitle}>Sin registros</Text>
+              <Text style={styles.emptyTitle}>Sin Electrodomésticos</Text>
               <Text style={styles.emptyText}>
                 No encontramos electrodomésticos asociados a tu usuario por ahora.
               </Text>
