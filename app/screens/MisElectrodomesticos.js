@@ -7,7 +7,8 @@ import {
   Image,
   Dimensions,
   ActivityIndicator,
-  TouchableOpacity
+  TouchableOpacity,
+  Alert
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -20,32 +21,36 @@ export default function MisElectrodomesticos() {
 
   const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
 
-  useEffect(() => {
-    const obtenerElectros = async () => {
-      try {
-        const usuario = await AsyncStorage.getItem('usuarioGuardado');
-        if (!usuario) {
-          console.log('Usuario no encontrado');
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(`https://api.progresarcorp.com.py/api/ver_electrodomesticos/${usuario}`);
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-          setElectros(data);
-        } else if (data && data.nro_comprobante) {
-          setElectros([data]);
-        }
-      } catch (error) {
-        console.log('Error al obtener electrodomésticos:', error);
-      } finally {
-        setLoading(false);
+  const cargarElectros = async () => {
+    try {
+      setLoading(true);
+      const usuario = await AsyncStorage.getItem('usuarioGuardado');
+      if (!usuario) {
+        console.log('Usuario no encontrado');
+        setElectros([]);
+        return;
       }
-    };
+      const response = await fetch(`https://api.progresarcorp.com.py/api/ver_electrodomesticos/${usuario}`);
+      const data = await response.json();
 
-    obtenerElectros();
+      if (Array.isArray(data)) {
+        setElectros(data);
+      } else if (data && data.nro_comprobante) {
+        setElectros([data]);
+      } else {
+        setElectros([]);
+      }
+    } catch (error) {
+      console.log('Error al obtener electrodomésticos:', error);
+      Alert.alert('Error', 'No se pudieron cargar los electrodomésticos.');
+      setElectros([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    cargarElectros();
   }, []);
 
   return (
@@ -62,19 +67,32 @@ export default function MisElectrodomesticos() {
 
       {/* Contenido */}
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color="#000" />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {electros.length === 0 ? (
-            <Text style={{ textAlign: 'center', color: '#555' }}>No se encontraron registros.</Text>
+            <View style={styles.emptyCard}>
+              <FontAwesome5 name="inbox" size={40} color="#FF6F61" style={{ marginBottom: 10 }} />
+              <Text style={styles.emptyTitle}>Sin registros</Text>
+              <Text style={styles.emptyText}>
+                No encontramos electrodomésticos asociados a tu usuario por ahora.
+              </Text>
+
+              <TouchableOpacity style={styles.emptyButton} onPress={cargarElectros}>
+                <FontAwesome5 name="redo" size={16} color="#fff" />
+                <Text style={styles.emptyButtonText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
           ) : (
             electros.map((item, index) => {
               const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
+              const key = `${item.cod_cliente || 'cli'}-${item.nro_comprobante || index}-${index}`;
+
               return (
                 <TouchableOpacity
-                  key={index}
+                  key={key}
                   style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}
                   onPress={() =>
                     navigation.navigate('DetalleElectro', {
@@ -94,12 +112,16 @@ export default function MisElectrodomesticos() {
                     <FontAwesome5 name="tv" size={28} color="#fff" />
                   </View>
                   <Text style={styles.cardBrand}>Comprobante #{item.nro_comprobante}</Text>
-                  <Text style={styles.cardDetail}>Tipo: {item.tipo_comprobante}</Text>
-                  <Text style={styles.cardDetail}>Sector: {item.cod_sector}</Text>
-                  <Text style={styles.cardDetail}>Fecha origen: {item.fec_origen}</Text>
+                  <Text style={styles.cardDetail}>Tipo: {item.tipo_comprobante || '-'}</Text>
+                  <Text style={styles.cardDetail}>Sector: {item.cod_sector || '-'}</Text>
+                  <Text style={styles.cardDetail}>Fecha origen: {item.fec_origen || '-'}</Text>
                   <Text style={styles.cardDetail}>Cuotas: {item.nro_cuota}</Text>
-                  <Text style={styles.cardDetail}>Monto total: {Number(item.monto_cuota).toLocaleString()} Gs</Text>
-                  <Text style={styles.cardDetail}>Saldo pendiente: {Number(item.saldo_cuota).toLocaleString()} Gs</Text>
+                  <Text style={styles.cardDetail}>
+                    Monto total: {Number(item.monto_cuota || 0).toLocaleString()} Gs
+                  </Text>
+                  <Text style={styles.cardDetail}>
+                    Saldo pendiente: {Number(item.saldo_cuota || 0).toLocaleString()} Gs
+                  </Text>
                 </TouchableOpacity>
               );
             })
@@ -112,16 +134,14 @@ export default function MisElectrodomesticos() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+
   headerContainer: {
     position: 'relative',
     overflow: 'hidden',
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25
   },
-  headerImage: {
-    width: Dimensions.get('window').width,
-    height: 180
-  },
+  headerImage: { width: Dimensions.get('window').width, height: 180 },
   headerText: {
     position: 'absolute',
     bottom: 20,
@@ -133,7 +153,11 @@ const styles = StyleSheet.create({
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3
   },
+
+  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
   scrollContainer: { padding: 20 },
+
   cardContainer: {
     borderRadius: 20,
     padding: 20,
@@ -145,26 +169,40 @@ const styles = StyleSheet.create({
     shadowRadius: 4,
     position: 'relative'
   },
-  cardIconContainer: {
-    marginBottom: 12,
-    zIndex: 2
+  cardIconContainer: { marginBottom: 12, zIndex: 2 },
+  cardBackgroundIcon: { position: 'absolute', top: 20, right: 20, opacity: 0.08, zIndex: 0 },
+  cardBrand: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
+  cardDetail: { fontSize: 14, color: '#fff', marginBottom: 4 },
+
+  // Estado vacío
+  emptyCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
   },
-  cardBackgroundIcon: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    opacity: 0.08,
-    zIndex: 0
-  },
-  cardBrand: {
+  emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10
+    color: '#333',
+    marginBottom: 6,
+    textAlign: 'center',
   },
-  cardDetail: {
-    fontSize: 14,
-    color: '#fff',
-    marginBottom: 4
-  }
+  emptyText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 14 },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6F61',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 },
 });

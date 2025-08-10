@@ -279,13 +279,14 @@ function App() {
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
-            <Stack.Screen name="AtmQr" component={AtmQr} options={
-                {
-                    headerTintColor: "white",
-                    headerTitle:"Adelantos Qr",
-                    headerStyle: { backgroundColor: '#bf0404' },
-                }
-            }/>
+            <Stack.Screen
+                    name="AtmQr"
+                    component={AtmQr}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
             <Stack.Screen name="AdelantoQr" component={AdelantoQr} options={
                 {
                     headerTintColor: "white",

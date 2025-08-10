@@ -6,56 +6,63 @@ import {
   ScrollView,
   Image,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  TouchableOpacity,
+  Alert,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TouchableOpacity } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
+
 export default function MisOperaciones() {
   const [operaciones, setOperaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
   const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
-    const sectores = {
+  const sectores = {
     FRC: 'Francés',
     AME: 'Americano',
     FIS: 'Fisalco',
-    DIR: 'Directo'
-    };
+    DIR: 'Directo',
+  };
+
+  const cargarOperaciones = async () => {
+    try {
+      setLoading(true);
+      const usuario = await AsyncStorage.getItem('usuarioGuardado');
+      if (!usuario) {
+        console.log('Usuario no encontrado');
+        setOperaciones([]);
+        return;
+      }
+
+      const response = await fetch(`https://api.progresarcorp.com.py/api/ver_operaciones/${usuario}`);
+      const data = await response.json();
+
+      if (Array.isArray(data)) {
+        setOperaciones(data);
+      } else if (data && data.nro_comprobante) {
+        setOperaciones([data]);
+      } else {
+        setOperaciones([]);
+      }
+    } catch (error) {
+      console.log('Error al obtener operaciones:', error);
+      Alert.alert('Error', 'No se pudieron cargar las operaciones.');
+      setOperaciones([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const obtenerOperaciones = async () => {
-      try {
-        const usuario = await AsyncStorage.getItem('usuarioGuardado');
-        if (!usuario) {
-          console.log('Usuario no encontrado');
-          setLoading(false);
-          return;
-        }
-
-        const response = await fetch(`https://api.progresarcorp.com.py/api/ver_operaciones/${usuario}`);
-        const data = await response.json();
-
-        if (Array.isArray(data)) {
-          setOperaciones(data);
-        } else if (data && data.nro_comprobante) {
-          setOperaciones([data]);
-        }
-
-      } catch (error) {
-        console.log('Error al obtener operaciones:', error);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    obtenerOperaciones();
+    cargarOperaciones();
   }, []);
 
   return (
     <View style={styles.container}>
+      {/* Cabecera */}
       <View style={styles.headerContainer}>
         <Image
           source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
@@ -66,43 +73,65 @@ export default function MisOperaciones() {
       </View>
 
       {loading ? (
-        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <View style={styles.loadingBox}>
           <ActivityIndicator size="large" color="#000" />
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {operaciones.map((op, index) => {
-            const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
+          {operaciones.length === 0 ? (
+            <View style={styles.emptyCard}>
+              <FontAwesome5 name="inbox" size={40} color="#FF6F61" style={{ marginBottom: 10 }} />
+              <Text style={styles.emptyTitle}>Sin operaciones vigentes</Text>
+              <Text style={styles.emptyText}>
+                No encontramos operaciones asociadas a tu usuario por ahora.
+              </Text>
 
-            return (
-              <TouchableOpacity
-                key={index}
-                style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}
-                onPress={() =>
+              <TouchableOpacity style={styles.emptyButton} onPress={cargarOperaciones}>
+                <FontAwesome5 name="redo" size={16} color="#fff" />
+                <Text style={styles.emptyButtonText}>Reintentar</Text>
+              </TouchableOpacity>
+            </View>
+          ) : (
+            operaciones.map((op, index) => {
+              const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
+              const key = `${op.cod_cliente || 'cli'}-${op.nro_comprobante || index}-${index}`;
+
+              return (
+                <TouchableOpacity
+                  key={key}
+                  style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}
+                  onPress={() =>
                     navigation.navigate('DetalleOperaciones', {
-                    cod_cliente: op.cod_cliente,
-                    nro_comprobante: op.nro_comprobante
+                      cod_cliente: op.cod_cliente,
+                      nro_comprobante: op.nro_comprobante,
                     })
-                }
+                  }
                 >
-                <FontAwesome5
+                  <FontAwesome5
                     name="file-invoice-dollar"
                     size={120}
                     color="#fff"
                     style={styles.cardBackgroundIcon}
-                />
-                <View style={styles.cardIconContainer}>
+                  />
+                  <View style={styles.cardIconContainer}>
                     <FontAwesome5 name="file-invoice-dollar" size={28} color="#fff" />
-                </View>
-                <Text style={styles.cardBrand}>Operación #{op.nro_comprobante}</Text>
-                <Text style={styles.cardDetail}>Metodo: {sectores[op.cod_sector] || op.cod_sector}</Text>
-                <Text style={styles.cardDetail}>Cantidad de cuota: {op.nro_cuota}</Text>
-                <Text style={styles.cardDetail}>Fecha de operación: {op.fec_origen}</Text>
-                <Text style={styles.cardDetail}>Total operación: {Number(op.monto_cuota).toLocaleString()} Gs</Text>
-                <Text style={styles.cardDetail}>Saldo pendiente: {Number(op.saldo_cuota).toLocaleString()} Gs</Text>
+                  </View>
+                  <Text style={styles.cardBrand}>Operación #{op.nro_comprobante}</Text>
+                  <Text style={styles.cardDetail}>
+                    Método: {sectores[op.cod_sector] || op.cod_sector || '-'}
+                  </Text>
+                  <Text style={styles.cardDetail}>Cantidad de cuotas: {op.nro_cuota}</Text>
+                  <Text style={styles.cardDetail}>Fecha de operación: {op.fec_origen}</Text>
+                  <Text style={styles.cardDetail}>
+                    Total operación: {Number(op.monto_cuota || 0).toLocaleString()} Gs
+                  </Text>
+                  <Text style={styles.cardDetail}>
+                    Saldo pendiente: {Number(op.saldo_cuota || 0).toLocaleString()} Gs
+                  </Text>
                 </TouchableOpacity>
-            );
-          })}
+              );
+            })
+          )}
         </ScrollView>
       )}
     </View>
@@ -110,20 +139,15 @@ export default function MisOperaciones() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff'
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
+
   headerContainer: {
     position: 'relative',
     overflow: 'hidden',
     borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25
+    borderBottomRightRadius: 25,
   },
-  headerImage: {
-    width: Dimensions.get('window').width,
-    height: 180,
-  },
+  headerImage: { width: Dimensions.get('window').width, height: 180 },
   headerText: {
     position: 'absolute',
     bottom: 20,
@@ -133,11 +157,13 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3
+    textShadowRadius: 3,
   },
-  scrollContainer: {
-    padding: 20
-  },
+
+  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  scrollContainer: { padding: 20 },
+
   cardContainer: {
     borderRadius: 20,
     padding: 20,
@@ -147,28 +173,42 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    position: 'relative'
+    position: 'relative',
   },
-  cardIconContainer: {
-    marginBottom: 12,
-    zIndex: 2
+  cardIconContainer: { marginBottom: 12, zIndex: 2 },
+  cardBackgroundIcon: { position: 'absolute', top: 20, right: 20, opacity: 0.08, zIndex: 0 },
+  cardBrand: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
+  cardDetail: { fontSize: 14, color: '#fff', marginBottom: 4 },
+
+  // Estado vacío
+  emptyCard: {
+    borderRadius: 16,
+    padding: 20,
+    marginTop: 20,
+    backgroundColor: '#fff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
   },
-  cardBackgroundIcon: {
-    position: 'absolute',
-    top: 20,
-    right: 20,
-    opacity: 0.08,
-    zIndex: 0
-  },
-  cardBrand: {
+  emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10
+    color: '#333',
+    marginBottom: 6,
+    textAlign: 'center',
   },
-  cardDetail: {
-    fontSize: 14,
-    color: '#fff',
-    marginBottom: 4
-  }
+  emptyText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 14 },
+  emptyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF6F61',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+  },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 },
 });
