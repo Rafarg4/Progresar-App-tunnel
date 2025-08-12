@@ -10,7 +10,8 @@ import {
   StatusBar,
   FlatList,
   Modal,
-  ActivityIndicator
+  ActivityIndicator,
+  Alert
   
 } from 'react-native';
 import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons';
@@ -68,7 +69,7 @@ export default function HomeScreen() {
   const dateStr = new Date().toLocaleDateString('es-ES');
   const timeStr = new Date().toLocaleTimeString('es-ES');
   const greeting = getGreeting();
-
+  const [expanded, setExpanded] = useState({});
   const [loading, setLoading] = useState(true);
   const [flyers, setFlyers] = useState([]);
   const [historiaSeleccionada, setHistoriaSeleccionada] = useState(null);
@@ -81,7 +82,32 @@ export default function HomeScreen() {
   const [promos, setPromos] = useState([]);
   const [loadingPromos, setLoadingPromos] = useState(true);
   const [errorPromos, setErrorPromos] = useState(null);
+  const [tarjetas, setTarjetas] = useState([]);
+  const [openPendientes, setOpenPendientes] = useState(true); // abierto por defecto
+  const togglePendientes = () => setOpenPendientes(v => !v);
+ const formatMoney = (value, currency = '') => {
+  if (isNaN(value)) return `${currency} 0`;
+  return `${currency} ${Number(value).toLocaleString('es-PY', {
+    minimumFractionDigits: 0,
+    maximumFractionDigits: 0
+  })}`;
+};
 
+// Acción del botón Pagar (stub)
+const onPagar = (item) => {
+  // Abrí tu flujo de pago aquí
+  Alert.alert('Pagar', `Iniciar pago por ${formatMoney(item?.saldo_mora, '$')}`);
+};
+
+  const formatGs = (val) => {
+  const n = Number(val) || 0;
+  // evita dependencias; toLocaleString suele estar ok en RN
+  return `Gs. ${Math.round(n).toLocaleString('es-PY')}`;
+};
+
+const toggleExpand = (idx) => {
+  setExpanded(prev => ({ ...prev, [idx]: !prev[idx] }));
+};
   useEffect(() => {
     const fetchPromos = async () => {
       try {
@@ -121,6 +147,45 @@ export default function HomeScreen() {
 
     fetchPromos();
   }, []);
+  useEffect(() => {
+  const obtenerTarjetas = async () => {
+    try {
+      setLoading(true);
+      setError('');
+
+      const usuario = await AsyncStorage.getItem('usuarioGuardado');
+      if (!usuario) {
+        setError('Usuario no encontrado en el almacenamiento.');
+        setTarjetas([]);
+        return;
+      }
+
+      const res = await fetch(`https://api.progresarcorp.com.py/api/ver_notificaciones/${encodeURIComponent(usuario)}`, {
+        headers: { Accept: 'application/json' },
+      });
+      if (!res.ok) {
+        throw new Error(`HTTP ${res.status}`);
+      }
+      const data = await res.json();
+
+      if (Array.isArray(data)) {
+        setTarjetas(data);
+      } else if (data && (data.dias_mora != null || data.saldo_mora != null)) {
+        setTarjetas([data]);
+      } else {
+        setTarjetas([]);
+      }
+    } catch (e) {
+      console.log('Error al obtener tarjetas:', e?.message);
+      setError('No se pudo obtener las notificaciones.');
+      setTarjetas([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  obtenerTarjetas();
+}, []);
 useEffect(() => {
   const obtenerDatos = async () => {
     try {
@@ -240,9 +305,32 @@ const obtenerIniciales = (nombreCompleto) => {
               <Text style={styles.hello}>Hola,</Text>
              <Text style={styles.name}>{nombre || 'Invitado'}</Text>
             </View>
-            <View style={styles.avatarCircle}>
-              <Text style={styles.avatarText}>{obtenerIniciales(nombre)}</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.avatarCircle}
+              onPress={() => {
+                Alert.alert(
+                  'Cerrar sesión',
+                  '¿Estás seguro que deseas salir?',
+                  [
+                    { text: 'Cancelar', style: 'cancel' },
+                    {
+                      text: 'Aceptar',
+                      onPress: async () => {
+                        await AsyncStorage.clear();
+                        if (navigation.canGoBack()) {
+                          navigation.goBack();        // vuelve a la pantalla anterior
+                        } else {
+                          navigation.popToTop();      // fallback: vuelve al inicio del stack
+                        }
+                      },
+                    },
+                  ],
+                  { cancelable: true }
+                );
+              }}
+            >
+              <FontAwesome5 name="sign-out-alt" size={22} color="#fff" />
+            </TouchableOpacity>
           </View>
         </ImageBackground>
 
@@ -284,8 +372,66 @@ const obtenerIniciales = (nombreCompleto) => {
                   <Image source={{ uri: historiaSeleccionada.imagen }} style={styles.modalImage} />
                 </TouchableOpacity>
               </View>
-            </View>
+            </View> 
           </Modal>
+        )}
+        {/* PENDIENTES */}
+        {!loading && !error && tarjetas.length > 0 && (
+          <View style={styles.card}>
+            {/* Cabecera del acordeón */}
+            <TouchableOpacity
+              activeOpacity={0.9}
+              onPress={togglePendientes}
+              style={[
+                styles.groupHeader,
+                { paddingHorizontal: 20, marginHorizontal: 15 } // aire interno y externo
+              ]}
+            >
+              <Text style={styles.groupTitle}>
+                <FontAwesome5 name="exclamation-circle" size={17} color="#d11f1fff" /> Pago vencido
+              </Text>
+              <Text style={styles.groupCount}>({tarjetas.length})</Text>
+              <View style={{ flex: 1 }} />
+              <FontAwesome5
+                name={openPendientes ? 'chevron-up' : 'chevron-down'}
+                size={18}
+                color="#555"
+              />
+            </TouchableOpacity>
+
+            {/* Contenido del acordeón */}
+            {openPendientes && (
+              <View style={styles.pendingContainer}>
+                {tarjetas.map((item, idx) => {
+                  const dias = Number(item?.dias_mora) || 0;
+                  const saldo = Number(item?.saldo_mora) || 0;
+                  return (
+                    <View key={idx} style={styles.pendingCard}>
+                      <View style={styles.pendingRow}>
+                        <View style={{ flex: 1, marginRight: 12 }}>
+                          <View style={styles.pendingTitleRow}>
+                            <FontAwesome5 name="exclamation-circle" size={14} color="#d32f2f" />
+                            <Text style={styles.pendingTitle}>Vencido</Text>
+                          </View>
+                          <Text style={styles.pendingText}>
+                            Tienes un saldo pendiente en tu tarjeta de crédito de{' '}
+                            <Text style={{ fontWeight: 'bold' }}>{formatMoney(saldo, 'Gs')}</Text>
+                            {dias > 0 && (
+                              <Text style={{ fontWeight: 'bold' }}>
+                                {` (${dias} día${dias === 1 ? '' : 's'} en mora)`}
+                              </Text>
+                            )}
+                            . Pagar a tiempo te ayudará a mantener un buen historial y cuidar tu perfil crediticio.
+                          </Text>
+                        </View>
+                      </View>
+                      <View style={styles.leftStripe} />
+                    </View>
+                  );
+                })}
+              </View>
+            )}
+          </View>
         )}
         <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginTop: 10, marginBottom: 5 }}>
           Categorias
@@ -368,26 +514,42 @@ const obtenerIniciales = (nombreCompleto) => {
             <Text style={styles.optionText}>Electrodomésticos</Text>
           </TouchableOpacity>
 
+         <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => {
+              setShowOptions(false);
+               navigation.navigate('Tarjetas');
+            }}
+          >
+            <Ionicons name="card-outline" size={20} color="#fff" />
+            <Text style={styles.optionText}>Tarjeta</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.optionButton}
             onPress={() => {
               setShowOptions(false);
-              navigation.navigate('Pagos');
+               navigation.navigate('Financiero');
             }}
           >
-            <Ionicons name="card-outline" size={20} color="#fff" />
-            <Text style={styles.optionText}>Solicitar Tarjeta</Text>
+            <Ionicons name="wallet" size={20} color="#fff" />
+            <Text style={styles.optionText}>Financiero</Text>
           </TouchableOpacity>
         </View>
       )}
       {/* Barra de navegación inferior */}
     <View style={styles.bottomNavContainer}>
-      <View style={styles.bottomNavStyled}>
+      <View style={styles.bottomNavStyled}> 
 
          {/* Icono QR */}
-        <TouchableOpacity>
+       <TouchableOpacity
+          onPress={() => {
+            console.log('NAV -> Qr con params:', { num_doc: String(usuario) });
+            navigation.navigate('Qr', { num_doc: String(usuario) });
+          }}
+        >
           <Ionicons name="qr-code" size={24} color="#fff" />
         </TouchableOpacity>
+
 
         {/* Icono University */}
         <TouchableOpacity onPress={() => navigation.navigate('AtmQr')}>
@@ -403,7 +565,7 @@ const obtenerIniciales = (nombreCompleto) => {
         </TouchableOpacity>
 
         {/* Icono Usuario */}
-        <TouchableOpacity onPress={() => navigation.navigate('Usuario')}>
+        <TouchableOpacity onPress={() => navigation.navigate('PerfilUsuario')}>
           <FontAwesome5 name="user" size={24} color="#fff" />
         </TouchableOpacity>
         {/* Icono Documento */}
@@ -518,15 +680,16 @@ headerContent: {
     fontWeight: 'bold',
     fontSize: 19
   },
-  avatarCircle: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
-    marginTop: -90,
-    backgroundColor: '#fff',
-    justifyContent: 'center',
-    alignItems: 'center'
-  },
+ avatarCircle: {
+  width: 40,
+  height: 40,
+  borderRadius: 25,
+  backgroundColor: '#F44336',
+  justifyContent: 'center',
+  alignItems: 'center',
+},
+
+
   avatarText: {
     color: '#0D47A1',
     fontWeight: 'bold'
@@ -755,5 +918,236 @@ botonProducto: {
 botonTextoProducto: {
   color: '#c00',
   fontWeight: '600'
-}
+},
+accordionTitle: {
+  fontSize: 16,
+  fontWeight: '700',
+  color: '#333',
+  marginBottom: 8,
+},
+
+accordionItem: {
+  borderWidth: 1,
+  borderColor: '#eee',
+  borderRadius: 10,
+  marginBottom: 10,
+  overflow: 'hidden',
+  backgroundColor: '#fff',
+},
+
+accordionHeader: {
+  paddingHorizontal: 12,
+  paddingVertical: 12,
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#fafafa',
+},
+
+accordionHeaderTitle: {
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#333',
+},
+
+accordionHeaderSub: {
+  fontSize: 12,
+  color: '#666',
+  marginTop: 2,
+},
+
+accordionContent: {
+  paddingHorizontal: 12,
+  paddingVertical: 10,
+  backgroundColor: '#fff',
+  borderTopWidth: 1,
+  borderTopColor: '#f0f0f0',
+},
+
+rowLine: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  paddingVertical: 6,
+},
+
+rowLabel: {
+  fontSize: 13,
+  color: '#666',
+},
+
+rowValue: {
+  fontSize: 13,
+  color: '#333',
+  fontWeight: '600',
+},
+
+loadingBoxSm: {
+  paddingVertical: 12,
+  alignItems: 'center',
+  justifyContent: 'center',
+},
+
+loadingText: {
+  marginTop: 6,
+  fontSize: 12,
+  color: '#666',
+},
+
+emptyText: {
+  fontSize: 12,
+  color: '#666',
+},
+pendingHeaderText: {
+  fontSize: 14,
+  fontWeight: '700',
+  color: '#222',
+  marginBottom: 8,
+},
+
+pendingContainer: {
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  padding: 19, // 👈 antes era 29, ahora 15
+},
+pendingCard: {
+  position: 'relative',
+  backgroundColor: '#ffffffff',
+  borderRadius: 12,
+  padding: 12,
+  marginBottom: 10,
+  // sombra sutil
+  shadowColor: '#000',
+  shadowOpacity: 0.06,
+  shadowOffset: { width: 0, height: 2 },
+  shadowRadius: 6,
+  elevation: 2,
+},
+
+leftStripe: {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  bottom: 0,
+  width: 4,
+  borderTopLeftRadius: 12,
+  borderBottomLeftRadius: 12,
+  backgroundColor: '#e53935', // rojo
+},
+
+pendingRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+},
+
+pendingTitleRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  gap: 6,
+  marginBottom: 6,
+},
+
+pendingTitle: {
+  fontSize: 14,
+  fontWeight: '800',
+  color: '#d32f2f', // rojo título
+},
+
+pendingText: {
+  fontSize: 13,
+  color: '#444',
+  lineHeight: 18,
+},
+
+payBtn: {
+  backgroundColor: '#1e88e5', // azul
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  borderRadius: 16,
+  alignSelf: 'flex-start',
+},
+payBtnText: {
+  color: '#ffffffff',
+  fontWeight: '700',
+  fontSize: 13,
+},
+groupHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#fff',
+  borderRadius: 12,
+  paddingVertical: 10,
+  paddingHorizontal: 0,
+  borderWidth: 1,
+  borderColor: '#fff',
+  marginBottom: 8,
+  width: '92%',        // 👈 ancho controlado
+  alignSelf: 'center', // 👈 centrado
+},
+
+groupHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center', // Centra horizontalmente todo el contenido
+  backgroundColor: '#ffffffff',
+  borderRadius: 12,
+  paddingVertical: 12,
+  paddingHorizontal: 16,
+  borderWidth: 1,
+  borderColor: '#ffe0e0',
+  marginBottom: 8,
+},
+
+groupTitle: {
+  fontSize: 15,
+  fontWeight: '800',
+  color: '#b40303',
+  textAlign: 'center', // Asegura que el texto esté centrado
+},
+
+groupCount: {
+  marginLeft: 6,
+  fontSize: 13,
+  color: '#b40303',
+  fontWeight: '700',
+},
+pendingCard: {
+  position: 'relative',
+  backgroundColor: '#ffffffff',
+  borderRadius: 12,
+  padding: 12,
+  marginBottom: 10,
+  shadowColor: '#000',
+  shadowOpacity: 0.06,
+  shadowOffset: { width: 0, height: 2 },
+  shadowRadius: 6,
+  elevation: 2,
+},
+leftStripe: {
+  position: 'absolute',
+  left: 0,
+  top: 0,
+  bottom: 0,
+  width: 4,
+  borderTopLeftRadius: 12,
+  borderBottomLeftRadius: 12,
+  backgroundColor: '#e53935',
+},
+
+pendingRow: { flexDirection: 'row', alignItems: 'center' },
+pendingTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
+pendingTitle: { fontSize: 14, fontWeight: '800', color: '#d32f2f' },
+pendingText: { fontSize: 13, color: '#444', lineHeight: 18 },
+
+payBtn: {
+  backgroundColor: '#1e88e5',
+  paddingVertical: 8,
+  paddingHorizontal: 14,
+  borderRadius: 16,
+  alignSelf: 'flex-start',
+},
+payBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
+
+loadingBoxSm: { paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
+loadingText: { marginTop: 6, fontSize: 12, color: '#666' },
+emptyBox: { paddingVertical: 12, alignItems: 'center', gap: 6 },
+emptyText: { fontSize: 12, color: '#666' },
 });

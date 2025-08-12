@@ -1,161 +1,343 @@
-import React, { Component} from 'react';
-import { Text, View, SafeAreaView, StyleSheet, FlatList, Image, TouchableOpacity, Alert, ActivityIndicator} from 'react-native';
-import * as global from '../global.js'
-import { Divider } from 'react-native-paper';
+import React, { Component } from 'react';
+import {
+  Text,
+  View,
+  SafeAreaView,
+  StyleSheet,
+  FlatList,
+  TouchableOpacity,
+  ActivityIndicator,
+  ImageBackground,
+} from 'react-native';
+import * as global from '../global.js';
 import * as WebBrowser from 'expo-web-browser';
 import { ScrollView } from 'react-native-virtualized-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome5 } from '@expo/vector-icons';
 
-export default class TarjetasScreen extends Component{
-    constructor(props) {
-        super(props);
+export default class TarjetasScreen extends Component {
+  constructor(props) {
+    super(props);
 
-        this.state = {
-            url: 'https://api.progresarcorp.com.py/api/NuestrasTC',
-            valid: global.valid_api_key,
+    this.state = {
+      url: 'https://api.progresarcorp.com.py/api/NuestrasTC',
+      valid: global.valid_api_key,
 
-            nombre: global.nombre,
-            num_doc: global.num_doc,
-            num_usu: global.num_usuario,
-            cod_cliente: global.codigo_cliente,
+      nombre: global.nombre,
+      num_doc: global.num_doc,
+      num_usu: global.num_usuario,
+      cod_cliente: global.codigo_cliente,
 
-            tarjetas: [],
-            loading: false,
-        }
-    }
+      tarjetas: [],
+      loading: false,
+    };
+  }
 
-    componentDidMount(){
-        setTimeout(() => {
-            this.cargarTCs();
-        }, 1, this)
+  componentDidMount() {
+    setTimeout(() => {
+      this.cargarTCs();
+    }, 1, this);
 
-        setTimeout(() => {
-            AsyncStorage.getItem('tarjetas')
-            .then((res)=>{
-                this.setState({
-                    tarjetas: JSON.parse(res),
-                })
-                this.setState({ loading: false })
-            })
-        }, 1000, this)
-    }
+    setTimeout(() => {
+      AsyncStorage.getItem('tarjetas').then((res) => {
+        this.setState({
+          tarjetas: JSON.parse(res || '[]'),
+          loading: false,
+        });
+      });
+    }, 1000, this);
+  }
 
-    cargarTCs(){
-        this.setState({loading: true})
-        fetch(this.state.url, {
-            method: 'get',
-        })
-        .then(response => response.json())
-            .then(data => {
-                AsyncStorage.setItem('tarjetas', JSON.stringify(data))
-            })
-    }
+  cargarTCs() {
+    this.setState({ loading: true });
+    fetch(this.state.url, { method: 'get' })
+      .then((response) => response.json())
+      .then((data) => {
+        AsyncStorage.setItem('tarjetas', JSON.stringify(data || []));
+      })
+      .catch(() => {})
+      .finally(() => this.setState({ loading: false }));
+  }
 
-    render(){
-        const {tarjetas, loading} = this.state;
+  openSolicitud = () => {
+    WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
+  };
 
-        const Indicador = () => {
-            if(loading == true){
-                return ( 
-                    <ActivityIndicator color="#bf0404" />
-                )
-            }else{
-                return null
-            }
-        }
+  renderItem = ({ item, index }) => {
+    return (
+      <View style={styles.card}>
+        {/* Franja roja lateral */}
+        <View style={styles.leftStripe} />
 
-        return(
-            <SafeAreaView style={styles.box1}>
-                <ScrollView
-                    showsVerticalScrollIndicator= {false}
-                >
-                    <View style={{marginTop: 15, marginBottom: 10}}>
-                        <Text style= {{textAlign: 'center', marginBottom: 5}}>Progresar Corporation S.A. ofrece a sus clientes variedad de tarjetas de crédito. ¡Qué esperas para elegir el tuyo!</Text>
-                        <Indicador />
-                        <FlatList
-                            data={tarjetas}
-                            showsVerticalScrollIndicator={false}
-                            keyExtractor={(item) => item.id}
-                            renderItem={({ item, index }) => {
-                                return (
-                                    <View>
-                                        <View>
-                                            <View
-                                                style={styles.item}
-                                            >
-                                                <Image
-                                                    style={{ width: '100%', height: 180, marginBottom: 15, borderRadius: 5 }}
-                                                    source={{ uri: item.uri }}
-                                                />
+        {/* Header del item con icono */}
+        <View style={styles.cardHeader}>
+          <View style={styles.cardIconWrap}>
+            <FontAwesome5 name="credit-card" size={16} color="#fff" />
+          </View>
+          <Text style={styles.cardTitle} numberOfLines={2}>
+            {item?.title || 'Tarjeta de crédito'}
+          </Text>
+        </View>
 
-                                                <View style={{ width: '100%', backgroundColor: 'rgba(156, 156, 156, 0.7)', padding: 10, borderRadius: 5 }}>
-                                                    <Text style={[styles.title, styles.textColor]}>{item.title}</Text>
+        {/* Cuerpo */}
+        <View style={styles.cardBody}>
+          {/* Beneficios */}
+          {!!item?.subtitle && (
+            <>
+              <Text style={styles.sectionTitle}>Beneficios</Text>
+              <Text style={styles.bodyText}>{item.subtitle}</Text>
+              <View style={styles.separator} />
+            </>
+          )}
 
-                                                    <Text style={[styles.title2, styles.textColor]}>Beneficios:</Text>
+          {/* Cobertura */}
+          <Text style={styles.sectionTitle}>Cobertura</Text>
+          {!!item?.cobertura ? (
+            <Text style={styles.bodyText}>{item.cobertura}</Text>
+          ) : (
+            <Text style={styles.bodyTextMuted}>No especificado.</Text>
+          )}
+        </View>
 
-                                                    <Divider style={{marginBottom: 5, backgroundColor: '#fff'}}/>
+        {/* Footer con CTA */}
+        <View style={styles.cardFooter}>
+          <TouchableOpacity
+            style={styles.footerBtn}
+            activeOpacity={0.9}
+            onPress={this.openSolicitud}
+          >
+            <FontAwesome5 name="file-signature" size={14} color="#fff" />
+            <Text style={styles.footerBtnText}>Solicitar tarjeta</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
 
-                                                    <Text style={[styles.subtitle, styles.textColor]}>{item.subtitle}</Text>
+  render() {
+    const { tarjetas, loading } = this.state;
 
-                                                    <Text style={[styles.title2, styles.textColor]}>Cobertura:</Text>
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: 20 }}
+        >
+          {/* CABECERA GENERAL con ImageBackground */}
+          <ImageBackground
+            source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+            style={styles.headerBackground}
+            imageStyle={{ borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
+          >
+            <View style={styles.headerOverlay} />
+            <View style={styles.headerContent}>
+              <Text style={styles.headerTitle}>Nuestras Tarjetas</Text>
+              <Text style={styles.headerSubtitle}>
+                Elegí la tarjeta que va con vos
+              </Text>
+            </View>
+          </ImageBackground>
 
-                                                    <Divider style={{marginBottom: 5, backgroundColor: '#fff'}}/>
+          {/* Loader */}
+          {loading && (
+            <View style={styles.loaderBox}>
+              <ActivityIndicator color="#bf0404" />
+              <Text style={styles.loaderText}>Cargando…</Text>
+            </View>
+          )}
 
-                                                    <Text style={[styles.subtitle, styles.textColor]}>{item.cobertura}</Text>
-                                                </View>
-                                            </View>
-                                        </View>
-                                    </View>
-                                )
-                            }}
-                        />
-                    </View>
-                    <View style={{marginBottom: 10}}>
-                        <TouchableOpacity
-                            onPress={() => {WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');}}
-                            style={{width: '100%', borderRadius: 5, padding: 5, backgroundColor: '#bf0404'}}
-                        >
-                            <Text style= {{color: 'white', textAlign: 'center'}}>Solicitar Tarjeta</Text>
-                        </TouchableOpacity>
-                    </View>
-                </ScrollView>
-            </SafeAreaView>
-        )
-    }
+          {/* Lista */}
+          {!loading && (
+            <FlatList
+              data={tarjetas}
+              keyExtractor={(item, idx) => String(item?.id ?? idx)}
+              renderItem={this.renderItem}
+              showsVerticalScrollIndicator={false}
+              scrollEnabled={false}
+              contentContainerStyle={{ paddingTop: 10 }}
+              ListEmptyComponent={
+                <View style={styles.emptyBox}>
+                  <FontAwesome5 name="bell-slash" size={18} color="#999" />
+                  <Text style={styles.emptyText}>
+                    No hay tarjetas disponibles por el momento.
+                  </Text>
+                </View>
+              }
+            />
+          )}
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
 }
 
 const styles = StyleSheet.create({
-    box1:{ 
-        flex: 1, 
-        paddingHorizontal: 15, 
-        width: '100%', 
-        height: '100%', 
-    },
+  safe: {
+    flex: 1,
+    backgroundColor: '#f7f8fa',
+  },
 
-    item: {
-        padding: 15,
-        marginVertical: 5,
-        marginHorizontal: 15,
-        borderRadius: 12,
-        backgroundColor: '#fff'
-    },
+  /* ===== Header general ===== */
+  headerBackground: {
+    width: '100%',
+    height: 160,
+    justifyContent: 'flex-end',
+  },
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0,0,0,0.25)',
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
+  },
+  headerContent: {
+    paddingHorizontal: 16,
+    paddingBottom: 14,
+  },
+  headerIconCircle: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(191,4,4,0.95)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 26,
+    fontWeight: '800',
+  },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 12,
+    opacity: 0.9,
+    marginTop: 2,
+  },
 
-    title: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        marginTop: 5
-    },
+  /* ===== Loader / vacío ===== */
+  loaderBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
+  loaderText: { marginTop: 6, fontSize: 12, color: '#6b7280' },
+  emptyBox: { alignItems: 'center', paddingVertical: 24, gap: 8 },
+  emptyText: { fontSize: 12, color: '#6b7280' },
 
-    title2: {
-        fontSize: 14,
-        fontWeight: 'bold',
-    },
+  /* ===== Card ===== */
+  card: {
+    marginHorizontal: 16,
+    marginVertical: 10,
+    borderRadius: 16,
+    backgroundColor: '#fff',
+    overflow: 'hidden',
+    // sombra
+    shadowColor: '#000',
+    shadowOpacity: 0.08,
+    shadowOffset: { width: 0, height: 4 },
+    shadowRadius: 10,
+    elevation: 3,
+  },
+  leftStripe: {
+    position: 'absolute',
+    left: 0,
+    top: 0,
+    bottom: 0,
+    width: 4,
+    borderTopLeftRadius: 16,
+    borderBottomLeftRadius: 16,
+    zIndex: 1,
+  },
 
-    textColor: {
-        color: 'white'
-    },
+  /* Header de cada card */
+  cardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    paddingTop: 14,
+  },
+  cardIconWrap: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#1e88e5',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 10,
+  },
+  cardTitle: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '800',
+    color: '#111827',
+  },
 
-    subtitle: {
-        fontSize: 14,
-    },
-})
+  /* Cuerpo */
+  cardBody: {
+    padding: 14,
+    backgroundColor: '#fff',
+  },
+  sectionTitle: {
+    fontSize: 12,
+    color: '#6b7280',
+    fontWeight: '700',
+    marginBottom: 6,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  bodyText: {
+    fontSize: 13,
+    color: '#374151',
+    lineHeight: 19,
+  },
+  bodyTextMuted: {
+    fontSize: 13,
+    color: '#9ca3af',
+    lineHeight: 19,
+  },
+  separator: {
+    height: 1,
+    backgroundColor: '#f1f2f4',
+    marginVertical: 10,
+  },
+
+  /* Footer */
+  cardFooter: {
+    borderTopWidth: 1,
+    borderTopColor: '#f1f2f4',
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    backgroundColor: '#fff',
+  },
+  footerBtn: {
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#1e88e5',
+    borderRadius: 10,
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    minWidth: 200,
+    gap: 8,
+  },
+  footerBtnText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '800',
+    textAlign: 'center',
+  },
+
+  /* CTA global */
+  globalCta: {
+    marginTop: 6,
+    marginHorizontal: 16,
+    backgroundColor: '#bf0404',
+    paddingVertical: 12,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  globalCtaText: {
+    color: '#fff',
+    fontWeight: '800',
+    fontSize: 14,
+    textAlign: 'center',
+  },
+});

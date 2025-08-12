@@ -138,14 +138,15 @@ export default function Electrodomesticos() {
               </View>
             }
           />
-
           {/* Botón final "Conocer más" */}
           <View style={{ paddingHorizontal: H_PADDING, paddingBottom: 18 }}>
             <TouchableOpacity
               style={styles.btnMas}
               onPress={() => Linking.openURL('https://progresarelectrodomesticos.com/')}
             >
-              <Text style={styles.btnMasText}>Conocer más</Text>
+              <Text style={styles.btnMasText}>
+                <FontAwesome5 name="plus" size={16} color="#fafafaff" /> Ver más
+              </Text>
             </TouchableOpacity>
           </View>
         </>
@@ -194,7 +195,7 @@ const styles = StyleSheet.create({
   // Card en fila
   cardRow: {
     flexDirection: 'row',
-    backgroundColor: '#F4F8E8',
+    backgroundColor: '#ffffffff',
     borderRadius: 16,
     padding: 10,
     elevation: 3,

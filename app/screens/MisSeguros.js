@@ -107,21 +107,13 @@ export default function MisSeguros() {
                   <Text style={styles.cardNumber}>Nro. Documento: {seguro.numero}</Text>
                   <Text style={styles.cardHolder}>Asegurado: {seguro.aseguradora}</Text>
                   <Text style={styles.cardDetail}>
-                    Desde: {seguro.fec_inicial} - Hasta: {seguro.vencimiento}
+                    Desde: {seguro.fec_inicial}
                   </Text>
                   <Text style={styles.cardDetail}>
-                    Monto: {Number(seguro.monto_seguro || 0).toLocaleString()} Gs
+                    Hasta: {seguro.vencimiento}
                   </Text>
                   <Text style={styles.cardDetail}>
-                    Prima: {Number(seguro.prima_seguro || 0).toLocaleString()} Gs
-                  </Text>
-                  <Text
-                    style={[
-                      styles.cardEstado,
-                      { color: seguro.vencido === 'V' ? '#FFD54F' : '#C8E6C9' }
-                    ]}
-                  >
-                    Estado: {seguro.vencido === 'V' ? 'Vencido' : 'Activo'}
+                    Monto asegurado: {Number(seguro.monto_seguro || 0).toLocaleString()} Gs
                   </Text>
                 </View>
               );

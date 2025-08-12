@@ -58,7 +58,7 @@ export default function MisElectrodomesticos() {
       {/* Header */}
       <View style={styles.headerContainer}>
         <Image
-          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/Electro.png' }}
           style={styles.headerImage}
           resizeMode="cover"
         />

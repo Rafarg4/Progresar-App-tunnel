@@ -37,7 +37,7 @@ export default class LoginScreen extends Component{
         this.state = {
             user:'',
             pass:'',
-            url: 'https://api.progresarcorp.com.py/api/ConsultarAcceso',
+            url: 'https://api.progresarcorp.com.py/api/ver_clave',
             valid: global.valid_api_key,
             clave:'',
             num_usu:'',
@@ -842,16 +842,7 @@ changeUser(user){
 
                   {/* Fila de Servicios */}
                   <View style={styles.rowCol}>
-                    {/* nuestras tc */}
-                    <View style={{flexDirection:'column'}}>
-                      <TouchableOpacity
-                        onPress={() => this.gotoSreen('Tarjetas')}
-                        style={{padding: 10, width: 100, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
-                      >
-                        <Text style={{textAlign: 'center'}}><Icon name='credit-card' size={24} /></Text>
-                      </TouchableOpacity>
-                      <Text style={{textAlign:'center'}}>Tarjetas</Text>
-                    </View>
+                  
 
                     {/* nuestras sucursales */}
                     <View style={{flexDirection:'column'}}>
@@ -864,27 +855,12 @@ changeUser(user){
                       <Text style={{textAlign:'center'}}>Sucursales</Text>
                     </View>
 
-                    {/* nuestros prestamos */}
-                    <View style={{flexDirection:'column'}}>
-                      <TouchableOpacity
-                        onPress={() => this.gotoSreen('Financiero')}
-                        style={{padding: 10, width: 100, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
-                      >
-                        <Text style={{textAlign: 'center'}}><Icon name='usd' size={24} /></Text>
-                      </TouchableOpacity>
-                      <Text style={{textAlign:'center'}}>Préstamos</Text>
-                    </View>
-                  </View>
-
-                  {/* Fila de contactos */}
-                  <View style={styles.rowCol}>
-                    {/* llamanos */}
                     <View style={{flexDirection:'column'}}>
                       <TouchableOpacity
                         onPress={() => {
                           Linking.openURL('tel:071204877');
                         }}
-                        style={{padding: 10, width: 150, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
+                        style={{padding: 10, width: 100, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
                       >
                         <Text style={{textAlign: 'center'}}><Icon name='phone' size={24} /></Text>
                       </TouchableOpacity>
@@ -897,7 +873,7 @@ changeUser(user){
                         onPress={() => {
                           Linking.openURL('mailto:info.progresar@prorgresarcorp.com.py');
                         }}
-                        style={{padding: 10, width: 150, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
+                        style={{padding: 10, width: 100, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
                       >
                         <Text style={{textAlign: 'center'}}> <Icon name='envelope' size={24} /></Text>
                       </TouchableOpacity>

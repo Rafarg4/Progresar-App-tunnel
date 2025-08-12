@@ -11,8 +11,8 @@ import 'react-native-gesture-handler';
 import SplashScreen from '../screens/SplashScreen'
 import LoginScreen from '../screens/LoginScreen'
 import HomeScreen from '../screens/ScreenHome'
-import TarjetasScreen from '../screens/Tarjetas'
-import FinancieroScreen from '../screens/Financiero';
+import Tarjetas from '../screens/Tarjetas'
+import Financiero from '../screens/Financiero';
 import UsuarioScreen from '../screens/Usuario';
 import SoporteScreen from '../screens/Soporte';
 import ElectroScreen from '../screens/Electro';
@@ -30,6 +30,8 @@ import Extracto from '../screens/Extracto'
 import Electrodomesticos from '../screens/Electrodomesticos'
 import InicioApp from '../screens/InicioApp'
 import MisTarjetas from '../screens/MisTarjetas'
+import DetalleBepsa from '../screens/DetalleBepsa'
+import PerfilUsuario from '../screens/PerfilUsuario'
 import MisOperaciones from '../screens/MisOperaciones'
 import DetalleTarjetas from '../screens/DetalleTarjetas'
 import DetalleOperaciones from '../screens/DetalleOperaciones'
@@ -101,24 +103,10 @@ function App() {
                 }
             }/>
 
-            <Stack.Screen name="Tarjetas" component={TarjetasScreen} options={
-                {
-                    headerTintColor: "white",
-                    headerStyle: { backgroundColor: '#bf0404' },
-                }
-            }/>
-
             <Stack.Screen name="Usuario" component={UsuarioScreen} options={
                 {
                     headerTintColor: "white",
                     headerTitle:"Peril de Usuario",
-                    headerStyle: { backgroundColor: '#bf0404' },
-                }
-            }/>
-
-            <Stack.Screen name="Financiero" component={FinancieroScreen} options={
-                {
-                    headerTintColor: "white",
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
@@ -171,6 +159,38 @@ function App() {
             <Stack.Screen
                     name="Extracto"
                     component={Extracto}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+             <Stack.Screen
+                    name="Tarjetas"
+                    component={Tarjetas}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="Financiero"
+                    component={Financiero}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+            <Stack.Screen
+                    name="PerfilUsuario"
+                    component={PerfilUsuario}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
+             <Stack.Screen
+                    name="DetalleBepsa"
+                    component={DetalleBepsa}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
                         gestureEnabled: false
@@ -294,13 +314,14 @@ function App() {
                     headerStyle: { backgroundColor: '#bf0404' },
                 }
             }/>
-            <Stack.Screen name="DetaBepsa" component={DetaBepsa} options={
-                {
-                    headerTintColor: "white",
-                    headerTitle:"Movimientos Dinelco",
-                    headerStyle: { backgroundColor: '#bf0404' },
-                }
-            }/>
+            <Stack.Screen
+                    name="DetaBepsa"
+                    component={DetaBepsa}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: false
+                    }}
+                    />
             <Stack.Screen
                     name="DetaProcard"
                     component={DetaProcard}

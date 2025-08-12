@@ -143,7 +143,7 @@ useEffect(() => {
               <Text style={styles.value}>{formatearNumero(pagoMinimoPendiente)}</Text>
             </View>
             <View style={styles.row}>
-              <Text style={styles.label}>Vencimineto de extracto:</Text>
+              <Text style={styles.label}>Vencimiento de extracto:</Text>
               <Text style={[styles.value, { color: 'green' }]}>{vencimiento}</Text>
             </View>
             {/* Footer con botones */}

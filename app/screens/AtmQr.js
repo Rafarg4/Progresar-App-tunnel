@@ -28,20 +28,13 @@ const AtmQr = () => {
   }, []);
 
   const handleStart = () => {
-    if (!usuario) {
-      Alert.alert('Falta usuario', 'No se puede continuar sin el usuario.');
-      return;
-    }
-    navigation.navigate('AdelantoQr', { usuario });
-  };
-
-  if (loading) {
-    return (
-      <View style={[styles.container, { justifyContent: 'center' }]}>
-        <ActivityIndicator size="large" />
-      </View>
-    );
+  if (!usuario) {
+    Alert.alert('Falta usuario', 'No se puede continuar sin el usuario.');
+    return;
   }
+  // Enviar como nro_doc
+  navigation.navigate('AdelantoQr', { nro_doc: String(usuario) });
+};
 
   return (
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
@@ -94,15 +87,21 @@ const AtmQr = () => {
           </View>
 
           <View style={styles.separator} />
-
-          <TouchableOpacity style={styles.button} onPress={handleStart}>
+          <TouchableOpacity
+            style={styles.button}
+            onPress={() => {
+              if (!usuario) {
+                Alert.alert('Falta usuario', 'No se puede continuar sin el usuario.');
+                return;
+              }
+              navigation.navigate('AdelantoQr', { num_doc: String(usuario) });
+            }}
+          >
             <FontAwesome name="qrcode" size={24} color="white" />
             <Text style={styles.buttonText}>Iniciar</Text>
           </TouchableOpacity>
-
           {usuario ? (
             <Text style={{ marginTop: 10, textAlign: 'center' }}>
-              Usuario: <Text style={{ fontWeight: 'bold' }}>{usuario}</Text>
             </Text>
           ) : null}
         </View>
@@ -117,7 +116,6 @@ const styles = StyleSheet.create({
   headerImage: { borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
   headerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(191,4,4,0.4)',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },

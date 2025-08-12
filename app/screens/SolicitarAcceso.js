@@ -164,7 +164,6 @@ const styles = StyleSheet.create({
   headerImage: { borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
   headerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(191,4,4,0.4)',
     borderBottomLeftRadius: 20,
     borderBottomRightRadius: 20,
   },

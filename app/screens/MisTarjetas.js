@@ -6,12 +6,13 @@ import {
   ScrollView,
   Image,
   Dimensions,
-  ActivityIndicator
+  ActivityIndicator,
+  TouchableOpacity
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { TouchableOpacity } from 'react-native';
+
 export default function MisTarjetas() {
   const [tarjetas, setTarjetas] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -34,28 +35,26 @@ export default function MisTarjetas() {
     EV: 'EL VIAJERO',
     EI: 'VISA EMPRESARIAL'
   };
-const navigation = useNavigation();
+
+  const navigation = useNavigation();
+
   useEffect(() => {
     const obtenerTarjetas = async () => {
       try {
-        const usuario = await AsyncStorage.getItem('usuarioGuardado'); // <-- del login
-
+        const usuario = await AsyncStorage.getItem('usuarioGuardado');
         if (!usuario) {
           console.log('Usuario no encontrado en el storage');
           setLoading(false);
           return;
         }
-
         const response = await fetch(`https://api.progresarcorp.com.py/api/ver_tarjeta/${usuario}`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
           setTarjetas(data);
         } else if (data && data.nro_tarjeta) {
-          // Si la API devuelve un solo objeto
           setTarjetas([data]);
         }
-
       } catch (error) {
         console.log('Error al obtener tarjetas:', error);
       } finally {
@@ -66,72 +65,83 @@ const navigation = useNavigation();
     obtenerTarjetas();
   }, []);
 
- return (
-  <View style={styles.container}>
-    <View style={styles.headerContainer}>
-      <Image
-        source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
-        style={styles.headerImage}
-        resizeMode="cover"
-      />
-      <Text style={styles.headerText}>Mis Tarjetas</Text>
-    </View>
+  // >>> AQUI la lógica para decidir la pantalla de movimientos
+  const handleMovimientos = (t) => {
+    const clase = String(t.clase_tarjeta || '');
+    const routeName = clase === '1' ? 'DetaBepsa' : 'DetaProcard';
+    navigation.navigate(routeName, { nro_tarjeta: t.nro_tarjeta });
+  };
 
-    {loading ? (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
-        <ActivityIndicator size="large" color="#000" />
+  return (
+    <View style={styles.container}>
+      <View style={styles.headerContainer}>
+        <Image
+          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+          style={styles.headerImage}
+          resizeMode="cover"
+        />
+        <Text style={styles.headerText}>Mis Tarjetas</Text>
       </View>
-    ) : (
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {tarjetas.map((tarjeta, index) => {
-          const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
 
-          return (
-           <View key={index} style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}>
-              <TouchableOpacity
-                activeOpacity={0.9}
-               onPress={() =>
-                  navigation.navigate('DetalleTarjetas', { tarjeta })
-                }
-              >
-                <FontAwesome5
-                  name="credit-card"
-                  size={120}
-                  color="#fff"
-                  style={styles.cardBackgroundIcon}
-                />
+      {loading ? (
+        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+          <ActivityIndicator size="large" color="#000" />
+        </View>
+      ) : (
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          {tarjetas.map((tarjeta, index) => {
+            const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
 
-                <View style={styles.cardIconContainer}>
-                  <FontAwesome5 name="credit-card" size={28} color="#fff" />
-                </View>
+            return (
+              <View key={index} style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}>
+               <TouchableOpacity
+                  activeOpacity={0.9}
+                  onPress={() => {
+                    const clase = String(tarjeta.clase_tarjeta ?? '');
+                    if (clase === '1') {
+                      navigation.navigate('DetalleBepsa', { nro_tarjeta: tarjeta.nro_tarjeta, tarjeta });
+                    } else {
+                      navigation.navigate('DetalleTarjetas', { tarjeta });
+                    }
+                  }}
+                >
+                  <FontAwesome5
+                    name="credit-card"
+                    size={120}
+                    color="#fff"
+                    style={styles.cardBackgroundIcon}
+                  />
 
-                <Text style={styles.cardBrand}>
-                  {nombresTarjeta[tarjeta.clase_tarjeta] || 'Desconocido'}
-                </Text>
-                <Text style={styles.cardNumber}>{formatearNumero(tarjeta.nro_tarjeta)}</Text>
-                <Text style={styles.cardHolder}>{tarjeta.nombre_usuario}</Text>
-              </TouchableOpacity>
+                  <View style={styles.cardIconContainer}>
+                    <FontAwesome5 name="credit-card" size={28} color="#fff" />
+                  </View>
 
-              {/* Footer: botón de movimientos */}
-              <TouchableOpacity
-                style={styles.cardFooter}
-                onPress={() =>
-                  navigation.navigate('DetaProcard', { nro_tarjeta: tarjeta.nro_tarjeta })
-                }
-              >
-                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                  <FontAwesome5 name="exchange-alt" size={14} color="#fff" style={{ marginRight: 5 }} />
-                  <Text style={styles.cardFooterText}>Mis movimientos</Text>
-                </View>
-              </TouchableOpacity>
+                  <Text style={styles.cardBrand}>
+                    {nombresTarjeta[tarjeta.clase_tarjeta] || 'Desconocido'}
+                  </Text>
+                  <Text style={styles.cardNumber}>{formatearNumero(tarjeta.nro_tarjeta)}</Text>
+                  <Text style={styles.cardHolder}>{tarjeta.nombre_usuario}</Text>
+                </TouchableOpacity>
 
-            </View>
-          );
-        })}
-      </ScrollView>
-    )}
-  </View>
-)};
+                {/* Footer: botón de movimientos */}
+                <TouchableOpacity
+                  style={styles.cardFooter}
+                  onPress={() => handleMovimientos(tarjeta)}
+                >
+                  <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                    <FontAwesome5 name="exchange-alt" size={14} color="#fff" style={{ marginRight: 5 }} />
+                    <Text style={styles.cardFooterText}>Mis movimientos</Text>
+                  </View>
+                </TouchableOpacity>
+
+              </View>
+            );
+          })}
+        </ScrollView>
+      )}
+    </View>
+  );
+}
 
 // Función para ocultar los dígitos del número de tarjeta
 const formatearNumero = (numero) => {
@@ -140,31 +150,16 @@ const formatearNumero = (numero) => {
 };
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#fff'
-  },
+  container: { flex: 1, backgroundColor: '#fff' },
   headerContainer: {
     position: 'relative',
     overflow: 'hidden',
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25
   },
-  cardIconContainer: {
-  marginBottom: 12,
-  zIndex: 2
-},
-cardBackgroundIcon: {
-  position: 'absolute',
-  top: 20,
-  right: 20,
-  opacity: 0.08,
-  zIndex: 0
-},
-  headerImage: {
-    width: Dimensions.get('window').width,
-    height: 180,
-  },
+  cardIconContainer: { marginBottom: 12, zIndex: 2 },
+  cardBackgroundIcon: { position: 'absolute', top: 20, right: 20, opacity: 0.08, zIndex: 0 },
+  headerImage: { width: Dimensions.get('window').width, height: 180 },
   headerText: {
     position: 'absolute',
     bottom: 20,
@@ -176,9 +171,7 @@ cardBackgroundIcon: {
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3
   },
-  scrollContainer: {
-    padding: 20
-  },
+  scrollContainer: { padding: 20 },
   cardContainer: {
     borderRadius: 20,
     padding: 20,
@@ -189,34 +182,9 @@ cardBackgroundIcon: {
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4
   },
-  cardBrand: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 20
-  },
-  cardNumber: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#fff',
-    marginBottom: 10
-  },
-  cardHolder: {
-    fontSize: 16,
-    color: '#fff',
-    fontWeight: '500'
-  },
-  cardFooter: {
-    marginTop: 12,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255,255,255,0.3)',
-    paddingTop: 8
-  },
-  cardFooterText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14,
-    textAlign: 'right',
-    textDecorationLine: 'underline'
-  }
+  cardBrand: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 20 },
+  cardNumber: { fontSize: 20, fontWeight: '600', color: '#fff', marginBottom: 10 },
+  cardHolder: { fontSize: 16, color: '#fff', fontWeight: '500' },
+  cardFooter: { marginTop: 12, borderTopWidth: 1, borderTopColor: 'rgba(255,255,255,0.3)', paddingTop: 8 },
+  cardFooterText: { color: '#fff', fontWeight: 'bold', fontSize: 14, textAlign: 'right', textDecorationLine: 'underline' }
 });
