@@ -52,35 +52,35 @@ const AtmQr = () => {
       <ScrollView contentContainerStyle={{ padding: 16 }}>
         <View style={styles.stepsContainer}>
           <View style={styles.step}>
-            <FontAwesome name="qrcode" size={39} color="#bf0404" />
+            <FontAwesome name="qrcode" size={39} color="#9e2021" />
             <Text style={styles.stepText}>
               <Text style={styles.stepBold}>Paso 1:</Text> Escanear QR generado por el cajero
             </Text>
           </View>
 
           <View style={styles.step}>
-            <FontAwesome name="credit-card" size={30} color="#bf0404" />
+            <FontAwesome name="credit-card" size={30} color="#9e2021" />
             <Text style={styles.stepText}>
               <Text style={styles.stepBold}>Paso 2:</Text> Seleccionar la cuenta de la cual quiera realizar el adelanto
             </Text>
           </View>
 
           <View style={styles.step}>
-            <FontAwesome name="money" size={30} color="#bf0404" />
+            <FontAwesome name="money" size={30} color="#9e2021" />
             <Text style={styles.stepText}>
               <Text style={styles.stepBold}>Paso 3:</Text> Seleccionar el monto en el ATM
             </Text>
           </View>
 
           <View style={styles.step}>
-            <FontAwesome name="check" size={30} color="#bf0404" />
+            <FontAwesome name="check" size={30} color="#9e2021" />
             <Text style={styles.stepText}>
               <Text style={styles.stepBold}>Paso 4:</Text> Retirar el dinero
             </Text>
           </View>
 
           <View style={styles.step}>
-            <FontAwesome name="exclamation-triangle" size={30} color="#bf0404" />
+            <FontAwesome name="exclamation-triangle" size={30} color="#9e2021" />
             <Text style={styles.stepText}>
               <Text style={styles.stepBold}>Nota:</Text> Este apartado solo realiza la autenticación al ATM; no quedarán registrados los movimientos.
             </Text>
@@ -143,7 +143,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignSelf: 'center',
     alignItems: 'center',
-    backgroundColor: '#bf0404',
+    backgroundColor: '#9e2021',
     paddingVertical: 10,
     paddingHorizontal: 20,
     borderRadius: 5,

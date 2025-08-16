@@ -604,18 +604,18 @@ tarjetaText: {
 selectButton: {
   backgroundColor: '#ffffff',
   borderWidth: 1,
-  borderColor: '#FF6F61',
+  borderColor: '#9e2021',
   padding: 12,
   borderRadius: 10,
   marginBottom: 10,
 },
 selectButtonText: {
-  color: '#FF6F61',
+  color: '#9e2021',
   fontWeight: 'bold',
   textAlign: 'center',
 },
 closeButton: { 
-  backgroundColor: '#FF6F61',
+  backgroundColor: '#9e2021',
   padding: 10,
   borderRadius: 8,
   marginTop: 10,
@@ -634,7 +634,7 @@ footerButtons: {
 actionButton: {
   flex: 1,
   padding: 12,
-  backgroundColor: '#FF6F61',
+  backgroundColor: '#9e2021',
   borderRadius: 8,
   alignItems: 'center',
 },

@@ -198,7 +198,7 @@ useEffect(() => {
       console.log('Error al obtener datos de AsyncStorage:', error);
     }
   };
-
+ 
   obtenerDatos();
 }, []);
 const obtenerIniciales = (nombreCompleto) => {
@@ -590,7 +590,7 @@ const styles = StyleSheet.create({
   },
   bottomNavStyled: {
     flexDirection: 'row',
-    backgroundColor: '#333',
+    backgroundColor: '#9e2021',
     borderRadius: 40,
     paddingVertical: 14,
     paddingHorizontal: 40,
@@ -600,7 +600,7 @@ const styles = StyleSheet.create({
     elevation: 8
   },
   centerButton: {
-    backgroundColor: '#F50057',
+    backgroundColor: '#9e2021',
     width: 58,
     height: 58,
     borderRadius: 29,
@@ -619,7 +619,7 @@ const styles = StyleSheet.create({
   optionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#F50057',
+    backgroundColor: '#9e2021',
     borderRadius: 20,
     paddingVertical: 8,
     paddingHorizontal: 14,
@@ -684,7 +684,7 @@ headerContent: {
   width: 40,
   height: 40,
   borderRadius: 25,
-  backgroundColor: '#F44336',
+  backgroundColor: '#9e2021',
   justifyContent: 'center',
   alignItems: 'center',
 },
@@ -770,7 +770,7 @@ categoryBackgroundIcon: {
     elevation: 8
   },
   centerButton: {
-    backgroundColor: '#F50057',
+    backgroundColor: '#9e2021',
     width: 58,
     height: 58,
     borderRadius: 29,
@@ -918,7 +918,7 @@ botonProducto: {
 botonTextoProducto: {
   color: '#c00',
   fontWeight: '600'
-},
+}, 
 accordionTitle: {
   fontSize: 16,
   fontWeight: '700',

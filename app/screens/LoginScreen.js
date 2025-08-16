@@ -48,7 +48,7 @@ export default class LoginScreen extends Component{
             loading:false,
             disabledButton: true,
             buttonStyle: {
-                backgroundColor: 'rgba(191, 4, 4, 1)', // 👈 Totalmente opaco
+                backgroundColor: '#9e2021', // 👈 Totalmente opaco
                 padding: 15,
                 borderRadius: 5,
                 width: '90%',
@@ -619,7 +619,7 @@ changeUser(user){
           return (
             <View>
               <Switch
-                trackColor={{ false: "#767577", true: "#bf0404" }}
+                trackColor={{ false: "#767577", true: "#9e2021" }}
                 thumbColor={isEnabled ? "#fff" : "#f4f3f4"}
                 ios_backgroundColor="#3e3e3e"
                 onValueChange={toggleSwitch}
@@ -683,11 +683,11 @@ changeUser(user){
             <SafeAreaView style={styles.box}>
             <View style={{ position: 'absolute', top: 240, left: 25, zIndex: 10 }}>
                 <TouchableOpacity onPress={this.handleLogout}>
-                  <Icon name="sign-out" size={28} color="#bf0404" />
+                  <Icon name="sign-out" size={28} color="#9e2021" />
                 </TouchableOpacity>
               </View>
               <ScrollView
-                showsVerticalScrollIndicator={false}
+                showsVerticalScrollIndicator={true}
               >
                 {/* Logo de la empresa */}
                 <View style={styles.container}>
@@ -769,7 +769,7 @@ changeUser(user){
                     borderRadius: 8,
                     paddingHorizontal: 10,
                     height: 55,
-                     borderColor: "#bf0404",
+                     borderColor: "#9e2021",
                     width: '100%',
                     backgroundColor: 'white',
                   }}>
@@ -912,7 +912,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     borderRadius: 5,
     borderWidth: 0.8,
-    borderColor: "#bf0404",
+    borderColor: "#9e2021",
   },
   
   inputStyle: { fontSize: 14 },
@@ -932,7 +932,7 @@ const styles = StyleSheet.create({
   },
 
   botLogin:{
-    backgroundColor: "#bf0404",
+    backgroundColor: "#9e2021",
     padding: 8,
     borderRadius: 5,
     width: 300,
@@ -1070,7 +1070,7 @@ selectorButton: {
   marginHorizontal: 5,
 },
 selectorButtonSelected: {
-  backgroundColor: 'rgba(191, 4, 4, 1)',
+  backgroundColor: '#9e2021',
 },
 selectorText: {
   color: '#000',

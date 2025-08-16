@@ -379,7 +379,7 @@ export default function PerfilUsuario() {
                         style={[styles.headerBtn, styles.headerBtnGhost]}
                         activeOpacity={0.85}
                       >
-                        <FontAwesome5 name="key" size={14} color="#bf0404" />
+                        <FontAwesome5 name="key" size={14} color="#9e2021" />
                         <Text style={styles.headerBtnGhostText}>Cambiar</Text>
                       </TouchableOpacity>
 
@@ -388,7 +388,7 @@ export default function PerfilUsuario() {
                         style={[styles.headerBtn, styles.headerBtnGhost]}
                         activeOpacity={0.85}
                       >
-                        <FontAwesome5 name="lock" size={14} color="#bf0404" />
+                        <FontAwesome5 name="lock" size={14} color="#9e2021" />
                         <Text style={styles.headerBtnGhostText}>{postingBlock ? '...' : 'Bloquear'}</Text>
                       </TouchableOpacity>
                     </View>
@@ -611,11 +611,11 @@ const styles = StyleSheet.create({
   },
   headerBtnGhost: {
     borderWidth: 1,
-    borderColor: '#bf0404',
+    borderColor: '#9e2021',
     backgroundColor: 'transparent',
   },
   headerBtnGhostText: {
-    color: '#bf0404',
+    color: '#9e2021',
     fontWeight: '700',
     fontSize: 13,
   },

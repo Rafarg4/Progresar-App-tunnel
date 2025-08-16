@@ -234,7 +234,7 @@ const styles = StyleSheet.create({
   btnCarritoText: { color: '#558B2F', fontWeight: 'bold', fontSize: 12 },
 
   btnMas: {
-    backgroundColor: '#8BC34A',
+    backgroundColor: '#9e2021',
     paddingVertical: 14,
     borderRadius: 14,
     alignItems: 'center',
