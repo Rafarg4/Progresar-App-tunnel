@@ -74,7 +74,7 @@ export default function MisElectrodomesticos() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {electros.length === 0 ? (
             <View style={styles.emptyCard}>
-              <FontAwesome5 name="inbox" size={40} color="#FF6F61" style={{ marginBottom: 10 }} />
+              <FontAwesome5 name="inbox" size={40} color="#9e2021" style={{ marginBottom: 10 }} />
               <Text style={styles.emptyTitle}>Sin Electrodomésticos</Text>
               <Text style={styles.emptyText}>
                 No encontramos electrodomésticos asociados a tu usuario por ahora.
@@ -112,8 +112,7 @@ export default function MisElectrodomesticos() {
                     <FontAwesome5 name="tv" size={28} color="#fff" />
                   </View>
                   <Text style={styles.cardBrand}>Comprobante #{item.nro_comprobante}</Text>
-                  <Text style={styles.cardDetail}>Tipo: {item.tipo_comprobante || '-'}</Text>
-                  <Text style={styles.cardDetail}>Sector: {item.cod_sector || '-'}</Text>
+                  <Text style={styles.cardDetail}>Tipo: {item.tipo_comprobante || '-'}- Credito</Text>
                   <Text style={styles.cardDetail}>Fecha origen: {item.fec_origen || '-'}</Text>
                   <Text style={styles.cardDetail}>Cuotas: {item.nro_cuota}</Text>
                   <Text style={styles.cardDetail}>
@@ -199,7 +198,7 @@ const styles = StyleSheet.create({
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF6F61',
+    backgroundColor: '#9e2021',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,

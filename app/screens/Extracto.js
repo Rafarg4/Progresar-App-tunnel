@@ -16,6 +16,7 @@ import { useRoute } from "@react-navigation/native";
 import * as FileSystem from 'expo-file-system';
 import * as Sharing from "expo-sharing";
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { FontAwesome5 } from '@expo/vector-icons';
 const Extracto = () => {
   const route = useRoute();
   const { num_doc } = route.params || {};
@@ -296,11 +297,11 @@ const handleRequestByEmail = async () => {
           <View style={{ borderTopWidth: 1, borderTopColor: "#ccc", marginTop: 20 }} />
           <View style={styles.footerButtons}>
             <TouchableOpacity onPress={handleDownload} style={styles.actionButton}>
-              <Text style={styles.buttonText}>Descargar</Text>
+              <Text style={styles.buttonText}>  <FontAwesome5 name="download" size={16} color="#fff" style={styles.icon} /> Descargar</Text>
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleRequestByEmail} style={styles.actionButton}>
-              <Text style={styles.buttonText}>Solicitar por correo</Text>
+              <Text style={styles.buttonText}>  <FontAwesome5 name="envelope" size={16} color="#fff" style={styles.icon} /> Solicitar por correo</Text>
             </TouchableOpacity>
           </View>
         </View>

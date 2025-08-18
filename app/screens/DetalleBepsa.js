@@ -126,7 +126,7 @@ export default function DetalleTarjetas() {
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {/* Tarjeta visual */}
-          <View style={[styles.cardContainer, { backgroundColor: '#4CAF50' }]}>
+          <View style={[styles.cardContainer, { backgroundColor: '#9e2021' }]}>
             <FontAwesome5 name="credit-card" size={120} color="#fff" style={styles.cardBackgroundIcon} />
             <View style={styles.cardIconContainer}>
               <FontAwesome5 name="credit-card" size={28} color="#fff" />
@@ -187,7 +187,7 @@ export default function DetalleTarjetas() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f8f9fa' },
   footerButtons: { flexDirection: 'row', justifyContent: 'space-between', gap: 10, marginTop: 20 },
-  actionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#4CAF50', paddingVertical: 12, borderRadius: 8 },
+  actionButton: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', backgroundColor: '#9e2021', paddingVertical: 12, borderRadius: 8 },
   actionText: { color: '#fff', fontWeight: 'bold' },
   iconButton: { marginRight: 8 },
   headerContainer: { position: 'relative', overflow: 'hidden', borderBottomLeftRadius: 25, borderBottomRightRadius: 25 },

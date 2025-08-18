@@ -72,7 +72,7 @@ export default function MisSeguros() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {seguros.length === 0 ? (
             <View style={styles.emptyCard}>
-              <FontAwesome5 name="shield-alt" size={40} color="#FF6F61" style={{ marginBottom: 10 }} />
+              <FontAwesome5 name="shield-alt" size={40} color="#9e2021" style={{ marginBottom: 10 }} />
               <Text style={styles.emptyTitle}>Sin seguros registrados</Text>
               <Text style={styles.emptyText}>
                 No encontramos seguros asociados a tu usuario por ahora.
@@ -195,7 +195,7 @@ const styles = StyleSheet.create({
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF6F61',
+    backgroundColor: '#9e2021',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,

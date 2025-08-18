@@ -24,11 +24,34 @@ import {expo} from '../../app.json'
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native-elements';
-
+import axios from 'axios';
 const { width } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
-
+  axios
+    .get('https://api.progresarcorp.com.py/api/actualizacion', { headers: { 'Cache-Control': 'no-cache' } })
+    .then(response => {
+      const data = Number(response.data); // tu API devuelve "20" como string o número
+      if (data == 20) {
+        return Alert.alert(
+          '¡Aviso de actualización!',
+          'Tenemos una nueva actualización disponible de la app',
+          [
+            { 
+              text: 'Actualizar',
+              onPress: () =>
+                WebBrowser.openBrowserAsync(
+                  'https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil'
+                ),
+            },
+          ]
+        );
+      }
+      console.log(data, Application.nativeBuildVersion); // equivalente a tu log
+    })
+    .catch(() => {
+      // opcional: manejar error silencioso
+    });
 export default class LoginScreen extends Component{
 
     constructor(props){
@@ -244,7 +267,7 @@ this.cargarNombreGuardado(); // Solo el nombre
 //Valida si esta configurado la contraseña 
 intentarLoginBiometrico = async () => {
   try {
-    // Aquí haces la llamada a tu método de autenticación biométrica
+    // Aquí haces la llamada a tu método de autenticación biométrica 
     const resultadoBiometrico = await LocalAuthentication.authenticateAsync({
       promptMessage: 'Autentícate con biometría',
     });
@@ -456,7 +479,7 @@ changeUser(user){
           this.gotoSreen('InicioApp');
         }
       })
-    }
+    } 
 
     changeSecureText(){
 
@@ -465,21 +488,6 @@ changeUser(user){
       }else{
         this.setState({secureText: true, iconShow: 'eye-slash'});
       }
-    }
-
-    comprobActualization(){
-      fetch('https://api.progresarcorp.com.py/api/actualizacion')
-      .then(response => response.json())
-      .then(data => {
-        if(data > expo.android.versionCode){
-          return Alert.alert('¡Aviso de actualización!', 'Tenemos una nueva actualización disponible de la app',
-          [
-              { text: "Actualizar", onPress: () => {WebBrowser.openBrowserAsync('https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil');} }
-          ]
-          );
-        }
-        console.log(data, expo.android.versionCode)
-      })
     }
 
     /* changeEnabledSwitch(value){

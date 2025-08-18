@@ -369,14 +369,14 @@ const styles = StyleSheet.create({
     marginBottom: 10,
   },
   monthButton: {
-    backgroundColor: '#FF6F61',
+    backgroundColor: '#9e2021',
     paddingVertical: 10,
     paddingHorizontal: 15,
     borderRadius: 5,
     marginRight: 10,
   },
   selectedMonthButton: {
-    backgroundColor: '#900',
+    backgroundColor: 'rgba(176, 161, 161, 1)',
   },
   monthButtonText: {
     color: '#fff',

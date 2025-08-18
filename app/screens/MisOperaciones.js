@@ -80,7 +80,7 @@ export default function MisOperaciones() {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {operaciones.length === 0 ? (
             <View style={styles.emptyCard}>
-              <FontAwesome5 name="inbox" size={40} color="#FF6F61" style={{ marginBottom: 10 }} />
+              <FontAwesome5 name="inbox" size={40} color="#9e2021" style={{ marginBottom: 10 }} />
               <Text style={styles.emptyTitle}>Sin operaciones vigentes</Text>
               <Text style={styles.emptyText}>
                 No encontramos operaciones asociadas a tu usuario por ahora.
@@ -205,7 +205,7 @@ const styles = StyleSheet.create({
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF6F61',
+    backgroundColor: '#9e2021',
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
