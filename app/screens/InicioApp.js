@@ -108,7 +108,10 @@ const toggleExpand = (idx) => {
   setExpanded(prev => ({ ...prev, [idx]: !prev[idx] }));
 };
   useEffect(() => {
-    const fetchPromos = async () => {
+    const MAX_RETRIES = 5;      // cantidad máxima de intentos
+    const RETRY_DELAY = 2000;   // 2 segundos entre intentos
+
+    const fetchPromos = async (retries = MAX_RETRIES) => {
       try {
         setLoadingPromos(true);
         setErrorPromos(null);
@@ -122,7 +125,14 @@ const toggleExpand = (idx) => {
           }
         });
 
-        if (!res.ok) throw new Error(`Error ${res.status}: No se pudo obtener promos`);
+        if (!res.ok) {
+          if (res.status === 500 && retries > 0) {
+            console.warn(`Error 500. Reintentando... (${MAX_RETRIES - retries + 1})`);
+            setTimeout(() => fetchPromos(retries - 1), RETRY_DELAY);
+            return;
+          }
+          throw new Error(`Error ${res.status}: No se pudo obtener promos`);
+        }
 
         const data = await res.json();
 
@@ -138,7 +148,16 @@ const toggleExpand = (idx) => {
 
         setPromos(items);
       } catch (e) {
-        setErrorPromos(e.message);
+        console.log('Error al obtener promos:', e?.message);
+
+        if (retries > 0) {
+          console.warn(`Reintentando... (${MAX_RETRIES - retries + 1})`);
+          setTimeout(() => fetchPromos(retries - 1), RETRY_DELAY);
+          return;
+        }
+
+        setErrorPromos('No se pudo obtener las promos.');
+        setPromos([]);
       } finally {
         setLoadingPromos(false);
       }
@@ -146,46 +165,66 @@ const toggleExpand = (idx) => {
 
     fetchPromos();
   }, []);
-  useEffect(() => {
-  const obtenerTarjetas = async () => {
-    try {
-      setLoading(true);
-      setError('');
+    //Para consultar varias veces
+    const MAX_RETRIES = 5; // cantidad máxima de intentos
+    const RETRY_DELAY = 2000; // 2 segundos entre intentos
 
-      const usuario = await AsyncStorage.getItem('usuarioGuardado');
-      if (!usuario) {
-        setError('Usuario no encontrado en el almacenamiento.');
+    const obtenerTarjetas = async (retries = MAX_RETRIES) => {
+      try {
+        setLoading(true);
+        setError('');
+
+        const usuario = await AsyncStorage.getItem('usuarioGuardado');
+        if (!usuario) {
+          setError('Usuario no encontrado en el almacenamiento.');
+          setTarjetas([]);
+          return;
+        }
+
+        const res = await fetch(
+          `https://api.progresarcorp.com.py/api/ver_notificaciones/${encodeURIComponent(usuario)}`,
+          { headers: { Accept: 'application/json' } }
+        );
+
+        if (!res.ok) {
+          if (res.status === 500 && retries > 0) {
+            console.warn(`Error 500. Reintentando... (${MAX_RETRIES - retries + 1})`);
+            setTimeout(() => obtenerTarjetas(retries - 1), RETRY_DELAY);
+            return;
+          }
+          throw new Error(`HTTP ${res.status}`);
+        }
+
+        const data = await res.json();
+
+        if (Array.isArray(data)) {
+          setTarjetas(data);
+        } else if (data && (data.dias_mora != null || data.saldo_mora != null)) {
+          setTarjetas([data]);
+        } else {
+          setTarjetas([]);
+        }
+
+      } catch (e) {
+        console.log('Error al obtener tarjetas:', e?.message);
+
+        if (retries > 0) {
+          console.warn(`Reintentando... (${MAX_RETRIES - retries + 1})`);
+          setTimeout(() => obtenerTarjetas(retries - 1), RETRY_DELAY);
+          return;
+        }
+
+        setError('No se pudo obtener las notificaciones.');
         setTarjetas([]);
-        return;
+      } finally {
+        setLoading(false);
       }
-
-      const res = await fetch(`https://api.progresarcorp.com.py/api/ver_notificaciones/${encodeURIComponent(usuario)}`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) {
-        throw new Error(`HTTP ${res.status}`);
-      }
-      const data = await res.json();
-
-      if (Array.isArray(data)) {
-        setTarjetas(data);
-      } else if (data && (data.dias_mora != null || data.saldo_mora != null)) {
-        setTarjetas([data]);
-      } else {
-        setTarjetas([]);
-      }
-    } catch (e) {
-      console.log('Error al obtener tarjetas:', e?.message);
-      setError('No se pudo obtener las notificaciones.');
-      setTarjetas([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  obtenerTarjetas();
-}, []);
-useEffect(() => {
+    };
+        // lo llamás dentro de useEffect
+        useEffect(() => {
+          obtenerTarjetas();
+        }, []);
+    useEffect(() => {
   const obtenerDatos = async () => {
     try {
       const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
@@ -304,7 +343,7 @@ const obtenerIniciales = (nombreCompleto) => {
               <Text style={styles.hello}>Hola,</Text>
              <Text style={styles.name}>{nombre || 'Invitado'}</Text>
             </View>
-            <TouchableOpacity
+           <TouchableOpacity
               style={styles.avatarCircle}
               onPress={() => {
                 Alert.alert(
@@ -314,8 +353,7 @@ const obtenerIniciales = (nombreCompleto) => {
                     { text: 'Cancelar', style: 'cancel' },
                     {
                       text: 'Aceptar',
-                      onPress: async () => {
-                        await AsyncStorage.clear();
+                      onPress: () => {
                         if (navigation.canGoBack()) {
                           navigation.goBack();        // vuelve a la pantalla anterior
                         } else {
@@ -465,7 +503,7 @@ const obtenerIniciales = (nombreCompleto) => {
         ))}
       </View>
       {/* Carrusel de Promos */}
-       <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginTop: 10, marginBottom: 5 }}>
+       <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginTop: 20 }}>
           Promos
         </Text>
       {/* Carrusel de Promos */}
@@ -627,16 +665,23 @@ const styles = StyleSheet.create({
   optionText: {
     color: '#fff',
     marginLeft: 8
-  },
+  }, 
   container: {
     flex: 1,
     backgroundColor: '#fff'
+  },
+  card: {
+    flex: 0.3,          // ocupa el 30% del alto
+    width: '80%',       // 90% del ancho de pantalla
+    backgroundColor: '#eee',
+    borderRadius: 12,
+    padding: 16,
   },
     carouselWrapper: {
     width: '100%',
     alignItems: 'center',
     marginTop: 10,
-    marginBottom: 8,
+    marginBottom: 5,
   },
   carouselContainer: {
     backgroundColor: '#fff',
@@ -688,7 +733,6 @@ headerContent: {
   alignItems: 'center',
 },
 
-
   avatarText: {
     color: '#0D47A1',
     fontWeight: 'bold'
@@ -718,7 +762,7 @@ headerContent: {
     paddingHorizontal: 8
   },
  categoryBox: {
-  width: '45%',
+  width: '47%',
   aspectRatio: 1.7,
   borderRadius: 20,
   padding: 16,

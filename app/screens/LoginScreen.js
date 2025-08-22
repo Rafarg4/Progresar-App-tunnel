@@ -24,34 +24,55 @@ import {expo} from '../../app.json'
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native-elements';
+import Constants from 'expo-constants';
 import axios from 'axios';
 const { width } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
-  axios
-    .get('https://api.progresarcorp.com.py/api/actualizacion', { headers: { 'Cache-Control': 'no-cache' } })
-    .then(response => {
-      const data = Number(response.data); // tu API devuelve "20" como string o número
-      if (data == 20) {
-        return Alert.alert(
-          '¡Aviso de actualización!',
-          'Tenemos una nueva actualización disponible de la app',
-          [
-            { 
-              text: 'Actualizar',
-              onPress: () =>
-                WebBrowser.openBrowserAsync(
-                  'https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil'
-                ),
-            },
-          ]
-        );
-      }
-      console.log(data, Application.nativeBuildVersion); // equivalente a tu log
-    })
-    .catch(() => {
-      // opcional: manejar error silencioso
-    });
+const isVersionOlder = (current, latest) => {
+  const c = current.split('.').map(Number);
+  const l = latest.split('.').map(Number);
+
+  for (let i = 0; i < Math.max(c.length, l.length); i++) {
+    const cur = c[i] || 0;
+    const lat = l[i] || 0;
+    if (cur < lat) return true;   // versión actual es menor
+    if (cur > lat) return false;  // versión actual es mayor
+  }
+  return false; // son iguales
+};
+ 
+axios
+  .get('https://api.progresarcorp.com.py/api/actualizacion', { headers: { 'Cache-Control': 'no-cache' } })
+  .then(response => {
+    const latest = String(response.data).trim();   
+    const current = Constants.expoConfig?.version || Constants.manifest?.version;
+
+    console.log(`Versión actual: ${current}, disponible: ${latest}`);
+
+    if (isVersionOlder(current, latest)) {
+      Alert.alert(  
+        '¡Aviso de actualización!',
+        `Tienes la versión ${current}, pero hay una nueva versión ${latest} disponible.`,
+        [
+          { 
+            text: 'Actualizar',
+            onPress: () => 
+              WebBrowser.openBrowserAsync(
+                'https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil'
+              ),
+          },
+          { 
+            text: 'Cerrar', 
+            style: 'cancel'   // estilo de botón de cierre
+          }
+        ] 
+      );
+    }
+  })
+  .catch((err) => {
+    console.log("Error al consultar actualización:", err.message);
+  });
 export default class LoginScreen extends Component{
 
     constructor(props){
@@ -207,7 +228,7 @@ verificarBiometria = async () => {
     headers: {
       'Content-Type': 'application/json',
     },
-  })
+  }) 
     .then((response) => response.json())
     .then((dataResponse) => {
       if (dataResponse.status === 'success') {
@@ -221,7 +242,7 @@ verificarBiometria = async () => {
             nombre: dataResponse.nombre,
              token: dataResponse.token,
           },
-          () => {
+          () => { 
             if (this.state.pass === dataResponse.clave) {
               global.num_doc = this.state.user;
               global.nombre = dataResponse.nombre;

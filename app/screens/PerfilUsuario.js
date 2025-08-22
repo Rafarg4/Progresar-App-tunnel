@@ -596,7 +596,7 @@ const styles = StyleSheet.create({
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 3,
     flexWrap: 'wrap',
     marginTop: 4,
   },
