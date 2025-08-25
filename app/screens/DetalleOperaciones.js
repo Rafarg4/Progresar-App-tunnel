@@ -96,7 +96,7 @@ export default function DetalleOperaciones() {
       {/* Cabecera con imagen */}
       <View style={styles.headerContainer}>
         <Image
-          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+            source={require('../assets/inicio.png')}  
           style={styles.headerImage}
           resizeMode="cover"
         />
@@ -264,11 +264,15 @@ badgePendiente: {
     marginBottom: 4
   },
   cuotaBox: {
-    backgroundColor: '#ffffffff',
+    backgroundColor: '#fff',
     padding: 14,
     borderRadius: 10,
     marginBottom: 12,
-    elevation: 3
+    elevation: 3, // Android
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   row: {
     flexDirection: 'row',
@@ -318,12 +322,17 @@ filterText: {
   fontWeight: 'bold'
 },
 resumenContainer: {
-  backgroundColor: '#ffffffff',
+  backgroundColor: '#fff',
   padding: 16,
   borderRadius: 12,
   marginBottom: 20,
-  elevation: 2
+  elevation: 2, // Android
+  shadowColor: '#000', // iOS
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.15,
+  shadowRadius: 3.5,
 },
+
 resumenTitulo: {
   fontSize: 16,
   fontWeight: 'bold',

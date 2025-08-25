@@ -113,10 +113,10 @@ export default function DetalleTarjetas() {
     <View style={styles.container}>
       <View style={styles.headerContainer}>
         <Image
-          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+             source={require('../assets/inicio.png')}  
           style={styles.headerImage}
         />
-        <Text style={styles.headerText}>Detalle de Tarjeta # {String(nro_tarjeta).slice(-4)}</Text>
+        <Text style={styles.headerText}>Detalle de Tarjeta </Text>
       </View>
 
       {loading ? (
@@ -131,7 +131,7 @@ export default function DetalleTarjetas() {
             <View style={styles.cardIconContainer}>
               <FontAwesome5 name="credit-card" size={28} color="#fff" />
             </View>
-            <Text style={styles.cardBrand}>Dinelco</Text>
+            <Text style={styles.cardBrand}></Text>
             <Text style={styles.cardNumber}>**** **** **** {String(nro_tarjeta).slice(-4)}</Text>
             <Text style={styles.cardHolder}>{tarjeta.nombre_usuario}</Text>
           </View>

@@ -65,7 +65,7 @@ export default function MisOperaciones() {
       {/* Cabecera */}
       <View style={styles.headerContainer}>
         <Image
-          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+            source={require('../assets/inicio.png')}  
           style={styles.headerImage}
           resizeMode="cover"
         />

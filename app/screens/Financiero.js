@@ -116,7 +116,7 @@ export default class TarjetasScreen extends Component {
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 20 }}>
           {/* CABECERA GENERAL con ImageBackground */}
           <ImageBackground
-            source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+          source={require('../assets/inicio.png')}  
             style={styles.headerBackground}
             imageStyle={{ borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
           >

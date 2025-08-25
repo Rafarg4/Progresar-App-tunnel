@@ -13,11 +13,13 @@ import {
   Modal,
   KeyboardAvoidingView,
   Platform,
+  ImageBackground,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
 
-const IMG_HEADER  = 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png';
+// Importa desde assets en vez de URL
+const IMG_HEADER = require('../assets/inicio.png'); 
 const API_GET     = 'https://api.progresarcorp.com.py/api/ver_datos_usuario';
 const API_UPDATE  = 'https://api.progresarcorp.com.py/api/actualizar_datos_usuario';
 const API_BLOCK   = 'https://api.progresarcorp.com.py/api/bloquear_acceso';
@@ -330,13 +332,15 @@ export default function PerfilUsuario() {
   );
 
   return (
-    <View style={styles.container}>
-      {/* Cabecera con imagen */}
-      <View style={styles.headerContainer}>
-        <Image source={{ uri: IMG_HEADER }} style={styles.headerImage} resizeMode="cover" />
-        <Text style={styles.headerText}>Mi Perfil</Text>
-      </View>
-
+   <View style={styles.container}>
+         <View style={styles.headerContainer}>
+           <Image
+                source={require('../assets/inicio.png')}   
+             style={styles.headerImage}
+             resizeMode="cover"
+           />
+           <Text style={styles.headerText}>Mi Perfil</Text>
+         </View>
       {loading ? (
         <View style={styles.loadingBox}><ActivityIndicator size="large" /></View>
       ) : (

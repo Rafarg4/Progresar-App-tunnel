@@ -40,7 +40,7 @@ const AtmQr = () => {
     <View style={{ flex: 1, backgroundColor: '#fff' }}>
       {/* Cabecera con imagen como en otras pantallas */}
       <ImageBackground
-        source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+         source={require('../assets/inicio.png')}  
         style={styles.header}
         resizeMode="cover"
         imageStyle={styles.headerImage}

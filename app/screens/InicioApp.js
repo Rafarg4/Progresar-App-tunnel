@@ -329,12 +329,13 @@ const obtenerIniciales = (nombreCompleto) => {
   const cerrarModal = () => setHistoriaSeleccionada(null);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+    <View style={styles.container}>
+  <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+
 
       {/* Encabezado tipo "Hola, Rafael + RE" */}
       <ImageBackground
-           source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+              source={require('../assets/inicio.png')}  
           style={styles.headerBackground}
           imageStyle={{ borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
         >
@@ -612,7 +613,7 @@ const obtenerIniciales = (nombreCompleto) => {
 
       </View>
     </View>
-    </SafeAreaView>
+    </View>
     
   );
 }
@@ -666,9 +667,13 @@ const styles = StyleSheet.create({
     color: '#fff',
     marginLeft: 8
   }, 
-  container: {
-    flex: 1,
-    backgroundColor: '#fff'
+  container: { flex: 1, backgroundColor: '#fff' },
+  headerContainer: {
+    position: 'relative',
+    overflow: 'hidden',
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    backgroundColor: 'transparent'
   },
   card: {
     flex: 0.3,          // ocupa el 30% del alto

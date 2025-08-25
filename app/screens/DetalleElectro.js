@@ -102,7 +102,7 @@ export default function MisElectrodomesticos() {
       {/* Header igual estilo */}
       <View style={styles.headerContainer}>
         <Image
-          source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+             source={require('../assets/inicio.png')}  
           style={styles.headerImage}
           resizeMode="cover"
         />
@@ -252,7 +252,11 @@ const styles = StyleSheet.create({
     padding: 14,
     borderRadius: 10,
     marginBottom: 12,
-    elevation: 3
+    elevation: 3, // Android
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 4,
   },
   row: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
   label: { fontWeight: 'bold', fontSize: 15, color: '#333' },
@@ -269,7 +273,11 @@ const styles = StyleSheet.create({
     padding: 16,
     borderRadius: 12,
     marginBottom: 20,
-    elevation: 2
+    elevation: 2, // Android
+    shadowColor: '#000', // iOS
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3.5,
   },
   resumenTitulo: {
     fontSize: 16, fontWeight: 'bold', marginBottom: 12, color: '#333', textAlign: 'center'

@@ -250,7 +250,7 @@ const handleRequestByEmail = async () => {
     {/* Cabecera con imagen */}
         <View style={[styles.headerContainer, { width: '100%' }]}>
           <Image
-            source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+                source={require('../assets/inicio.png')}  
             style={styles.headerImage}
             resizeMode="cover"
           /> 
@@ -301,7 +301,7 @@ const handleRequestByEmail = async () => {
             </TouchableOpacity>
 
             <TouchableOpacity onPress={handleRequestByEmail} style={styles.actionButton}>
-              <Text style={styles.buttonText}>  <FontAwesome5 name="envelope" size={16} color="#fff" style={styles.icon} /> Solicitar por correo</Text>
+              <Text style={styles.buttonText}>  <FontAwesome5 name="envelope" size={16} color="#fff" style={styles.icon} /> Correo</Text>
             </TouchableOpacity>
           </View>
         </View>

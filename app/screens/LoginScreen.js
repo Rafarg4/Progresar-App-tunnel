@@ -29,7 +29,7 @@ import axios from 'axios';
 const { width } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
-const isVersionOlder = (current, latest) => {
+const isVersionOlder = (current, latest) => { 
   const c = current.split('.').map(Number);
   const l = latest.split('.').map(Number);
 
@@ -59,7 +59,7 @@ axios
             text: 'Actualizar',
             onPress: () => 
               WebBrowser.openBrowserAsync(
-                'https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil'
+                'http://apps.apple.com/app/progresarmovil/id6740653178'
               ),
           },
           { 
@@ -709,7 +709,7 @@ changeUser(user){
         const saludoNombre = this.state.nombre ? this.state.nombre : 'Usuario';
 
         return(
-            <SafeAreaView style={styles.box}>
+          <View style={styles.container}>
             <View style={{ position: 'absolute', top: 240, left: 25, zIndex: 10 }}>
                 <TouchableOpacity onPress={this.handleLogout}>
                   <Icon name="sign-out" size={28} color="#9e2021" />
@@ -915,7 +915,7 @@ changeUser(user){
                 <Text style={{textAlign: 'center', color: 'rgba(155,155,155,0.5)', marginTop: 5}}>Versión: {expo.version}</Text>
               </ScrollView>
               {cargando()}
-            </SafeAreaView>
+            </View>
         ); 
     }
 };
