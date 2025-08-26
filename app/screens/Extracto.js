@@ -209,7 +209,7 @@ const handleRequestByEmail = async () => {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      num_doc,
+      num_doc: usuario,
       nro_tarjeta: nroTarjeta,
       mes,
       anho: anio,
