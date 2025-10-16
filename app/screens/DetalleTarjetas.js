@@ -14,6 +14,7 @@ export default function DetalleTarjetas() {
   const nro_tarjeta = tarjeta.nro_tarjeta;
   const [saldoDisponible, setSaldoDisponible] = useState(null);
   const [deudaTotal, setDeudaTotal] = useState(null);
+  const [deudaNormal, setDeudaNormal] = useState(null);
   const [lineaCredito, setLineaCredito] = useState(null);
   const [saldoEnMora, setSaldoEnMora] = useState(null);
   const [pagoMinimoPendiente, setPagoMinimoPendiente] = useState(null);
@@ -67,6 +68,7 @@ useEffect(() => {
       if (data.cuenta) {
         setSaldoDisponible(data.cuenta.disponi_adelanto || 0);
         setDeudaTotal(data.cuenta.deuda_total_mas_pendiente || 0);
+        setDeudaNormal(data.cuenta.saldo_ultimo_resultado || 0);
         setLineaCredito(data.cuenta.linea_de_credito || 0);
         setSaldoEnMora(data.cuenta.saldo_en_mora || 0);
         setPagoMinimoPendiente(data.cuenta.pago_minimo_pendiente || 0);
@@ -133,6 +135,10 @@ useEffect(() => {
             <View style={styles.row}>
               <Text style={styles.label}>Deuda total:</Text>
               <Text style={[styles.value, { color: 'red' }]}>{formatearNumero(deudaTotal)}</Text>
+            </View>
+             <View style={styles.row}>
+              <Text style={styles.label}>Deuda normal:</Text>
+              <Text style={[styles.value, { color: 'red' }]}>{formatearNumero(deudaNormal)}</Text>
             </View>
             <View style={styles.row}>
               <Text style={styles.label}>Saldo en mora:</Text>

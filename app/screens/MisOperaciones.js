@@ -19,7 +19,6 @@ export default function MisOperaciones() {
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
-  const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
   const sectores = {
     FRC: 'Francés',
     AME: 'Americano',
@@ -62,28 +61,32 @@ export default function MisOperaciones() {
 
   return (
     <View style={styles.container}>
-      {/* Cabecera */}
+      {/* Header con subtítulo */}
       <View style={styles.headerContainer}>
         <Image
-            source={require('../assets/inicio.png')}  
+          source={require('../assets/inicio.png')}
           style={styles.headerImage}
           resizeMode="cover"
         />
-        <Text style={styles.headerText}>Mis Operaciones</Text>
+        <View style={styles.headerOverlay}>
+          <Text style={styles.headerText}>Mis Operaciones</Text>
+          <Text style={styles.headerSubtitle}>Visualizá tus préstamos y su estado actual</Text>
+        </View>
       </View>
 
       {loading ? (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#000" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#9e2021" />
+          <Text style={styles.loadingText}>Cargando tus operaciones...</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {operaciones.length === 0 ? (
             <View style={styles.emptyCard}>
               <FontAwesome5 name="inbox" size={40} color="#9e2021" style={{ marginBottom: 10 }} />
-              <Text style={styles.emptyTitle}>Sin operaciones vigentes</Text>
+              <Text style={styles.emptyTitle}>Sin operaciones registradas</Text>
               <Text style={styles.emptyText}>
-                No encontramos operaciones asociadas a tu usuario por ahora.
+                No encontramos operaciones asociadas a tu usuario.
               </Text>
 
               <TouchableOpacity style={styles.emptyButton} onPress={cargarOperaciones}>
@@ -93,13 +96,12 @@ export default function MisOperaciones() {
             </View>
           ) : (
             operaciones.map((op, index) => {
-              const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
               const key = `${op.cod_cliente || 'cli'}-${op.nro_comprobante || index}-${index}`;
-
               return (
                 <TouchableOpacity
                   key={key}
-                  style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}
+                  style={styles.cardContainer}
+                  activeOpacity={0.9}
                   onPress={() =>
                     navigation.navigate('DetalleOperaciones', {
                       cod_cliente: op.cod_cliente,
@@ -107,15 +109,20 @@ export default function MisOperaciones() {
                     })
                   }
                 >
+                  {/* Ícono de fondo */}
                   <FontAwesome5
                     name="file-invoice-dollar"
-                    size={120}
-                    color="#fff"
+                    size={Dimensions.get('window').width * 0.35}
+                    color="rgba(158,32,33,0.25)"
                     style={styles.cardBackgroundIcon}
                   />
+
+                  {/* Ícono principal */}
                   <View style={styles.cardIconContainer}>
-                    <FontAwesome5 name="file-invoice-dollar" size={28} color="#fff" />
+                    <FontAwesome5 name="file-invoice-dollar" size={26} color="#9e2021" />
                   </View>
+
+                  {/* Datos principales */}
                   <Text style={styles.cardBrand}>Operación #{op.nro_comprobante}</Text>
                   <Text style={styles.cardDetail}>
                     Método: {sectores[op.cod_sector] || op.cod_sector || '-'}
@@ -141,67 +148,109 @@ export default function MisOperaciones() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
+  // HEADER
   headerContainer: {
     position: 'relative',
     overflow: 'hidden',
     borderBottomLeftRadius: 25,
     borderBottomRightRadius: 25,
   },
-  headerImage: { width: Dimensions.get('window').width, height: 180 },
-  headerText: {
+  headerImage: { width: Dimensions.get('window').width, height: 170 },
+  headerOverlay: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
+    bottom: 16,
+    left: 16,
+    right: 16,
+  },
+  headerText: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13.5,
+    marginTop: 3,
+    opacity: 0.9,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
 
-  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  // LOADING
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: '#9e2021', marginTop: 10, fontWeight: '500' },
 
-  scrollContainer: { padding: 20 },
+  // CONTENIDO
+  scrollContainer: { padding: 16 },
 
+  // TARJETAS
   cardContainer: {
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 6,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(158,32,33,0.15)',
     shadowColor: '#000',
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.10,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
+    elevation: 3,
     position: 'relative',
   },
-  cardIconContainer: { marginBottom: 12, zIndex: 2 },
-  cardBackgroundIcon: { position: 'absolute', top: 20, right: 20, opacity: 0.08, zIndex: 0 },
-  cardBrand: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
-  cardDetail: { fontSize: 14, color: '#fff', marginBottom: 4 },
+  cardBackgroundIcon: {
+    position: 'absolute',
+    right: 10,
+    bottom: 30,
+    opacity: 0.18,
+    zIndex: 0,
+  },
+  cardIconContainer: { marginBottom: 10, zIndex: 2 },
+  cardBrand: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#9e2021',
+    marginBottom: 10,
+  },
+  cardDetail: {
+    fontSize: 14,
+    color: '#9e2021',
+    marginBottom: 3,
+    fontWeight: '500',
+  },
 
-  // Estado vacío
+  // ESTADO VACÍO
   emptyCard: {
     borderRadius: 16,
     padding: 20,
-    marginTop: 20,
+    marginTop: 40,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
+    shadowRadius: 4,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 6,
+    color: '#9e2021',
+    marginBottom: 4,
     textAlign: 'center',
   },
-  emptyText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 14 },
+  emptyText: {
+    fontSize: 13.5,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 20,
+  },
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -209,6 +258,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
+    shadowColor: '#9e2021',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
   },
-  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 14 },
 });

@@ -19,8 +19,6 @@ export default function MisElectrodomesticos() {
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation();
 
-  const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
-
   const cargarElectros = async () => {
     try {
       setLoading(true);
@@ -55,20 +53,24 @@ export default function MisElectrodomesticos() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header con subtítulo */}
       <View style={styles.headerContainer}>
         <Image
-             source={require('../assets/Electro.png')}   
+          source={require('../assets/Electro.png')}
           style={styles.headerImage}
           resizeMode="cover"
         />
-        <Text style={styles.headerText}>Mis Electrodomésticos</Text>
+        <View style={styles.headerOverlay}>
+          <Text style={styles.headerText}>Mis Electrodomésticos</Text>
+          <Text style={styles.headerSubtitle}>Visualizá tus compras y cuotas vigentes</Text>
+        </View>
       </View>
 
       {/* Contenido */}
       {loading ? (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#000" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#9e2021" />
+          <Text style={styles.loadingText}>Cargando tus electrodomésticos...</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -87,13 +89,12 @@ export default function MisElectrodomesticos() {
             </View>
           ) : (
             electros.map((item, index) => {
-              const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
               const key = `${item.cod_cliente || 'cli'}-${item.nro_comprobante || index}-${index}`;
-
               return (
                 <TouchableOpacity
                   key={key}
-                  style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}
+                  style={styles.cardContainer}
+                  activeOpacity={0.9}
                   onPress={() =>
                     navigation.navigate('DetalleElectro', {
                       cod_cliente: item.cod_cliente,
@@ -102,17 +103,22 @@ export default function MisElectrodomesticos() {
                     })
                   }
                 >
+                  {/* Ícono de fondo */}
                   <FontAwesome5
                     name="tv"
-                    size={120}
-                    color="#fff"
+                    size={Dimensions.get('window').width * 0.35}
+                    color="rgba(158,32,33,0.25)"
                     style={styles.cardBackgroundIcon}
                   />
+
+                  {/* Ícono principal */}
                   <View style={styles.cardIconContainer}>
-                    <FontAwesome5 name="tv" size={28} color="#fff" />
+                    <FontAwesome5 name="tv" size={26} color="#9e2021" />
                   </View>
+
+                  {/* Texto principal */}
                   <Text style={styles.cardBrand}>Comprobante #{item.nro_comprobante}</Text>
-                  <Text style={styles.cardDetail}>Tipo: {item.tipo_comprobante || '-'}- Credito</Text>
+                  <Text style={styles.cardDetail}>Tipo: {item.tipo_comprobante || '-'} - Crédito</Text>
                   <Text style={styles.cardDetail}>Fecha origen: {item.fec_origen || '-'}</Text>
                   <Text style={styles.cardDetail}>Cuotas: {item.nro_cuota}</Text>
                   <Text style={styles.cardDetail}>
@@ -134,67 +140,110 @@ export default function MisElectrodomesticos() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
+  // HEADER
   headerContainer: {
     position: 'relative',
     overflow: 'hidden',
     borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25
+    borderBottomRightRadius: 25,
   },
-  headerImage: { width: Dimensions.get('window').width, height: 180 },
-  headerText: {
+  headerImage: { width: Dimensions.get('window').width, height: 170 },
+  headerOverlay: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
+    bottom: 16,
+    left: 16,
+    right: 16,
+  },
+  headerText: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3
+    textShadowRadius: 3,
+  },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13.5,
+    marginTop: 3,
+    opacity: 0.9,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 
-  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  // LOADING
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: '#9e2021', marginTop: 10, fontWeight: '500' },
 
-  scrollContainer: { padding: 20 },
+  // CONTENIDO
+  scrollContainer: { padding: 16 },
 
+  // TARJETAS
   cardContainer: {
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 6,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(158,32,33,0.15)',
     shadowColor: '#000',
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.10,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    position: 'relative'
+    elevation: 3,
+    position: 'relative',
   },
-  cardIconContainer: { marginBottom: 12, zIndex: 2 },
-  cardBackgroundIcon: { position: 'absolute', top: 20, right: 20, opacity: 0.08, zIndex: 0 },
-  cardBrand: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
-  cardDetail: { fontSize: 14, color: '#fff', marginBottom: 4 },
+  cardBackgroundIcon: {
+    position: 'absolute',
+    right: 5,
+    bottom: 30,
+    opacity: 0.18,
+    zIndex: 0,
+  },
+  cardIconContainer: { marginBottom: 10, zIndex: 2 },
 
-  // Estado vacío
+  cardBrand: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#9e2021',
+    marginBottom: 10,
+  },
+  cardDetail: {
+    fontSize: 14,
+    color: '#9e2021',
+    marginBottom: 3,
+    fontWeight: '500',
+  },
+
+  // ESTADO VACÍO
   emptyCard: {
     borderRadius: 16,
     padding: 20,
-    marginTop: 20,
+    marginTop: 40,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
+    shadowRadius: 4,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 6,
+    color: '#9e2021',
+    marginBottom: 4,
     textAlign: 'center',
   },
-  emptyText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 14 },
+  emptyText: {
+    fontSize: 13.5,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 20,
+  },
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -202,6 +251,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
+    shadowColor: '#9e2021',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
   },
-  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 14 },
 });

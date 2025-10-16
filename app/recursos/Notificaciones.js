@@ -1,35 +1,46 @@
 import * as Notifications from 'expo-notifications';
 import { Alert, Platform } from 'react-native';
-import * as global from '../global';
 import * as Device from 'expo-device';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import * as global from '../global';
+const saveToken = async (token) => {
+	try {
+		// 🔹 Obtenemos los datos guardados localmente
+		const usuario = await AsyncStorage.getItem('usuarioGuardado');
+		const clave = await AsyncStorage.getItem('claveGuardada');
+		const nombre = await AsyncStorage.getItem('nombreUsuario');
+		const cliente = await AsyncStorage.getItem('cliente');
 
-const saveToken = (token) => {
+		// 🔹 Info del dispositivo
+		const dispositivo = `${Device.osName} ${Device.brand} ${Device.modelName}`;
 
-	var dispositivo= Device.osName+' '+Device.brand+' '+Device.modelName;
+		// 🔹 Construimos el JSON con los datos correctos
+		const data = {
+			valid: global.valid_api_key,
+			expo_token: token,
+			num_doc: usuario,       // o clave, según cuál sea tu identificador
+			cod_cliente: cliente,
+			nombre: nombre,
+			dispo: dispositivo
+		};
 
-	var data = {
-		valid: global.valid_api_key,
-		expo_token: token,
-		num_doc: global.num_doc,
-		cod_cliente: global.codigo_cliente,
-		nombre: global.nombre,
-		dispo: dispositivo
+		console.log("🛰️ Enviando token:", data);
+
+		// 🔹 Llamada al backend
+		const res = await fetch('https://api.progresarcorp.com.py/api/saveToken', {
+			method: 'POST',
+			body: JSON.stringify(data),
+			headers: {
+				'Content-Type': 'application/json'
+			}
+		});
+
+		const response = await res.json();
+		console.log("✅ Respuesta del servidor:", response);
+
+	} catch (error) {
+		console.log("❌ Error al guardar token:", error);
 	}
-
-	fetch('https://api.progresarcorp.com.py/api/saveToken',{
-		method: 'POST',
-		body: JSON.stringify(data), 
-		headers:{
-			'Content-Type': 'application/json'
-		}
-	})
-	.then(res => res.json())
-	.then(response =>{
-		console.log(response);
-	})
-	.catch((error) => {
-		console.log(error);
-	})
 }
 
 export const getToken = async () => {

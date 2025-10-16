@@ -17,8 +17,6 @@ export default function MisSeguros() {
   const [seguros, setSeguros] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
-
   const cargarSeguros = async () => {
     try {
       setLoading(true);
@@ -54,19 +52,23 @@ export default function MisSeguros() {
 
   return (
     <View style={styles.container}>
-      {/* Header */}
+      {/* Header con subtítulo */}
       <View style={styles.headerContainer}>
         <Image
-             source={require('../assets/inicio.png')}  
+          source={require('../assets/inicio.png')}
           style={styles.headerImage}
           resizeMode="cover"
         />
-        <Text style={styles.headerText}>Mis Seguros</Text>
+        <View style={styles.headerOverlay}>
+          <Text style={styles.headerText}>Mis Seguros</Text>
+          <Text style={styles.headerSubtitle}>Visualizá tus pólizas y coberturas vigentes</Text>
+        </View>
       </View>
 
       {loading ? (
-        <View style={styles.loadingBox}>
-          <ActivityIndicator size="large" color="#000" />
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#9e2021" />
+          <Text style={styles.loadingText}>Cargando tus seguros...</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
@@ -85,33 +87,28 @@ export default function MisSeguros() {
             </View>
           ) : (
             seguros.map((seguro, index) => {
-              const colorTarjeta = coloresTarjetas[index % coloresTarjetas.length];
               const key = `${seguro.id || 'seg'}-${index}`;
-
               return (
-                <View key={key} style={[styles.cardContainer, { backgroundColor: colorTarjeta }]}>
-                  {/* Ícono de fondo grande */}
+                <View key={key} style={styles.cardContainer}>
+                  {/* Ícono de fondo */}
                   <FontAwesome5
                     name="shield-alt"
-                    size={120}
-                    color="#fff"
+                    size={Dimensions.get('window').width * 0.35}
+                    color="rgba(158,32,33,0.25)"
                     style={styles.cardBackgroundIcon}
                   />
 
-                  {/* Ícono pequeño arriba */}
+                  {/* Ícono superior */}
                   <View style={styles.cardIconContainer}>
-                    <FontAwesome5 name="shield-alt" size={28} color="#fff" />
+                    <FontAwesome5 name="shield-alt" size={24} color="#9e2021" />
                   </View>
 
+                  {/* Datos del seguro */}
                   <Text style={styles.cardBrand}>{seguro.tipo_seguro}</Text>
-                  <Text style={styles.cardNumber}>Nro. Documento: {seguro.numero}</Text>
-                  <Text style={styles.cardHolder}>Asegurado: {seguro.aseguradora}</Text>
-                  <Text style={styles.cardDetail}>
-                    Desde: {seguro.fec_inicial}
-                  </Text>
-                  <Text style={styles.cardDetail}>
-                    Hasta: {seguro.vencimiento}
-                  </Text>
+                  <Text style={styles.cardDetail}>Nro. Documento: {seguro.numero}</Text>
+                  <Text style={styles.cardDetail}>Aseguradora: {seguro.aseguradora}</Text>
+                  <Text style={styles.cardDetail}>Desde: {seguro.fec_inicial}</Text>
+                  <Text style={styles.cardDetail}>Hasta: {seguro.vencimiento}</Text>
                   <Text style={styles.cardDetail}>
                     Monto asegurado: {Number(seguro.monto_seguro || 0).toLocaleString()} Gs
                   </Text>
@@ -132,66 +129,103 @@ const styles = StyleSheet.create({
     position: 'relative',
     overflow: 'hidden',
     borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25
+    borderBottomRightRadius: 25,
   },
-  headerImage: { width: Dimensions.get('window').width, height: 180 },
-  headerText: {
+  headerImage: { width: Dimensions.get('window').width, height: 170 },
+
+  headerOverlay: {
     position: 'absolute',
-    bottom: 20,
-    left: 20,
+    bottom: 16,
+    left: 16,
+    right: 16,
+  },
+  headerText: {
     color: '#fff',
-    fontSize: 26,
+    fontSize: 22,
     fontWeight: 'bold',
     textShadowColor: 'rgba(0,0,0,0.6)',
     textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3
+    textShadowRadius: 3,
+  },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13.5,
+    marginTop: 3,
+    opacity: 0.9,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 
-  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  loadingText: { color: '#9e2021', marginTop: 10, fontWeight: '500' },
 
-  scrollContainer: { padding: 20 },
+  scrollContainer: { padding: 16 },
 
   cardContainer: {
-    borderRadius: 20,
-    padding: 20,
-    marginBottom: 20,
-    elevation: 6,
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 14,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: 'rgba(158,32,33,0.15)',
     shadowColor: '#000',
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.10,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
-    position: 'relative'
+    elevation: 3,
+    position: 'relative',
   },
-  cardIconContainer: { marginBottom: 12, zIndex: 2 },
-  cardBackgroundIcon: { position: 'absolute', top: 20, right: 20, opacity: 0.08, zIndex: 0 },
-  cardBrand: { fontSize: 18, fontWeight: 'bold', color: '#fff', marginBottom: 10 },
-  cardNumber: { fontSize: 16, fontWeight: '600', color: '#fff', marginBottom: 4 },
-  cardHolder: { fontSize: 16, color: '#fff', marginBottom: 4 },
-  cardDetail: { fontSize: 14, color: '#fff', marginBottom: 2 },
-  cardEstado: { marginTop: 10, fontSize: 14, fontWeight: 'bold' },
+  cardBackgroundIcon: {
+    position: 'absolute',
+    right: 1,
+    bottom: 28,
+    opacity: 0.18,
+    zIndex: 0,
+  },
+  cardIconContainer: { marginBottom: 10, zIndex: 2 },
+
+  cardBrand: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#9e2021',
+    marginBottom: 10,
+  },
+  cardDetail: {
+    fontSize: 14,
+    color: '#9e2021',
+    marginBottom: 3,
+    fontWeight: '500',
+  },
 
   // Estado vacío
   emptyCard: {
     borderRadius: 16,
     padding: 20,
-    marginTop: 20,
+    marginTop: 40,
     backgroundColor: '#fff',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 4,
+    elevation: 3,
     shadowColor: '#000',
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.1,
     shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
+    shadowRadius: 4,
   },
   emptyTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 6,
+    color: '#9e2021',
+    marginBottom: 4,
     textAlign: 'center',
   },
-  emptyText: { fontSize: 14, color: '#666', textAlign: 'center', marginBottom: 14 },
+  emptyText: {
+    fontSize: 13.5,
+    color: '#555',
+    textAlign: 'center',
+    marginBottom: 14,
+    paddingHorizontal: 20,
+  },
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -199,6 +233,11 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
     paddingHorizontal: 16,
     borderRadius: 8,
+    shadowColor: '#9e2021',
+    shadowOpacity: 0.25,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 5,
+    elevation: 3,
   },
-  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 14 },
 });

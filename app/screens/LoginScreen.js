@@ -26,7 +26,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native-elements';
 import Constants from 'expo-constants';
 import axios from 'axios';
-const { width } = Dimensions.get('window');
+const { width, height } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
 const isVersionOlder = (current, latest) => { 
@@ -722,7 +722,7 @@ changeUser(user){
                 <View style={styles.container}>
                 <Image  
                   style={styles.headerImage}
-                  source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/04/logo-nuevo-3.png' }}
+                  source={require('../assets/logo_login.png')} 
                 />
                 <View style={styles.avatarContainer}>
                   <Text style={styles.avatarText}>{getIniciales()}</Text>
@@ -819,11 +819,11 @@ changeUser(user){
                 </View>
                 {/* Boton de ¿Olvidó su contraseña? */}
                 <View style={{alignItems: 'center', marginBottom: 5, paddingHorizontal: 15}}>
-                  <TouchableOpacity
-                    onPress={() => {WebBrowser.openBrowserAsync('https://secure.progresarcorp.com.py/auth/forgot-password');}}
-                  >
-                    <Text style={styles.botOlv}>¿Olvidó su contraseña?</Text>
-                  </TouchableOpacity>
+                  <TouchableOpacity 
+                      onPress={() => this.gotoSreen('RecuperarContraseña')}
+                    >
+                  <Text style={styles.botOlv}>¿Olvidó su contraseña?</Text>
+                </TouchableOpacity>
                 </View>
         
                 {/* Aqui se agrega el boton de login*/}

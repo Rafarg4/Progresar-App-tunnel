@@ -20,41 +20,44 @@ import { Linking, Dimensions } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { getToken } from '../recursos/Notificaciones.js';
+import { LinearGradient } from 'expo-linear-gradient';
 // Categorías fijas
 const categories = [
   {
     id: 1,
     name: 'Tarjetas',
-    icon: <FontAwesome name="credit-card" size={38} color="#fff" />,
-    backgroundIcon: <FontAwesome name="credit-card" size={100} color="#fff" />,
-    color: '#FF6B6B',
+    icon: <FontAwesome name="credit-card" size={38} color="#9e2021" />,
+    backgroundIcon: <FontAwesome name="credit-card" size={100} color="rgba(158,32,33,0.4)" />, // 💪 más fuerte
+    color: '#fff',
     description: 'Gestión de tarjetas'
   },
   {
     id: 2,
     name: 'Operaciones',
-    icon: <MaterialIcons name="account-balance-wallet" size={38} color="#fff" />,
-    backgroundIcon: <MaterialIcons name="account-balance-wallet" size={100} color="#fff" />,
-    color: '#4DD0E1',
+    icon: <MaterialIcons name="account-balance-wallet" size={38} color="#9e2021" />,
+    backgroundIcon: <MaterialIcons name="account-balance-wallet" size={100} color="rgba(158,32,33,0.4)" />,
+    color: '#fff',
     description: 'Movimientos y pagos'
   },
   {
     id: 3,
     name: 'Seguros',
-    icon: <Ionicons name="shield-checkmark" size={38} color="#fff" />,
-    backgroundIcon: <Ionicons name="shield-checkmark" size={100} color="#fff" />,
-    color: '#5C6BC0',
+    icon: <Ionicons name="shield-checkmark" size={38} color="#9e2021" />,
+    backgroundIcon: <Ionicons name="shield-checkmark" size={100} color="rgba(158,32,33,0.4)" />,
+    color: '#fff',
     description: 'Protegé tus bienes'
   },
   {
     id: 4,
     name: 'Electrodoméstico',
-    icon: <MaterialIcons name="tv" size={38} color="#fff" />,
-    backgroundIcon: <MaterialIcons name="tv" size={100} color="#fff" />,
-    color: '#FFA726',
+    icon: <MaterialIcons name="tv" size={38} color="#9e2021" />,
+    backgroundIcon: <MaterialIcons name="tv" size={100} color="rgba(158,32,33,0.4)" />,
+    color: '#fff',
     description: 'Comprá con cuotas'
   }
 ];
+
 
 const getGreeting = () => {
   const now = new Date();
@@ -236,7 +239,7 @@ const toggleExpand = (idx) => {
       console.log('Error al obtener datos de AsyncStorage:', error);
     }
   };
- 
+    getToken();
   obtenerDatos();
 }, []);
 const obtenerIniciales = (nombreCompleto) => {
@@ -372,30 +375,44 @@ const obtenerIniciales = (nombreCompleto) => {
           </View>
         </ImageBackground>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+     <ScrollView contentContainerStyle={styles.scrollContainer}>
         {/* Historias en círculos */}
-        <Text style={{ fontSize: 20, fontWeight: 'bold', margin: 10, textAlign: 'left' }}>
-                           ¡Descuentos de hoy!
-          </Text>
-        <View style={styles.storiesContainer}>
-          {loading ? (
-            <ActivityIndicator size="large" color="#bf0404" />
-          ) : error ? (
-            <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
-          ) : (
-            <FlatList
-              data={flyers}
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              keyExtractor={(item) => item.id.toString()}
-              contentContainerStyle={{ paddingHorizontal: 20 }}
-              renderItem={({ item }) => (
-                <TouchableOpacity onPress={() => mostrarHistoria(item)} style={styles.storyCircle}>
-                  <Image source={{ uri: item.imagen }} style={styles.storyImage} />
-                </TouchableOpacity>
-              )}
-            />
-          )}
+      <View style={styles.cardDescuentos}>
+          <LinearGradient
+            colors={['#fff', '#fdeaea']} // degradado más suave
+            style={styles.headerGradient}
+          >
+            <View style={styles.titleContainer}>
+              <FontAwesome5 name="tags" size={15} color="#bf0404" style={{ marginRight: 6 }} />
+              <Text style={styles.titleText}>Descuentos de hoy</Text>
+            </View>
+            <Text style={styles.subtitleText}>Aprovechá las mejores ofertas</Text>
+          </LinearGradient>
+
+          {/* Historias */}
+          <View style={styles.storiesContainer}>
+            {loading ? (
+              <ActivityIndicator size="large" color="#bf0404" />
+            ) : error ? (
+              <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
+            ) : (
+              <FlatList
+                data={flyers}
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                keyExtractor={(item) => item.id.toString()}
+                contentContainerStyle={{ paddingHorizontal: 20 }}
+                renderItem={({ item }) => (
+                  <TouchableOpacity
+                    onPress={() => mostrarHistoria(item)}
+                    style={styles.storyCircle}
+                  >
+                    <Image source={{ uri: item.imagen }} style={styles.storyImage} />
+                  </TouchableOpacity>
+                )}
+              />
+            )}
+          </View>
         </View>
 
         {/* Modal de historia */}
@@ -413,67 +430,8 @@ const obtenerIniciales = (nombreCompleto) => {
             </View> 
           </Modal>
         )}
-        {/* PENDIENTES */}
-        {!loading && !error && tarjetas.length > 0 && (
-          <View style={styles.card}>
-            {/* Cabecera del acordeón */}
-            <TouchableOpacity
-              activeOpacity={0.9}
-              onPress={togglePendientes}
-              style={[
-                styles.groupHeader,
-                { paddingHorizontal: 20, marginHorizontal: 15 } // aire interno y externo
-              ]}
-            >
-              <Text style={styles.groupTitle}>
-                <FontAwesome5 name="exclamation-circle" size={17} color="#d11f1fff" /> Pago vencido
-              </Text>
-              <Text style={styles.groupCount}>({tarjetas.length})</Text>
-              <View style={{ flex: 1 }} />
-              <FontAwesome5
-                name={openPendientes ? 'chevron-up' : 'chevron-down'}
-                size={18}
-                color="#555"
-              />
-            </TouchableOpacity>
-
-            {/* Contenido del acordeón */}
-            {openPendientes && (
-              <View style={styles.pendingContainer}>
-                {tarjetas.map((item, idx) => {
-                  const dias = Number(item?.dias_mora) || 0;
-                  const saldo = Number(item?.saldo_mora) || 0;
-                  return (
-                    <View key={idx} style={styles.pendingCard}>
-                      <View style={styles.pendingRow}>
-                        <View style={{ flex: 1, marginRight: 12 }}>
-                          <View style={styles.pendingTitleRow}>
-                            <FontAwesome5 name="exclamation-circle" size={14} color="#d32f2f" />
-                            <Text style={styles.pendingTitle}>Vencido</Text>
-                          </View>
-                          <Text style={styles.pendingText}>
-                            Tienes un saldo pendiente en tu tarjeta de crédito de{' '}
-                            <Text style={{ fontWeight: 'bold' }}>{formatMoney(saldo, 'Gs')}</Text>
-                            {dias > 0 && (
-                              <Text style={{ fontWeight: 'bold' }}>
-                                {` (${dias} día${dias === 1 ? '' : 's'} en mora)`}
-                              </Text>
-                            )}
-                            . Pagar a tiempo te ayudará a mantener un buen historial y cuidar tu perfil crediticio.
-                          </Text>
-                        </View>
-                      </View>
-                      <View style={styles.leftStripe} />
-                    </View>
-                  );
-                })}
-              </View>
-            )}
-          </View>
-        )}
-        <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginTop: 10, marginBottom: 5 }}>
-          Categorias
-        </Text>
+       
+       
         {/* Categorías */}
       <View style={styles.categoryContainer}>
         {categories.map(cat => (
@@ -503,39 +461,49 @@ const obtenerIniciales = (nombreCompleto) => {
           </TouchableOpacity>
         ))}
       </View>
+      <Text>
+    </Text>
       {/* Carrusel de Promos */}
-       <Text style={{ fontSize: 20, fontWeight: 'bold', marginHorizontal: 20, marginTop: 20 }}>
-          Promos
-        </Text>
-      {/* Carrusel de Promos */}
-    <View style={styles.carouselWrapper}>
-      <View style={styles.carouselContainer}>
-        {loadingPromos ? (
-          <ActivityIndicator size="large" color="#bf0404" />
-        ) : errorPromos ? (
-          <Text style={{ color: 'red', textAlign: 'center' }}>{errorPromos}</Text>
-        ) : (
-          <FlatList
-            data={promos}
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            keyExtractor={(item) => item.id}
-            renderItem={({ item }) => (
-              <TouchableOpacity
-                activeOpacity={0.9}
-                onPress={() => item.url && Linking.openURL(item.url)}
-              >
-               <Image
-                source={{ uri: item.image }}
-                style={[styles.carouselImage, { width: width * 0.9 }]} // mismo porcentaje que el contenedor
-              />
-              </TouchableOpacity>
-            )}
-          />
-        )}
-      </View>
+      <View style={styles.cardPromos}>
+      <LinearGradient
+        colors={['#fff', '#fdeaea']}
+        style={styles.headerGradient}
+      >
+    <View style={styles.titleContainer}>
+      <FontAwesome5 name="gift" size={20} color="#bf0404" style={{ marginRight: 6 }} />
+      <Text style={styles.titleText}>Promos destacadas</Text>
     </View>
+    <Text style={styles.subtitleText}>Descubrí las promociones de la semana</Text>
+  </LinearGradient>
+
+  {/* Carrusel directamente dentro de la card */}
+  {loadingPromos ? (
+    <ActivityIndicator size="large" color="#bf0404" style={{ marginVertical: 20 }} />
+  ) : errorPromos ? (
+    <Text style={{ color: 'red', textAlign: 'center' }}>{errorPromos}</Text>
+  ) : (
+    <FlatList
+      data={promos}
+      horizontal
+      pagingEnabled
+      showsHorizontalScrollIndicator={false}
+      keyExtractor={(item) => item.id.toString()}
+      contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 10 }}
+      renderItem={({ item }) => (
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={() => item.url && Linking.openURL(item.url)}
+        >
+          <Image
+            source={{ uri: item.image }}
+            style={[styles.carouselImage, { width: width * 0.9 }]}
+          />
+        </TouchableOpacity>
+      )}
+    />
+  )}
+</View>
+
 
       </ScrollView>
       {/* Opciones flotantes */}
@@ -582,7 +550,7 @@ const obtenerIniciales = (nombreCompleto) => {
        <TouchableOpacity
           onPress={() => {
             console.log('NAV -> Qr con params:', { num_doc: String(usuario) });
-            navigation.navigate('Qr', { num_doc: String(usuario) });
+            navigation.navigate('PagoQr', { num_doc: String(usuario) });
           }}
         >
           <Ionicons name="qr-code" size={24} color="#fff" />
@@ -636,6 +604,112 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     width: '100%',
     elevation: 8
+  },
+  cardPromos: {
+    marginHorizontal: 10,
+    marginVertical: 15,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+    overflow: 'hidden',
+    paddingBottom: 10, // agrega espacio final al carrusel
+  },
+  headerGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f2',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#222',
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 2,
+  },
+  carouselImage: {
+    height: 180,
+    borderRadius: 15,
+    resizeMode: 'cover',
+    alignSelf: 'center',
+    marginVertical: 8,
+  },
+
+   cardDescuentos: {
+    marginHorizontal: 10,
+    marginVertical: 15,
+    borderRadius: 18,
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 3 },
+    elevation: 4,
+    overflow: 'hidden',
+  },
+  headerGradient: {
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f2',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#222',
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: '#777',
+    marginTop: 2,
+  },
+  storiesContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 10,
+  },
+
+  headerGradient: {
+    paddingVertical: 15,
+    paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f2f2f2',
+  },
+  titleContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  titleEmoji: {
+    fontSize: 24,
+    marginRight: 6,
+  },
+  titleText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#222',
+  },
+  subtitleText: {
+    fontSize: 13,
+    color: '#666',
+    marginTop: 2,
+  },
+  storiesContainer: {
+    backgroundColor: '#fff',
+    paddingVertical: 12,
   },
   centerButton: {
     backgroundColor: '#9e2021',
@@ -781,16 +855,18 @@ headerContent: {
 categoryIcon: {
   marginBottom: 10
 },
-categoryText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 18,
-  marginBottom: 4
-},
-categorySubText: {
-  color: 'rgba(255,255,255,0.9)',
-  fontSize: 12
-},
+ categoryText: {
+    marginTop: 8,
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#9e2021', // rojo institucional
+  },
+  categorySubText: {
+    fontSize: 13,
+    color: '#9e2021', // rojo institucional
+    opacity: 0.85,
+    textAlign: 'center',
+  },
 categoryBackgroundIcon: {
   position: 'absolute',
   right: -20,

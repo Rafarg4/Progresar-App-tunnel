@@ -94,7 +94,7 @@ const Extracto = () => {
     const meses = {
       Enero: "01", Febrero: "02", Marzo: "03", Abril: "04",
       Mayo: "05", Junio: "06", Julio: "07", Agosto: "08",
-      Septiembre: "09", Octubre: "10", Noviembre: "11", Diciembre: "12"
+      Setiembre: "09", Octubre: "10", Noviembre: "11", Diciembre: "12"
     };
     return meses[mes];
   };
@@ -120,6 +120,26 @@ const descargarPDF = async (url, nombreArchivo) => {
   }
 };
 
+// 🔹 función global para mapear clase_tarjeta a nombre de carpeta
+const nombreTipoTarjeta = (clase) => {
+  switch (clase) {
+    case "V6": return "Visa";
+    case "1":  return "Dinelco";
+    case "JM": return "Credicard";
+    case "TR": return "Credicard";
+    case "RC": return "Credicard";
+    case "RM": return "Credicard";
+    case "J7": return "Credicard";
+    case "EV": return "Credicard";
+    case "TS": return "Credicard";
+    case "JW": return "Credicard";
+    case "FR": return "Credicard";
+    case "J0": return "Credicard";
+    case "EI": return "Visa";
+    default:   return "Otros"; // fallback
+  }
+};
+
 const handleDownload = async () => {
   if (
     !tarjetaCompletaSeleccionada ||
@@ -130,11 +150,13 @@ const handleDownload = async () => {
     return;
   }
 
-  const nroTarjeta = tarjetaCompletaSeleccionada.nro_tarjeta;
+  // 🔹 Datos necesarios
   const clase = tarjetaCompletaSeleccionada.clase_tarjeta || "";
-  const tipo_tc = clase === "1" ? "Bepsa" : "Otra";
-  const mes = obtenerNumeroMes(mesSeleccionado); // Ej: "05"
+  const tipoTarjeta = nombreTipoTarjeta(clase);  // ej: "Visa", "Dinelco"
+  const mes = obtenerNumeroMes(mesSeleccionado); // ej: "09"
+  const nombreMes = mesSeleccionado;             // ej: "Setiembre"
   const anho = anyoSeleccionado;
+  const nroUsuario = tarjetaCompletaSeleccionada.nro_usuario; // de tu API
 
   try {
     const response = await fetch("https://api.progresarcorp.com.py/generar_extracto", {
@@ -143,10 +165,11 @@ const handleDownload = async () => {
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        nro_tarjeta: nroTarjeta,
-        tipo_tc: tipo_tc,
-        mes: mes,
-        anho: anho,
+        nro_usuario: nroUsuario,
+        anho,
+        mes,
+        nombreMes,
+        tipo_tarjeta: tipoTarjeta,
       }),
     });
 
@@ -161,87 +184,32 @@ const handleDownload = async () => {
       throw new Error("La respuesta no es un JSON válido.");
     }
 
-    if (response.ok) {
-      console.log("✅ Respuesta OK:", data);
-
-      // Si Laravel no devuelve la URL, la armamos manualmente:
-      const urlDescarga = data?.url_pdf || 
-        `https://api.progresarcorp.com.py/extractos_generados/extracto_${nroTarjeta}_${mes}_${anho}.pdf`;
+    if (response.ok && data.success) {
+      console.log("✅ URL recibida:", data.url_pdf);
 
       Alert.alert(
         "¡Éxito!",
-        "El extracto fue generado correctamente.",
+        "El extracto está disponible.",
         [
           { text: "Cancelar", style: "cancel" },
           {
             text: "Descargar PDF",
-            onPress: () => descargarPDF(urlDescarga, `extracto_${nroTarjeta}_${mes}_${anho}.pdf`),
+            onPress: () =>
+              descargarPDF(
+                data.url_pdf, // 👈 usamos la URL del backend
+                data.filename || `Extracto_${tipoTarjeta}_${mes}_${anho}_${nroUsuario}.pdf`
+              ),
           },
         ]
       );
-
     } else {
       console.log("❌ Error del servidor:", data);
-      Alert.alert("Error", data.error || "No se pudo generar el extracto.");
+      Alert.alert("Error", data.error || "No se pudo obtener el extracto.");
     }
-
   } catch (error) {
     console.error("💥 Error general:", error);
     Alert.alert("Error", error.message || "Ocurrió un error inesperado.");
   }
-};
-
-const handleRequestByEmail = async () => {
-  if (!tarjetaCompletaSeleccionada || !mesSeleccionado || !anyoSeleccionado) {
-    Alert.alert("Faltan datos", "Debe seleccionar tarjeta, mes y año antes de continuar.");
-    return;
-  }
-
-  const nroTarjeta = tarjetaCompletaSeleccionada.nro_tarjeta;
-  const tipoTC = tarjetaCompletaSeleccionada.clase_tarjeta === '1' ? 'Bepsa' : 'Procard';
-  const mes = obtenerNumeroMes(mesSeleccionado);
-  const anio = anyoSeleccionado;
-
- try {
-  const response = await fetch('https://api.progresarcorp.com.py/api/guardar_solicitud_extracto', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      num_doc: usuario,
-      nro_tarjeta: nroTarjeta,
-      mes,
-      anho: anio,
-      tipo_tc: tipoTC,
-    }),
-  });
-
-  const contentType = response.headers.get('content-type');
-
-  if (!response.ok) {
-    // Si no es JSON, lo tratamos como texto plano (puede ser HTML)
-    if (contentType && contentType.includes('application/json')) {
-      const errorData = await response.json();
-      console.error('Error del servidor:', errorData);
-    } else {
-      const errorText = await response.text();
-      console.error('Respuesta inesperada (no JSON):', errorText);
-    }
-
-    Alert.alert("Error", "No se pudo enviar la solicitud.");
-    return;
-  }
-
-  // Si todo va bien:
-  const result = await response.json();
-  console.log('Respuesta exitosa:', result);
-  Alert.alert("Éxito", "La solicitud fue enviada por correo.");
-
-} catch (error) {
-  console.error('Error en la petición:', error.message || error);
-  Alert.alert("Error", "Hubo un problema al enviar la solicitud.");
-}
 };
 
   return (
@@ -298,10 +266,6 @@ const handleRequestByEmail = async () => {
           <View style={styles.footerButtons}>
             <TouchableOpacity onPress={handleDownload} style={styles.actionButton}>
               <Text style={styles.buttonText}>  <FontAwesome5 name="download" size={16} color="#fff" style={styles.icon} /> Descargar</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity onPress={handleRequestByEmail} style={styles.actionButton}>
-              <Text style={styles.buttonText}>  <FontAwesome5 name="envelope" size={16} color="#fff" style={styles.icon} /> Correo</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -396,7 +360,7 @@ const handleRequestByEmail = async () => {
               "Junio",
               "Julio",
               "Agosto",
-              "Septiembre",
+              "Setiembre",
               "Octubre",
               "Noviembre",
               "Diciembre",

@@ -87,7 +87,7 @@ export default function Electrodomesticos() {
     <View style={styles.container}>
       {/* Header con imagen */}
       <ImageBackground
-        source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/Electro.png' }}
+         source={require('../assets/Electro.png')} 
         style={styles.header}
         imageStyle={styles.headerImage}
         resizeMode="cover"

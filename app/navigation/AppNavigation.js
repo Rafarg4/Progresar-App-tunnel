@@ -27,11 +27,15 @@ import DetaBepsa from '../screens/DetaBepsa'
 import DetaProcard from '../screens/DetaProcard'
 import AtmQr from '../screens/AtmQr'
 import Extracto from '../screens/Extracto'
+import RecuperarContraseña from '../screens/RecuperarContraseña'
+import Extractos from '../screens/Extractos'
 import Electrodomesticos from '../screens/Electrodomesticos'
 import InicioApp from '../screens/InicioApp'
 import MisTarjetas from '../screens/MisTarjetas'
 import DetalleBepsa from '../screens/DetalleBepsa'
 import PerfilUsuario from '../screens/PerfilUsuario'
+import PagoQr from '../screens/PagoQr'
+import DetallePago from '../screens/DetallePago'
 import MisOperaciones from '../screens/MisOperaciones'
 import DetalleTarjetas from '../screens/DetalleTarjetas'
 import DetalleOperaciones from '../screens/DetalleOperaciones'
@@ -161,6 +165,40 @@ function App() {
                     component={Extracto}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+                <Stack.Screen
+                    name="PagoQr"
+                    component={PagoQr}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+                 
+                 <Stack.Screen
+                    name="RecuperarContraseña"
+                    component={RecuperarContraseña}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+                   
+                  <Stack.Screen
+                    name="DetallePago"
+                    component={DetallePago}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+               <Stack.Screen
+                    name="Extractos"
+                    component={Extractos}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
                         gestureEnabled: false
                     }}
                     />
@@ -169,7 +207,7 @@ function App() {
                     component={Tarjetas}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -177,7 +215,7 @@ function App() {
                     component={Financiero}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -185,7 +223,7 @@ function App() {
                     component={PerfilUsuario}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
              <Stack.Screen
@@ -193,7 +231,7 @@ function App() {
                     component={DetalleBepsa}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -201,7 +239,7 @@ function App() {
                     component={Electrodomesticos}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
 
@@ -218,7 +256,7 @@ function App() {
                     component={MisTarjetas}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
              <Stack.Screen
@@ -226,7 +264,7 @@ function App() {
                     component={MisSeguros}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -234,7 +272,7 @@ function App() {
                     component={MisElectrodomesticos}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -242,7 +280,7 @@ function App() {
                     component={MisOperaciones}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -250,7 +288,7 @@ function App() {
                     component={DetalleOperaciones}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -258,7 +296,7 @@ function App() {
                     component={DetalleElectro}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
             <Stack.Screen
@@ -266,7 +304,7 @@ function App() {
                     component={DetalleTarjetas}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
              <Stack.Screen
@@ -274,7 +312,7 @@ function App() {
                     component={SolicitarAcceso}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
-                        gestureEnabled: false
+                        gestureEnabled: true
                     }}
                     />
 

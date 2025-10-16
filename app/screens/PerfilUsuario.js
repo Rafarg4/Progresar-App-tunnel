@@ -438,16 +438,6 @@ export default function PerfilUsuario() {
                 {/* Acciones del formulario */}
                 <View style={styles.formActions}>
                   <TouchableOpacity
-                    onPress={resetForm}
-                    style={[styles.formBtn, { backgroundColor: '#888' }]}
-                    activeOpacity={0.85}
-                    disabled={savingForm}
-                  >
-                    <FontAwesome5 name="undo" size={14} color="#fff" />
-                    <Text style={styles.formBtnText}>Cancelar</Text>
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
                     onPress={saveAll}
                     style={[styles.formBtn, { backgroundColor: '#9e2021' }]}
                     activeOpacity={0.85}
