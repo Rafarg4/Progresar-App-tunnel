@@ -43,6 +43,7 @@ import MisSeguros from '../screens/MisSeguros'
 import MisElectrodomesticos from '../screens/MisElectrodomesticos'
 import DetalleElectro from '../screens/DetalleElectro'
 import ActualizarPerfil from '../screens/ActualizarPerfil'
+import Notificaciones from '../screens/Notificaciones'
 import SolicitarAcceso from '../screens/SolicitarAcceso'
 import Checkout from '../screens/Checkout';
 import ConfirmarCompra from '../screens/ConfirmarCompra';
@@ -189,6 +190,14 @@ function App() {
                   <Stack.Screen
                     name="DetallePago"
                     component={DetallePago}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+                 <Stack.Screen
+                    name="Notificaciones"
+                    component={Notificaciones}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
                         gestureEnabled: true

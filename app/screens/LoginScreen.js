@@ -25,7 +25,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Button } from 'react-native-elements';
 import Constants from 'expo-constants';
-import axios from 'axios';
+import axios from 'axios'; 
 const { width, height } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
@@ -59,7 +59,7 @@ axios
             text: 'Actualizar',
             onPress: () => 
               WebBrowser.openBrowserAsync(
-                'http://apps.apple.com/app/progresarmovil/id6740653178'
+                'https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil&hl=es'
               ),
           },
           { 
@@ -263,7 +263,7 @@ verificarBiometria = async () => {
               // No limpiar pass acá, para evitar pérdida
                this.setState({ pass: '' });
 
-              this.getEmailVerified();
+              this.getEmailVerified(); 
             }
           }
         );
@@ -479,27 +479,20 @@ changeUser(user){
         cod_cliente: global.codigo_cliente
       };
 
-      fetch('https://api.progresarcorp.com.py/api/email-verified', {
-        method: 'POST',
-        body: JSON.stringify(data), 
-        headers:{
-            'Content-Type': 'application/json'
-        }
-      })
-      .then(response => response.json())
-      .then(data => {
         if(data.emailVerify == null){
           this.setState({loading: false})
           if(data.email != null){
-            this.gotoSreen('Verificar Email', data.nombre, data.dominio, data.email);
+           this.setState({loading: false})
+          this.gotoSreen('InicioApp');
           }else{
-            Alert.alert('Atención', 'No cuenta con un email registrado en nuestro sistema \nContáctese con su oficial de negocios para actualizar sus datos')
+           this.setState({loading: false})
+          this.gotoSreen('InicioApp');
           }
         }else{
           this.setState({loading: false})
           this.gotoSreen('InicioApp');
         }
-      })
+      
     } 
 
     changeSecureText(){
@@ -549,13 +542,27 @@ changeUser(user){
 
         const Buton = () => {
             return(
-                <TouchableOpacity 
-                  style={buttonStyle}
-                  onPress={()=> this.onPresComprob()}
-                
-                >
-                  <Text style={styles.botText}> Ingresar</Text>
-                </TouchableOpacity>
+               <TouchableOpacity 
+                style={[
+                  styles.botLogin,
+                  { 
+                    width: 200,           // ancho más compacto
+                    paddingVertical: 10,  // 🔹 más alto que antes (era 8)
+                    alignSelf: 'center',
+                    borderRadius: 8,      // 🔹 bordes más suaves
+                    elevation: 3,         // 🔹 sombra en Android
+                    shadowColor: '#000',  // 🔹 sombra en iOS
+                    shadowOffset: { width: 0, height: 2 },
+                    shadowOpacity: 0.25,
+                    shadowRadius: 3.5,
+                  }
+                ]}
+                onPress={() => this.onPresComprob()}
+              >
+                <Text style={[styles.botText, { fontSize: 15, fontWeight: 'bold' }]}>
+                  Ingresar
+                </Text>
+              </TouchableOpacity>
             )
         }
 
@@ -739,45 +746,78 @@ changeUser(user){
                 </View>
 
               </View>
-             <View style={{flexDirection: 'row', justifyContent: 'center', marginVertical: 10}}>
-              <TouchableOpacity
-                style={[
-                  styles.selectorButton,
-                  this.state.metodoLogin === 'password' && styles.selectorButtonSelected,
-                ]}
-                onPress={() => {
-                  this.setState({ metodoLogin: 'password' }, () => {
-                    this.setState({ user: '', pass: '' }); // Limpiar solo al cambiar a password
-                  });
+             <View
+                style={{
+                  flexDirection: 'row',
+                  justifyContent: 'center',
+                  marginVertical: 6,
+                  marginHorizontal: 20,
                 }}
               >
-                <Text style={styles.selectorText}>Contraseña</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.selectorButton,
+                    this.state.metodoLogin === 'password' && styles.selectorButtonSelected,
+                  ]}
+                  onPress={() => {
+                    this.setState({ metodoLogin: 'password' }, () => {
+                      this.setState({ user: '', pass: '' });
+                    });
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      this.state.metodoLogin === 'password' && styles.selectorTextSelected,
+                    ]}
+                  >
+                    Contraseña
+                  </Text>
+                </TouchableOpacity>
 
-              <TouchableOpacity
-                style={[
-                  styles.selectorButton,
-                  this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
-                ]}
-                onPress={() => {
-                  this.setState({ metodoLogin: 'biometria' }, () => {
-                    this.cargarDatosBiometria(); // Cargar datos solo al cambiar a biometría
-                  });
-                }}
-              >
-                <Text style={styles.selectorText}>Biometría</Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.selectorButton,
+                    this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
+                  ]}
+                  onPress={() => {
+                    this.setState({ metodoLogin: 'biometria' }, () => {
+                      this.cargarDatosBiometria();
+                    });
+                  }}
+                >
+                  <Text
+                    style={[
+                      styles.selectorText,
+                      this.state.metodoLogin === 'biometria' && styles.selectorTextSelected,
+                    ]}
+                  >
+                    Biometría
+                  </Text>
+                </TouchableOpacity>
               </View>
+
               {this.state.metodoLogin === 'password' && (
                 <>
                  {/* Campo Cédula */}
-                <View style={{ paddingHorizontal: 15 }}>
+                <View style={{ paddingHorizontal: 15, marginTop: 10 }}>
                   <Text style={styles.loginText}>N° de Cédula</Text>
                 </View>
                 <View style={{ paddingHorizontal: 15, alignItems: 'center' }}>
                   <TextInput
                     value={this.state.user}
-                    style={styles.input}
+                     style={{
+                    flexDirection: 'row',
+                    alignItems: 'center',
+                    borderColor: '#ccc',
+                    borderWidth: 1,
+                    borderRadius: 8,
+                    paddingHorizontal: 10,
+                    height: 55,
+                     borderColor: "#9e2021",
+                    width: '100%',
+                    backgroundColor: 'white',
+                  }}
                     placeholder='1234567'
                     keyboardType="numeric"
                     placeholderTextColor="gray"
@@ -818,14 +858,13 @@ changeUser(user){
                   </View>
                 </View>
                 {/* Boton de ¿Olvidó su contraseña? */}
-                <View style={{alignItems: 'center', marginBottom: 5, paddingHorizontal: 15}}>
-                  <TouchableOpacity 
-                      onPress={() => this.gotoSreen('RecuperarContraseña')}
-                    >
-                  <Text style={styles.botOlv}>¿Olvidó su contraseña?</Text>
-                </TouchableOpacity>
+                <View style={{ alignItems: 'center', marginBottom: 5, paddingHorizontal: 15 }}>
+                  <TouchableOpacity onPress={() => this.gotoSreen('RecuperarContraseña')}>
+                    <Text style={[styles.botOlv, { fontSize: 14, textAlign: 'center' }]}>
+                      ¿Olvidó su contraseña? 
+                    </Text>
+                  </TouchableOpacity>
                 </View>
-        
                 {/* Aqui se agrega el boton de login*/}
                 <View style={{alignItems: 'center'}}>
                   {/* bioAvaliable ? <ButLogin/> : <Buton /> */}
@@ -836,8 +875,13 @@ changeUser(user){
               
               {this.state.metodoLogin === 'biometria' && (
                 <View style={{ padding: 20 }}>
-                  <TouchableOpacity onPress={this.handleBiometria} style={styles.botonBiometrico}>
-                    <Text style={{ color: 'white', textAlign: 'center' }}><Icon name="lock" size={18} color="white" style={{ marginRight: 8 }} /> Autenticarse con biometría</Text>
+                  <TouchableOpacity onPress={this.handleBiometria} style={styles.botonAzul}>
+                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                      <Icon name="lock" size={18} color="white" style={{ marginRight: 8 }} />
+                      <Text style={{ color: 'white', fontSize: 15, fontWeight: 'bold', textAlign: 'center' }}>
+                        Autenticarse con biometría
+                      </Text>
+                    </View>
                   </TouchableOpacity>
                 </View>
               )}
@@ -855,17 +899,14 @@ changeUser(user){
                 </View> */}
                 
                 {/* Solicitar Accesso */}
-                <View style={{marginTop: 10, alignItems: 'flex-end', marginRight: 20}}>
-                  <View style={{flexDirection:'row'}}>
+                <View style={{ marginTop: 5, alignItems: 'center' }}>
+                  <View style={{ flexDirection: 'row' }}>
                     <Text>¿No puedes ingresar? </Text>
-                    <TouchableOpacity 
-                      onPress={() => this.gotoSreen('SolicitarAcceso')}
-                    >
-                      <Text style={styles.textAcces}>Solicitar Acceso</Text>
+                    <TouchableOpacity onPress={() => this.gotoSreen('SolicitarAcceso')}>
+                      <Text style={styles.textAcces}>Solicitar acceso</Text>
                     </TouchableOpacity>
                   </View>
                 </View>
-
                 {/* botones de info */}
                 <View style={styles.botonInf}>
 
@@ -925,197 +966,243 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     top: 0,
-    height: 300,
+    height: 260, // antes 300
   },
 
- box: {
-  flex: 1,
-  backgroundColor: 'white',
-},
-  //estilos para los TextInput
+  box: {
+    flex: 1,
+    backgroundColor: 'white',
+  },
+
+  // estilos para los TextInput
   input: {
-    height: 50,
+    height: 42, // antes 50
     width: '100%',
-    marginBottom: 10,
-    marginTop: 10,
-    paddingHorizontal: 10,
-    borderRadius: 5,
+    marginBottom: 6, // antes 10
+    marginTop: 6,
+    paddingHorizontal: 8, // antes 10
+    borderRadius: 4, // antes 5
     borderWidth: 0.8,
     borderColor: "#9e2021",
   },
-  
-  inputStyle: { fontSize: 14 },
 
-  placeholderStyle: { fontSize: 14 },
-  textErrorStyle: { fontSize: 14 },
-  //termina el estilo del input
+  inputStyle: { fontSize: 13 },
+  placeholderStyle: { fontSize: 13 },
+  textErrorStyle: { fontSize: 13 },
+  // termina el estilo del input
 
-  loginText:{
-    fontWeight: 'bold'
-  }, 
+  loginText: {
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 
-  botText:{
-    textAlign:"center",
+  botText: {
+    textAlign: "center",
     color: '#fff',
-    fontSize:16
+    fontSize: 14, // antes 16
   },
 
-  botLogin:{
+  botLogin: {
     backgroundColor: "#9e2021",
-    padding: 8,
+    padding: 6, // antes 8
     borderRadius: 5,
-    width: 300,
-    marginBottom: 15
+    width: 260, // antes 300
+    marginBottom: 10,
   },
 
-  textAcces:{
+  textAcces: {
     color: '#000',
-    fontSize:14,
-    fontWeight: 'bold'
+    fontSize: 13,
+    fontWeight: 'bold',
   },
 
-  logo:{
-    width:270,
-    height: 70,
+  logo: {
+    width: 230, // antes 270
+    height: 60, // antes 70
+    marginTop: 10,
+    marginBottom: 20,
+    paddingHorizontal: 10,
+  },
+
+  botOlv: {
+    color: "black",
+    marginBottom: 10,
+    marginTop: 5,
+    fontSize: 13,
+  },
+
+  botonInf: {
     marginTop: 15,
-    marginBottom:25,
-    paddingHorizontal: 15
+    width: '100%',
   },
 
-  botOlv:{
-    color: "black", 
-    marginBottom: 15,
-    marginTop:5
-  },
-
-  botonInf:{
-    marginTop: 20,
-    width: '100%'
-  },
-
-  rowCol:{
+  rowCol: {
     flexDirection: "row",
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 20
+    marginBottom: 15,
   },
 
-  copy:{
+  copy: {
     position: 'absolute',
-    bottom: 15,
+    bottom: 10,
   },
 
-  contact:{
+  contact: {
     position: 'absolute',
-    bottom: 15,
+    bottom: 10,
   },
 
-  contAct:{
+  contAct: {
     flex: 1,
-    justifyContent: "center"
+    justifyContent: "center",
   },
 
-  horizontal:{
+  horizontal: {
     flexDirection: "row",
     justifyContent: "space-around",
   },
 
-  //estilo del Modal
-  centeredView:{
+  // estilo del Modal
+  centeredView: {
     justifyContent: 'center',
     alignItems: 'center',
     alignContent: 'center',
-    flex: 1
+    flex: 1,
   },
+
   container: {
     flex: 1,
     backgroundColor: '#fff',
   },
-headerImage: {
+
+  headerImage: {
     width: width,
-    height: 240,
+    height: 200, // antes 240
     resizeMode: 'cover',
   },
+
   curvedWhite: {
     position: 'absolute',
-    top: 240 - 40, // 200
+    top: 200 - 35,
     left: 0,
     right: 0,
-    height: 40,
+    height: 35,
     backgroundColor: '#fff',
-    borderTopLeftRadius: 40,
-    borderTopRightRadius: 40,
-    // Aseguramos que la vista esté por encima de la imagen
+    borderTopLeftRadius: 35,
+    borderTopRightRadius: 35,
     zIndex: 10,
   },
+
   formContainer: {
     flex: 1,
-    paddingTop: 17,
-    paddingHorizontal: 20,
+    paddingTop: 12, // antes 17
+    paddingHorizontal: 15,
   },
-avatarContainer: {
-  width: 80,
-  height: 80,
-  borderRadius: 40, // círculo perfecto
-  backgroundColor: '#e0e0e0',
-  justifyContent: 'center',  // centra verticalmente
-  alignItems: 'center',      // centra horizontalmente
-  alignSelf: 'center',
-  marginBottom: 10,
-},
-avatarText: {
-  fontSize: 26,
-  fontWeight: 'bold',
-  color: '#333',
-},
-greetingText: {
-  fontSize: 15,
-  textAlign: 'center',
-  fontWeight: '900',
-  color: '#333',
-  marginBottom: 20,
-},
-biometricsButton: {
-  marginTop: 20,
-  alignItems: 'center',
-  backgroundColor: '#007bff',
-  paddingVertical: 12,
-  borderRadius: 10,
-  marginHorizontal: 40,
+
+  avatarContainer: {
+    width: 70, // antes 80
+    height: 70,
+    borderRadius: 35,
+    backgroundColor: '#e0e0e0',
+    justifyContent: 'center',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginBottom: 8,
+  },
+
+  avatarText: {
+    fontSize: 22, // antes 26
+    fontWeight: 'bold',
+    color: '#333',
+  },
+
+  greetingText: {
+    fontSize: 13, // antes 15
+    textAlign: 'center',
+    fontWeight: '900',
+    color: '#333',
+    marginBottom: 15,
+  },
+
+  biometricsButton: {
+    marginTop: 15,
+    alignItems: 'center',
+    backgroundColor: '#007bff',
+    paddingVertical: 10, // antes 12
+    borderRadius: 8,
+    marginHorizontal: 35,
+  },
+
+  biometricsButtonText: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: 'bold',
+  },
+
+    selectorButton: {
+    flex: 1,
+    paddingVertical: 10,        // 🔹 altura agradable al tacto
+    borderWidth: 1.3,
+    borderColor: '#9e2021',     // 🔹 mantiene coherencia con tu paleta
+    alignItems: 'center',
+    borderRadius: 10,           // 🔹 bordes más redondeados
+    marginHorizontal: 6,        // 🔹 separación entre botones
+    backgroundColor: '#fff',    // 🔹 fondo claro por defecto
+    elevation: 2,               // 🔹 sombra Android
+    shadowColor: '#000',        // 🔹 sombra iOS
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 2,
+  },
+
+  selectorButtonSelected: {
+  backgroundColor: '#9e2021', // 🔹 fondo rojo al estar activo
+  borderColor: '#9e2021',
+  elevation: 3,
+  shadowOpacity: 0.25,
 },
 
-biometricsButtonText: {
-  color: '#fff',
-  fontSize: 16,
+  selectorText: {
+  color: '#000',              // 🔹 texto negro por defecto
+  fontSize: 14,
+  fontWeight: '500',
+},
+selectorTextSelected: {
+  color: '#fff',              // 🔹 texto blanco cuando está activo
+  fontSize: 14,
   fontWeight: 'bold',
 },
-selectorButton: {
-  flex: 1,
-  padding: 10,
-  borderWidth: 1,
-  borderColor: '#ccc',
-  alignItems: 'center',
-  borderRadius: 5,
-  marginHorizontal: 5,
-},
-selectorButtonSelected: {
-  backgroundColor: '#9e2021',
-},
-selectorText: {
-  color: '#000',
-},
-botonBiometrico: {
-  backgroundColor: '#2e86de',
-  paddingVertical: 12,
-  paddingHorizontal: 20,
-  borderRadius: 10,
-  marginTop: 10,
-  alignItems: 'center',
-},
-button: {
-    backgroundColor: '#0066cc',
-    padding: 12,
+
+  botonBiometrico: {
+    backgroundColor: '#2e86de',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
     borderRadius: 8,
+    marginTop: 8,
     alignItems: 'center',
   },
+
+  button: {
+    backgroundColor: '#0066cc',
+    padding: 10,
+    borderRadius: 7,
+    alignItems: 'center',
+  },
+  botonAzul: {
+  backgroundColor: '#007bff', // 🔹 Azul principal (puede ser #0056b3 si querés más oscuro)
+  paddingVertical: 10,        // igual grosor que tu botón "Ingresar"
+  paddingHorizontal: 20,
+  borderRadius: 8,
+  alignItems: 'center',
+  justifyContent: 'center',
+  alignSelf: 'center',
+  width: 260,                 // opcional: podés ajustar a 220 si querés más compacto
+  elevation: 3,               // 🔹 sombra en Android
+  shadowColor: '#000',        // 🔹 sombra en iOS
+  shadowOffset: { width: 0, height: 2 },
+  shadowOpacity: 0.25,
+  shadowRadius: 3.5,
+},
+
 });

@@ -13,7 +13,7 @@
     ],
     "name": "Progresar Movil",
     "slug": "progresar-movil",
-    "version": "1.7.7",
+    "version": "1.7.9",
     "orientation": "portrait",
     "icon": "./assets/isologo.png",
     "splash": {
@@ -43,7 +43,7 @@
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#BF0404"
       },
-      "versionCode": 23,
+      "versionCode": 25,
       "permissions": [
         "USER_FACING_NOTIFICATIONS",
         "USER_FACING_NOTIFICATIONS"

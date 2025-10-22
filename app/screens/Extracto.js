@@ -9,6 +9,7 @@ import {
   Image,
   Linking,
   Dimensions,
+  Platform,
   ActivityIndicator,
   Alert,
 } from "react-native";
@@ -17,6 +18,8 @@ import * as FileSystem from 'expo-file-system';
 import * as Sharing from "expo-sharing";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
+import * as MediaLibrary from "expo-media-library";
+import * as IntentLauncher from "expo-intent-launcher";
 const Extracto = () => {
   const route = useRoute();
   const { num_doc } = route.params || {};
@@ -35,7 +38,7 @@ const Extracto = () => {
   const [usuario, setUsuario] = useState('');
   useEffect(() => {
   const obtenerDatos = async () => {
-    try {
+    try { 
       const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
       const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
 
@@ -98,25 +101,59 @@ const Extracto = () => {
     };
     return meses[mes];
   };
+
 const descargarPDF = async (url, nombreArchivo) => {
   try {
-    const fileUri = FileSystem.documentDirectory + nombreArchivo;
-    console.log("📦 URL a descargar:", url);
-    console.log("📦 Nombre de archivo:", nombreArchivo);
-    console.log("📁 Se guardará en:", fileUri);
+    if (!url) {
+      Alert.alert("Error", "No se recibió una URL válida.");
+      return;
+    }
 
-    const download = await FileSystem.downloadAsync(url, fileUri);
-    console.log('✅ Archivo descargado en:', download.uri);
+    // Asegurar nombre limpio
+    const safeName = nombreArchivo.replace(/[^\w.\-]/g, "_");
 
-    // Compartir o alertar ubicación
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(download.uri);
+    // 📥 Descargar primero en caché
+    const tempPath = FileSystem.cacheDirectory + safeName;
+    console.log("⬇️ Descargando:", url);
+    const { uri: downloadedUri, status } = await FileSystem.downloadAsync(url, tempPath);
+    if (status !== 200) {
+      Alert.alert("Error", `No se pudo descargar (HTTP ${status}).`);
+      return;
+    }
+
+    console.log("✅ PDF descargado temporalmente en:", downloadedUri);
+
+    // 🔐 Pedir permiso de escritura
+    const { status: permStatus } = await MediaLibrary.requestPermissionsAsync(true);
+    if (permStatus !== "granted") {
+      Alert.alert("Permiso requerido", "Debe permitir acceso al almacenamiento.");
+      return;
+    }
+
+    // 🗂️ Crear o usar álbum “ProgresarPDFs” dentro de Descargas
+    const asset = await MediaLibrary.createAssetAsync(downloadedUri);
+    await MediaLibrary.createAlbumAsync("ProgresarPDFs", asset, false);
+
+    Alert.alert("✅ Descargado", `Guardado en carpeta: Descargas/ProgresarPDFs\n\nNombre: ${safeName}`);
+
+    // 🔹 Abrir el PDF automáticamente si hay visor instalado
+    if (Platform.OS === "android") {
+      try {
+        const intent = await import("expo-intent-launcher");
+        await intent.startActivityAsync("android.intent.action.VIEW", {
+          data: asset.uri,
+          flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
+          type: "application/pdf",
+        });
+      } catch (e) {
+        console.log("⚠️ No se pudo abrir visor PDF:", e);
+      }
     } else {
-      Alert.alert("Descargado", "El archivo se guardó en: " + download.uri);
+      await Linking.openURL(asset.uri);
     }
   } catch (error) {
     console.error("❌ Error al descargar:", error);
-    Alert.alert("Error", "No se pudo descargar el archivo.");
+    Alert.alert("Error", "No se pudo guardar el archivo.");
   }
 };
 
@@ -216,14 +253,19 @@ const handleDownload = async () => {
     
     <View style={styles.container}>
     {/* Cabecera con imagen */}
-        <View style={[styles.headerContainer, { width: '100%' }]}>
-          <Image
-                source={require('../assets/inicio.png')}  
-            style={styles.headerImage}
-            resizeMode="cover"
-          /> 
+       <View style={styles.headerContainer}>
+        <Image
+          source={require('../assets/inicio.png')}
+          style={styles.headerImage}
+          resizeMode="cover"
+        />
+        <View style={styles.headerOverlay}>
           <Text style={styles.headerText}>Extractos</Text>
-        </View> 
+          <Text style={styles.headerSubText}>
+            Descargue sus extractos mensuales de tarjeta de forma rápida y segura.
+          </Text>
+        </View>
+      </View>
       <ScrollView style={styles.scrollView}>
           <View style={{ height: 10 }} /> 
         {/* Card de campos y botones */}
@@ -394,221 +436,172 @@ const handleDownload = async () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff', // si querés color de fondo
-    paddingHorizontal: 0,    // evita que el padding lo achique
-    margin: 0,
-    width: '100%'            // asegura que ocupe todo el ancho de pantalla
-  },
-  scrollView: {
-    
-    flex: 1,
-  },
-  fieldTitle: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  color: '#333',
-  marginBottom: 8,
-}, 
- // ✅ deja SOLO una versión de estos estilos
-headerContainer: {
-  position: 'relative',
-  overflow: 'hidden',
-  borderBottomLeftRadius: 25,
-  borderBottomRightRadius: 25,
-  marginBottom: 10,
-},
-headerImage: {
-  width: Dimensions.get('window').width, // ancho real de pantalla
-  height: 180,
-},
-headerText: {
-  position: 'absolute',
-  bottom: 20,
-  left: 20,
-  color: '#fff',
-  fontSize: 26,
-  fontWeight: 'bold',
-  textShadowColor: 'rgba(0,0,0,0.6)',
-  textShadowOffset: { width: 1, height: 1 },
-  textShadowRadius: 3,
-},
-
-   scrollContainer: {
-      padding: 20
-    },
-  card: {
-  width: '92%',          // 👈 no ocupa 100%
-  maxWidth: 520,         // 👈 tope lindo en tablets
-  alignSelf: 'center',   // 👈 centrado
-  padding: 20,           // (puedes bajar de 30 a 20 para que respire)
-  marginBottom: 20,
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  shadowColor: '#000',
-  shadowOpacity: 0.1,
-  shadowRadius: 5,
-  shadowOffset: { width: 0, height: 2 },
-  elevation: 3,
-},
-  generalHeader: {
-    textAlign: "center",
-    fontSize: 18,
-    marginBottom: 5,
-    fontWeight: "bold",
-  },
-  selectButton: {
-    padding: 10,
-    backgroundColor: "lightgray",
-    alignItems: "center",
-    borderRadius: 5,
-  },
-  selectButtonText: {
-    fontSize: 16,
-  },
-  modalOverlay: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    backgroundColor: "rgba(0,0,0,0.5)",
-  },
-  modalContainer: {
-    backgroundColor: "white",
-    padding: 20,
-    borderRadius: 10,
-    width: "80%",
-    alignItems: "center",
-  },
-  modalTitle: {
-    fontSize: 18,
-    fontWeight: "bold",
-    marginBottom: 15,
-  },
-  tarjetaItem: {
-    padding: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: "#ddd",
+    backgroundColor: "#fff",
     width: "100%",
   },
+
+  // 🔹 Cabecera con imagen y texto
+  headerContainer: {
+    position: "relative",
+    overflow: "hidden",
+    borderBottomLeftRadius: 25,
+    borderBottomRightRadius: 25,
+    marginBottom: 15,
+  },
+  headerImage: {
+    width: Dimensions.get("window").width,
+    height: 150,
+  },
+  headerOverlay: {
+    position: "absolute",
+    bottom: 20,
+    left: 20,
+    right: 20,
+  },
+  headerText: {
+    color: "#fff",
+    fontSize: 22,
+    fontWeight: "bold",
+    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+    marginBottom: 4,
+  },
+  headerSubText: {
+    color: "#f2f2f2",
+    fontSize: 13,
+    lineHeight: 18,
+    textShadowColor: "rgba(0,0,0,0.4)",
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  scrollView: {
+    flex: 1,
+  },
+
+  // 🔹 Tarjeta principal
+  card: {
+    width: "92%",
+    maxWidth: 520,
+    alignSelf: "center",
+    padding: 15,
+    marginBottom: 20,
+    backgroundColor: "#fff",
+    borderRadius: 12,
+    shadowColor: "#000",
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 3,
+  },
+
+  fieldTitle: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#333",
+    marginBottom: 8,
+  },
+
+  // 🔹 Selectores de tarjeta, año y mes
+  selectButton: {
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#9e2021",
+    paddingVertical: 10,
+    borderRadius: 8,
+    marginBottom: 10,
+    alignItems: "center",
+  },
+  selectButtonText: {
+    color: "#9e2021",
+    fontWeight: "bold",
+    textAlign: "center",
+    fontSize: 14,
+  },
+
+  // 🔹 Pie de botones (descargar, etc.)
+  footerButtons: {
+    flexDirection: "row",
+    justifyContent: "center",
+    marginTop: 20,
+  },
+  actionButton: {
+    width: 220,
+    paddingVertical: 10,
+    borderRadius: 8,
+    backgroundColor: "#9e2021",
+    alignItems: "center",
+    justifyContent: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.5,
+  },
+  buttonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 15,
+  },
+
+  // 🔹 Modal general
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  modalContainer: {
+    backgroundColor: "#fff",
+    width: "80%",
+    borderRadius: 12,
+    padding: 20,
+    elevation: 5,
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    marginBottom: 12,
+    textAlign: "center",
+  },
+  tarjetaItem: {
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderWidth: 1,
+    borderColor: "#ccc",
+    borderRadius: 8,
+    marginBottom: 10,
+    backgroundColor: "#f9f9f9",
+  },
+  selectedItem: {
+    borderColor: "#9e2021",
+    backgroundColor: "#ffeaea",
+  },
   tarjetaText: {
-    fontSize: 16,
+    fontSize: 14,
+    textAlign: "center",
   },
   closeButton: {
+    backgroundColor: "#9e2021",
+    paddingVertical: 10,
+    borderRadius: 8,
     marginTop: 10,
-    backgroundColor: "#bf0404",
-    padding: 10,
-    borderRadius: 5,
+    alignItems: "center",
   },
   closeButtonText: {
     color: "#fff",
-    fontSize: 16,
-  },
-  footerText_importante: {
-    fontSize: 14,
     fontWeight: "bold",
-    color: "#bf0404",
-    textAlign: "center",
-    marginTop: 10,
+    fontSize: 14,
   },
+
   errorText: {
     color: "red",
-    fontSize: 16,
+    fontSize: 14,
     textAlign: "center",
     marginBottom: 10,
   },
-  downloadButton: {
-    padding: 10,
-    backgroundColor: "#bf0404",
-    alignItems: "center",
-    borderRadius: 5,
-  },
-  downloadButtonText: {
-    color: "#fff",
-    fontSize: 16,
-  },
-  headerImage: {
-  width: '100%',
-  height: 150,
-  borderRadius: 10,
-},
-modalOverlay: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-modalContainer: {
-  backgroundColor: 'white',
-  width: '80%',
-  borderRadius: 15,
-  padding: 20,
-  elevation: 5,
-},
-modalTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginBottom: 15,
-  textAlign: 'center',
-},
-tarjetaItem: {
-  paddingVertical: 12,
-  paddingHorizontal: 15,
-  borderWidth: 1,
-  borderColor: '#ccc',
-  borderRadius: 8,
-  marginBottom: 10,
-  backgroundColor: '#f9f9f9',
-},
-selectedItem: {
-  borderColor: '#bf0404',
-  backgroundColor: '#ffeaea',
-},
-tarjetaText: {
-  fontSize: 16,
-  textAlign: 'center',
-},
-selectButton: {
-  backgroundColor: '#ffffff',
-  borderWidth: 1,
-  borderColor: '#9e2021',
-  padding: 12,
-  borderRadius: 10,
-  marginBottom: 10,
-},
-selectButtonText: {
-  color: '#9e2021',
-  fontWeight: 'bold',
-  textAlign: 'center',
-},
-closeButton: { 
-  backgroundColor: '#9e2021',
-  padding: 10,
-  borderRadius: 8,
-  marginTop: 10,
-},
-closeButtonText: {
-  color: 'white',
-  textAlign: 'center',
-  fontWeight: 'bold',
-},
-footerButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 20,
-  gap: 10, // Espacio entre botones (si usas React Native 0.71+)
-},
-actionButton: {
-  flex: 1,
-  padding: 12,
-  backgroundColor: '#9e2021',
-  borderRadius: 8,
-  alignItems: 'center',
-},
-buttonText: {
-  color: '#fff',
-  fontWeight: 'bold',
-  fontSize: 13,
-},
-
 });
+
 
 export default Extracto;

@@ -69,7 +69,9 @@
     "react-native-virtualized-view": "^1.0.0",
     "react-native-web": "^0.19.12",
     "react-native-webview": "^13.8.6",
-    "yet": "^0.1.0"
+    "yet": "^0.1.0",
+    "expo-media-library": "~16.0.5",
+    "expo-intent-launcher": "~11.0.1"
   },
   "devDependencies": {
     "@babel/core": "^7.24.0"

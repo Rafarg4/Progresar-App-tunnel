@@ -430,8 +430,7 @@ const obtenerIniciales = (nombreCompleto) => {
             </View> 
           </Modal>
         )}
-       
-       
+
         {/* Categorías */}
       <View style={styles.categoryContainer}>
         {categories.map(cat => (
@@ -461,8 +460,7 @@ const obtenerIniciales = (nombreCompleto) => {
           </TouchableOpacity>
         ))}
       </View>
-      <Text>
-    </Text>
+     
       {/* Carrusel de Promos */}
       <View style={styles.cardPromos}>
       <LinearGradient
@@ -571,12 +569,12 @@ const obtenerIniciales = (nombreCompleto) => {
         </TouchableOpacity>
 
         {/* Icono Usuario */}
+        <TouchableOpacity onPress={() => navigation.navigate('Notificaciones')}>
+          <FontAwesome5 name="bell" size={24} color="#fff" />
+        </TouchableOpacity>
+        {/* Icono Usuario */}
         <TouchableOpacity onPress={() => navigation.navigate('PerfilUsuario')}>
           <FontAwesome5 name="user" size={24} color="#fff" />
-        </TouchableOpacity>
-        {/* Icono Documento */}
-        <TouchableOpacity onPress={() => navigation.navigate('Extracto')}>
-          <Ionicons name="document-text-outline" size={24} color="#fff" />
         </TouchableOpacity>
 
       </View>
@@ -607,7 +605,7 @@ const styles = StyleSheet.create({
   },
   cardPromos: {
     marginHorizontal: 10,
-    marginVertical: 15,
+    marginVertical: 38,
     borderRadius: 18,
     backgroundColor: '#fff',
     shadowColor: '#000',
