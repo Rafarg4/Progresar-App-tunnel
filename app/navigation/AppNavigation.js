@@ -46,7 +46,6 @@ import ActualizarPerfil from '../screens/ActualizarPerfil'
 import Notificaciones from '../screens/Notificaciones'
 import SolicitarAcceso from '../screens/SolicitarAcceso'
 import Checkout from '../screens/Checkout';
-import ConfirmarCompra from '../screens/ConfirmarCompra';
 import ConfirmarVenta from '../screens/ConfirmarVenta';
 import MediosdePago from '../screens/MediosdePago';
 import MisPagos from '../screens/MisPagos';
@@ -401,12 +400,7 @@ function App() {
                 }
             }/>
             */}
-            <Stack.Screen name="Confirmar Compra" component={ConfirmarCompra} options={
-                {
-                    headerShown: false,
-                    gestureEnabled: false
-                }
-            }/>
+           
 
             <Stack.Screen name="Venta Confirmar" component={ConfirmarVenta} options={
                 {

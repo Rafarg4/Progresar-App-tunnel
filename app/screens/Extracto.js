@@ -15,10 +15,8 @@ import {
 } from "react-native";
 import { useRoute } from "@react-navigation/native";
 import * as FileSystem from 'expo-file-system';
-import * as Sharing from "expo-sharing";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
-import * as MediaLibrary from "expo-media-library";
 import * as IntentLauncher from "expo-intent-launcher";
 const Extracto = () => {
   const route = useRoute();
@@ -109,51 +107,38 @@ const descargarPDF = async (url, nombreArchivo) => {
       return;
     }
 
-    // Asegurar nombre limpio
     const safeName = nombreArchivo.replace(/[^\w.\-]/g, "_");
+    const fileUri = FileSystem.documentDirectory + safeName;
 
-    // 📥 Descargar primero en caché
-    const tempPath = FileSystem.cacheDirectory + safeName;
     console.log("⬇️ Descargando:", url);
-    const { uri: downloadedUri, status } = await FileSystem.downloadAsync(url, tempPath);
+    const { uri: downloadedUri, status } = await FileSystem.downloadAsync(url, fileUri);
     if (status !== 200) {
       Alert.alert("Error", `No se pudo descargar (HTTP ${status}).`);
       return;
     }
 
     console.log("✅ PDF descargado temporalmente en:", downloadedUri);
+    Alert.alert("✅ Descargado", "El archivo fue guardado correctamente.");
 
-    // 🔐 Pedir permiso de escritura
-    const { status: permStatus } = await MediaLibrary.requestPermissionsAsync(true);
-    if (permStatus !== "granted") {
-      Alert.alert("Permiso requerido", "Debe permitir acceso al almacenamiento.");
-      return;
-    }
-
-    // 🗂️ Crear o usar álbum “ProgresarPDFs” dentro de Descargas
-    const asset = await MediaLibrary.createAssetAsync(downloadedUri);
-    await MediaLibrary.createAlbumAsync("ProgresarPDFs", asset, false);
-
-    Alert.alert("✅ Descargado", `Guardado en carpeta: Descargas/ProgresarPDFs\n\nNombre: ${safeName}`);
-
-    // 🔹 Abrir el PDF automáticamente si hay visor instalado
+    // ✅ Solución: usar getContentUriAsync
     if (Platform.OS === "android") {
       try {
-        const intent = await import("expo-intent-launcher");
-        await intent.startActivityAsync("android.intent.action.VIEW", {
-          data: asset.uri,
+        const cUri = await FileSystem.getContentUriAsync(downloadedUri);
+        await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
+          data: cUri, 
           flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
           type: "application/pdf",
         });
       } catch (e) {
         console.log("⚠️ No se pudo abrir visor PDF:", e);
+        Alert.alert("Aviso", "El archivo fue descargado, pero no se pudo abrir automáticamente.");
       }
     } else {
-      await Linking.openURL(asset.uri);
+      await Linking.openURL(downloadedUri);
     }
   } catch (error) {
     console.error("❌ Error al descargar:", error);
-    Alert.alert("Error", "No se pudo guardar el archivo.");
+    Alert.alert("Error", "No se pudo guardar o abrir el archivo.");
   }
 };
 
