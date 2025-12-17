@@ -22,6 +22,9 @@ export default function DetalleTarjetas() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(false);
   const [usuario, setUsuario] = useState('');
+  const [puntosMes, setPuntosMes] = useState(0);
+  const [puntosUsados, setPuntosUsados] = useState(0);
+  const [puntosTotal, setPuntosTotal] = useState(0);
     const nombresTarjeta = {
         JM: 'CLÁSICA',
         '1': 'DINELCO',
@@ -88,96 +91,196 @@ useEffect(() => {
     fetchSaldo();
   }
 }, [tarjeta?.nro_tarjeta]);
+useEffect(() => {
 
+  const fetchProgrePuntos = async () => {
+    try {
+      const response = await fetch(
+        `https://api.progresarcorp.com.py/api/ver_progre_puntos/${tarjeta.nro_tarjeta}`
+      );
+
+      if (!response.ok) {
+        throw new Error('Error al obtener progrepuntos');
+      }
+
+      const data = await response.json();
+
+      // la API devuelve un array
+      if (Array.isArray(data) && data.length > 0) {
+        setPuntosMes(Number(data[0].puntos_mes) || 0);
+        setPuntosUsados(Number(data[0].puntos_usados) || 0);
+        setPuntosTotal(Number(data[0].puntos_total) || 0);
+      } else {
+        // sin registros
+        setPuntosMes(0);
+        setPuntosUsados(0);
+        setPuntosTotal(0);
+      }
+
+    } catch (error) {
+      console.error('Error Progrepuntos:', error);
+    }
+  };
+
+  if (tarjeta?.nro_tarjeta) {
+    fetchProgrePuntos();
+  }
+
+}, [tarjeta?.nro_tarjeta]);
   const formatearNumero = (num) => {
     return num.toLocaleString('es-ES') + ' ₲';
   };
 
-  return (
-    <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Image
-            source={require('../assets/inicio.png')}  
-          style={styles.headerImage}
-        />
-        <Text style={styles.headerText}>Detalle de Tarjeta # {tarjeta.nro_tarjeta?.slice(-4)}</Text>
-      </View>
-
-      {loading ? (
-        <ActivityIndicator size="large" color="#000" style={{ marginTop: 40 }} />
-      ) : error ? (
-        <Text style={styles.errorText}>No se pudo cargar los datos</Text>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* Tarjeta visual */}
-          <View style={[styles.cardContainer, { backgroundColor: '#9e2021' }]}>
-            <FontAwesome5 name="credit-card" size={120} color="#fff" style={styles.cardBackgroundIcon} />
-            <View style={styles.cardIconContainer}>
-              <FontAwesome5 name="credit-card" size={28} color="#fff" />
-            </View>
-            <Text style={styles.cardBrand}> {nombresTarjeta[tarjeta.clase_tarjeta] || 'Desconocido'}</Text>
-            <Text style={styles.cardNumber}>
-                **** **** **** {tarjeta.nro_tarjeta?.slice(-4)}
-            </Text>
-            <Text style={styles.cardHolder}>{tarjeta.nombre_usuario}</Text>
-          </View>
-
-          {/* Información financiera */}
-          <View style={styles.infoBox}>
-            <View style={styles.row}>
-              <Text style={styles.label}>Línea de crédito:</Text>
-              <Text style={styles.value}>{formatearNumero(lineaCredito)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Saldo disponible:</Text>
-              <Text style={[styles.value, { color: 'green' }]}>{formatearNumero(saldoDisponible)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Deuda total:</Text>
-              <Text style={[styles.value, { color: 'red' }]}>{formatearNumero(deudaTotal)}</Text>
-            </View>
-             <View style={styles.row}>
-              <Text style={styles.label}>Deuda normal:</Text>
-              <Text style={[styles.value, { color: 'red' }]}>{formatearNumero(deudaNormal)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Saldo en mora:</Text>
-              <Text style={[styles.value, { color: 'red' }]}>{formatearNumero(saldoEnMora)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Pago mínimo pendiente:</Text>
-              <Text style={styles.value}>{formatearNumero(pagoMinimoPendiente)}</Text>
-            </View>
-            <View style={styles.row}>
-              <Text style={styles.label}>Vencimiento de extracto:</Text>
-              <Text style={[styles.value, { color: 'green' }]}>{vencimiento}</Text>
-            </View>
-            {/* Footer con botones */}
-           <View style={styles.footerButtons}>
-            <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => navigation.navigate('DetaProcard', { nro_tarjeta: tarjeta.nro_tarjeta })}
-            >
-                <FontAwesome5 name="list-alt" size={18} color="#fff" style={styles.iconButton} />
-                <Text style={styles.actionText}>Movimientos</Text>
-            </TouchableOpacity>
-
-           <TouchableOpacity
-                style={styles.actionButton}
-                onPress={() => 
-                    navigation.navigate('Extracto')
-                }
-            >
-                <FontAwesome5 name="file-alt" size={18} color="#fff" style={styles.iconButton} />
-                <Text style={styles.actionText}>Extracto</Text>
-            </TouchableOpacity>
-
-            </View>
-          </View>
-        </ScrollView>
-      )}
+return (
+  <View style={styles.container}>
+    {/* HEADER */}
+    <View style={styles.headerContainer}>
+      <Image
+        source={require('../assets/inicio.png')}
+        style={styles.headerImage}
+      />
+      <Text style={styles.headerText}>
+        Detalle de Tarjeta # {tarjeta.nro_tarjeta?.slice(-4)}
+      </Text>
     </View>
-  );
+
+    {loading ? (
+      <ActivityIndicator size="large" color="#000" style={{ marginTop: 40 }} />
+    ) : error ? (
+      <Text style={styles.errorText}>No se pudo cargar los datos</Text>
+    ) : (
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+
+        {/* TARJETA VISUAL */}
+        <View style={[styles.cardContainer, { backgroundColor: '#9e2021' }]}>
+          <FontAwesome5
+            name="credit-card"
+            size={120}
+            color="#fff"
+            style={styles.cardBackgroundIcon}
+          />
+
+          <View style={styles.cardIconContainer}>
+            <FontAwesome5 name="credit-card" size={28} color="#fff" />
+          </View>
+
+          <Text style={styles.cardBrand}>
+            {nombresTarjeta[tarjeta.clase_tarjeta] || 'Desconocido'}
+          </Text>
+
+          <Text style={styles.cardNumber}>
+            **** **** **** {tarjeta.nro_tarjeta?.slice(-4)}
+          </Text>
+
+          <Text style={styles.cardHolder}>
+            {tarjeta.nombre_usuario}
+          </Text>
+        </View>
+
+        {/* INFORMACIÓN FINANCIERA */}
+        <View style={styles.infoBox}>
+          <View style={styles.row}>
+            <Text style={styles.label}>Línea de crédito:</Text>
+            <Text style={styles.value}>{formatearNumero(lineaCredito)}</Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Saldo disponible:</Text>
+            <Text style={[styles.value, { color: 'green' }]}>
+              {formatearNumero(saldoDisponible)}
+            </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Deuda total:</Text>
+            <Text style={[styles.value, { color: 'red' }]}>
+              {formatearNumero(deudaTotal)}
+            </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Deuda normal:</Text>
+            <Text style={[styles.value, { color: 'red' }]}>
+              {formatearNumero(deudaNormal)}
+            </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Saldo en mora:</Text>
+            <Text style={[styles.value, { color: 'red' }]}>
+              {formatearNumero(saldoEnMora)}
+            </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Pago mínimo pendiente:</Text>
+            <Text style={styles.value}>
+              {formatearNumero(pagoMinimoPendiente)}
+            </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Vencimiento de extracto:</Text>
+            <Text style={[styles.value, { color: 'green' }]}>
+              {vencimiento}
+            </Text>
+          </View>
+        </View>
+
+        {/* PROGREPUNTOS */}
+        <View style={styles.pointsBox}>
+          <View style={styles.pointsHeader}>
+            <FontAwesome5 name="circle" size={14} color="#9e2021" solid />
+            <Text style={styles.pointsTitle}>ProgrePuntos</Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Puntos del mes:</Text>
+            <Text style={styles.value}>{puntosMes}</Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Puntos utilizados:</Text>
+            <Text style={[styles.value, { color: 'red' }]}>
+              {puntosUsados}
+            </Text>
+          </View>
+
+          <View style={styles.row}>
+            <Text style={styles.label}>Total puntos acumulados:</Text>
+            <Text style={[styles.value, { color: 'green' }]}>
+              {puntosTotal}
+            </Text>
+          </View>
+        </View>
+
+        {/* BOTONES */}
+        <View style={styles.footerButtons}>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() =>
+              navigation.navigate('DetaProcard', {
+                nro_tarjeta: tarjeta.nro_tarjeta
+              })
+            }
+          >
+            <FontAwesome5 name="list-alt" size={18} color="#fff" />
+            <Text style={styles.actionText}> Movimientos</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => navigation.navigate('Extracto')}
+          >
+            <FontAwesome5 name="file-alt" size={18} color="#fff" />
+            <Text style={styles.actionText}> Extracto</Text>
+          </TouchableOpacity>
+        </View>
+
+      </ScrollView>
+    )}
+  </View>
+);
 }
 const styles = StyleSheet.create({
   container: {
@@ -190,7 +293,27 @@ const styles = StyleSheet.create({
   gap: 10, // Espacio entre los botones (si tu versión de React Native no soporta 'gap', usar 'marginRight' en el primero)
   marginTop: 20,
 },
+pointsBox: {
+  backgroundColor: '#FFF7ED',
+  borderRadius: 12,
+  padding: 14,
+  marginTop: 16,
+  borderWidth: 1,
+  borderColor: '#FED7AA'
+},
 
+pointsHeader: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  marginBottom: 10
+},
+
+pointsTitle: {
+  marginLeft: 8,
+  fontSize: 16,
+  fontWeight: 'bold',
+  color: '#92400E'
+},
 actionButton: {
   flex: 1, // Mismo ancho para ambos
   flexDirection: 'row',

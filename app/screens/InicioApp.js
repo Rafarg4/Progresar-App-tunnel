@@ -507,6 +507,16 @@ const obtenerIniciales = (nombreCompleto) => {
       {/* Opciones flotantes */}
       {showOptions && (
         <View style={styles.optionsContainer}>
+        <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => {
+              setShowOptions(false);
+              navigation.navigate('Beneficios');
+            }}
+          >
+          <Ionicons name="gift-outline" size={20} color="#fff" />
+            <Text style={styles.optionText}>Beneficios</Text>
+          </TouchableOpacity>
           <TouchableOpacity
             style={styles.optionButton}
             onPress={() => {
@@ -570,7 +580,7 @@ const obtenerIniciales = (nombreCompleto) => {
 
         {/* Icono Usuario */}
         <TouchableOpacity onPress={() => navigation.navigate('Notificaciones')}>
-          <FontAwesome5 name="bell" size={24} color="#fff" />
+         <FontAwesome5 name="exchange-alt" size={24} color="#fff" />
         </TouchableOpacity>
         {/* Icono Usuario */}
         <TouchableOpacity onPress={() => navigation.navigate('PerfilUsuario')}>

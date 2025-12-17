@@ -21,7 +21,34 @@ const DetaProcard = () => {
     { nombre: 'Noviembre', numero: 11 },
     { nombre: 'Diciembre', numero: 12 },
   ];
+  const hoy = new Date();
+  const mesActual = hoy.getMonth() + 1;
+  const anioActual = hoy.getFullYear();
+  const generarMesesVisibles = () => {
+    const resultado = [];
 
+    // 👉 DICIEMBRE del año anterior
+    resultado.push({
+      nombre: 'Diciembre',
+      numero: 12,
+      anio: anioActual - 1,
+    });
+
+    // 👉 Meses del año actual hasta el mes actual
+    for (let m = 1; m <= mesActual; m++) {
+      const mesObj = mesesArray.find(x => x.numero === m);
+      if (mesObj) {
+        resultado.push({
+          nombre: mesObj.nombre,
+          numero: m,
+          anio: anioActual,
+        });
+      }
+    }
+
+    return resultado;
+  };
+const [anio, setAnio] = useState(anioActual);
   const [saldoDisponible, setSaldoDisponible] = useState(0);
   const [tarjetaData, setTarjetaData] = useState([]);
   const [cantidadTotal, setCantidadTotal] = useState(0);
@@ -50,7 +77,8 @@ const DetaProcard = () => {
         }
   
         // Luego, obtenemos los movimientos
-        const urlMovimientos = `https://api.progresarcorp.com.py/api/ver_moviminetos_procard/${nro_tarjeta}?mes=${mes}&year=2025`;
+       const urlMovimientos = `https://api.progresarcorp.com.py/api/ver_moviminetos_procard/${nro_tarjeta}?mes=${mes}&year=${anio}`;
+
         const movimientosResponse = await fetch(urlMovimientos);
   
         if (!movimientosResponse.ok) {
@@ -70,8 +98,9 @@ const DetaProcard = () => {
       }
     };
   
-    fetchData(mes, 2025); // Usamos el mes seleccionado
-  }, [nro_tarjeta, mes]);
+    fetchData(mes, anio);
+  }, [nro_tarjeta, mes, anio]);
+
   
   return (
     
@@ -89,16 +118,24 @@ const DetaProcard = () => {
       {/* Selector de meses - fuera del ScrollView principal */}
       <View style={styles.monthSelectorWrapper}>
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthSelector}>
-          {mesesArray.map((item) => (
-            <TouchableOpacity
-              key={item.numero}
-              style={[styles.monthButton, mes === item.numero && styles.selectedMonthButton]}
-              onPress={() => setMes(item.numero)}
-            >
-              <Text style={styles.monthButtonText}>{item.nombre} - 2025</Text>
-            </TouchableOpacity>
-          ))}
-        </ScrollView>
+            {generarMesesVisibles().map((item) => (
+              <TouchableOpacity
+                key={`${item.numero}-${item.anio}`}
+                style={[
+                  styles.monthButton,
+                  mes === item.numero && anio === item.anio && styles.selectedMonthButton
+                ]}
+                onPress={() => {
+                  setMes(item.numero);
+                  setAnio(item.anio);
+                }}
+              >
+                <Text style={styles.monthButtonText}>
+                  {item.nombre} - {item.anio}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
       </View>
 
       {/* Scroll principal de contenido */}

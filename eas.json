@@ -5,7 +5,9 @@
   "build": {
     "production": {
       "android": {
-        "buildType": "app-bundle",
+        //Para apk
+        //"buildType": "apk",
+       "buildType": "app-bundle",
         "image": "latest"                // ✅ fuerza entorno Android 15 (API 35) + soporte 16 KB
       },
       "ios": {

@@ -13,7 +13,7 @@
     ],
     "name": "Progresar Movil",
     "slug": "progresar-movil",
-    "version": "1.8.1",
+    "version": "1.8.2",
     "orientation": "portrait",
     "icon": "./assets/isologo.png",
     "splash": {
@@ -28,6 +28,7 @@
     "assetBundlePatterns": [
       "**/*"
     ],
+
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.progresarcorporation.progresarmovil",
@@ -35,32 +36,37 @@
         "policy": "sdkVersion"
       },
       "infoPlist": {
-        "NSFaceIDUsageDescription": "Face ID se utiliza para autenticar al usuarior"
+        "NSFaceIDUsageDescription": "Face ID se utiliza para autenticar al usuario"
       }
     },
+
     "android": {
+      "package": "com.progresarcorporation.progresarmovil",
+      "versionCode": 30,
+      "googleServicesFile": "./google-services.json",
+      "permissions": [
+        "POST_NOTIFICATIONS",
+        "INTERNET",
+        "USER_FACING_NOTIFICATIONS"
+      ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#BF0404"
       },
-      "versionCode": 28,
-      "permissions": [
-        "INTERNET",
-        "USER_FACING_NOTIFICATIONS"
-      ],
-      "package": "com.progresarcorporation.progresarmovil",
-      "googleServicesFile": "./google-services.json",
       "runtimeVersion": {
         "policy": "appVersion"
       }
     },
+
     "notification": {
       "icon": "./assets/adaptive-icon.png"
     },
+
     "web": {
       "favicon": "./assets/isologo.png",
       "config": {}
     },
+
     "extra": {
       "eas": {
         "projectId": "865fa322-e28d-47f1-8c9d-8c8c53e0b70e"

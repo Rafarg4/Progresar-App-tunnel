@@ -37,6 +37,7 @@ import PerfilUsuario from '../screens/PerfilUsuario'
 import PagoQr from '../screens/PagoQr'
 import DetallePago from '../screens/DetallePago'
 import MisOperaciones from '../screens/MisOperaciones'
+import Beneficios from '../screens/Beneficios'
 import DetalleTarjetas from '../screens/DetalleTarjetas'
 import DetalleOperaciones from '../screens/DetalleOperaciones'
 import MisSeguros from '../screens/MisSeguros'
@@ -213,6 +214,14 @@ function App() {
              <Stack.Screen
                     name="Tarjetas"
                     component={Tarjetas}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+            <Stack.Screen
+                    name="Beneficios"
+                    component={Beneficios}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
                         gestureEnabled: true
