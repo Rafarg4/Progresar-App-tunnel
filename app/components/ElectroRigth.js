@@ -1,7 +1,6 @@
 import React from 'react';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { View, Alert, TouchableOpacity, Text} from 'react-native';
-import * as Animatable from 'react-native-animatable'
 import { Menu, MenuItem, MenuDivider } from 'react-native-material-menu';
 import { useNavigation } from '@react-navigation/native';
 import * as global from '../global.js'
@@ -33,23 +32,18 @@ const Salir = (props) => {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
       
-      <TouchableOpacity
-        onPress={()=> gotoScreen('Carrito')} //cambiar a promociones
-      >
-        <Animatable.Text
-          animation="bounceIn"
-          easing="linear"
-          iterationCount={1}
-          style={{marginRight: 10}}
-        >
-          <Icon name="shopping-cart" size={20} color='white' />
-          <View style={{paddingBottom: 10, alignItems: 'center'}}>
-            <View style={{borderRadius: 100, backgroundColor: 'white', width: 16}}>
-              <Text style={{fontSize: 11, color: 'black', textAlign: 'center',}}>{cant_carrito}</Text>
-            </View>
+     <TouchableOpacity onPress={() => gotoScreen('Carrito')}>
+      <View style={{ marginRight: 10 }}>
+        <Icon name="shopping-cart" size={20} color="white" />
+        <View style={{ paddingBottom: 10, alignItems: 'center' }}>
+          <View style={{ borderRadius: 100, backgroundColor: 'white', width: 16 }}>
+            <Text style={{ fontSize: 11, color: 'black', textAlign: 'center' }}>
+              {cant_carrito}
+            </Text>
           </View>
-        </Animatable.Text>
-      </TouchableOpacity>
+        </View>
+      </View>
+    </TouchableOpacity>
 
       <Menu
         ref={menuRef}

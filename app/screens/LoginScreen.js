@@ -29,6 +29,8 @@ import axios from 'axios';
 const { width, height } = Dimensions.get('window');
 
 const maxHeight = Dimensions.get("window").height;
+const HEADER_HEIGHT = 235;
+const SHEET_OVERLAP = 30; // cuánto se superpone la hoja blanca sobre la imagen
 const isVersionOlder = (current, latest) => { 
   const c = current.split('.').map(Number);
   const l = latest.split('.').map(Number);
@@ -104,14 +106,32 @@ export default class LoginScreen extends Component{
             secureText: true,
             metodoLogin: 'password',
             iconShow: 'eye-slash',
-            bioAvaliable: false
+            bioAvaliable: false,
+            errorModal: { visible: false, success: false, title: '', message: '', onClose: null }
         }
-        global.actRoute = 'Login';
+       global.currentRouteName = 'Login';
+    }
+
+    mostrarError(title, message, onClose){
+      this.setState({ errorModal: { visible: true, success: false, title, message, onClose } });
+    }
+
+    mostrarExito(title, message, onClose){
+      this.setState({ errorModal: { visible: true, success: true, title, message, onClose } });
+    }
+
+    cerrarError = () => {
+      const { onClose } = this.state.errorModal;
+      this.setState(
+        { errorModal: { visible: false, success: false, title: '', message: '', onClose: null } },
+        () => { if (typeof onClose === 'function') onClose(); }
+      );
     }
 
     cerrarSesion(){
       global.nombre= null
-      global.num_doc= null
+     global.currentUserDoc = null;
+
       global.num_usuario= null
       global.codigo_cliente= null
       global.user_perfil=null
@@ -244,11 +264,11 @@ verificarBiometria = async () => {
           },
           () => { 
             if (this.state.pass === dataResponse.clave) {
-              global.num_doc = this.state.user;
-              global.nombre = dataResponse.nombre;
-              global.token = dataResponse.token;
-              global.num_usuario = dataResponse.num_usu;
-              global.user_perfil = dataResponse.user_perfil;
+              global.currentUserDoc = this.state.user;
+              global.appUserNombre   = dataResponse.nombre;
+              global.appAuthToken    = dataResponse.token;
+              global.appNumUsuario   = dataResponse.num_usu;
+              global.appUserPerfil   = dataResponse.user_perfil;
  
               // Guardar datos en AsyncStorage, sin await ni callback
               AsyncStorage.setItem('usuarioGuardado', this.state.user)
@@ -269,11 +289,11 @@ verificarBiometria = async () => {
         );
       } else {
         this.setState({ loading: false });
-        Alert.alert('Error', dataResponse.mensaje);
+        this.mostrarError('Error', dataResponse.mensaje);
       }
     })
     .catch((error) => {
-      Alert.alert(
+      this.mostrarError(
         'Error',
         'No pudimos conectarnos a nuestro servidor, \nPor favor, inténtelo más tarde'
       );
@@ -375,12 +395,12 @@ handleBiometria = async () => {
     await AsyncStorage.removeItem('claveGuardada');
     await AsyncStorage.removeItem('nombreUsuario');
 
-    Alert.alert('Atención', 'Se ha cerrado sesión correctamente');
-
-    this.props.navigation.replace('Login');
+    this.mostrarExito('Atención', 'Se ha cerrado sesión correctamente', () => {
+      this.props.navigation.replace('Login');
+    });
   } catch (error) {
     console.log('Error al cerrar sesión:', error);
-    Alert.alert('Error', 'Ocurrió un problema al cerrar sesión');
+    this.mostrarError('Error', 'Ocurrió un problema al cerrar sesión');
   }
 };
 
@@ -538,30 +558,34 @@ changeUser(user){
     } */
 
     render(){
-        const {buttonStyle, disabledButton, loading, bioAvaliable, optBio, secureText, iconShow} = this.state;
+        const {buttonStyle, disabledButton, loading, bioAvaliable, optBio, secureText, iconShow, errorModal} = this.state;
+
+        const puedeIngresar = this.state.user !== '' && this.state.pass !== '';
 
         const Buton = () => {
             return(
-               <TouchableOpacity 
+               <TouchableOpacity
                 style={[
                   styles.botLogin,
-                  { 
-                    width: 200,           // ancho más compacto
-                    paddingVertical: 10,  // 🔹 más alto que antes (era 8)
-                    alignSelf: 'center',
-                    borderRadius: 8,      // 🔹 bordes más suaves
-                    elevation: 3,         // 🔹 sombra en Android
-                    shadowColor: '#000',  // 🔹 sombra en iOS
-                    shadowOffset: { width: 0, height: 2 },
-                    shadowOpacity: 0.25,
-                    shadowRadius: 3.5,
+                  {
+                    paddingVertical: 14,
+                    backgroundColor: puedeIngresar ? '#9e2021' : 'rgba(158, 32, 33, 0.4)',
+                    elevation: puedeIngresar ? 3 : 0,   // 🔹 sombra en Android
+                    shadowColor: '#9e2021',             // 🔹 sombra con el color de marca
+                    shadowOffset: { width: 0, height: 3 },
+                    shadowOpacity: puedeIngresar ? 0.3 : 0,
+                    shadowRadius: 5,
                   }
                 ]}
+                disabled={!puedeIngresar}
                 onPress={() => this.onPresComprob()}
               >
-                <Text style={[styles.botText, { fontSize: 15, fontWeight: 'bold' }]}>
-                  Ingresar
-                </Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                  <Icon name="sign-in" size={18} color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={[styles.botText, { fontSize: 15, fontWeight: 'bold' }]}>
+                    Ingresar
+                  </Text>
+                </View>
               </TouchableOpacity>
             )
         }
@@ -717,247 +741,198 @@ changeUser(user){
 
         return(
           <View style={styles.container}>
-            <View style={{ position: 'absolute', top: 240, left: 25, zIndex: 10 }}>
-                <TouchableOpacity onPress={this.handleLogout}>
-                  <Icon name="sign-out" size={28} color="#9e2021" />
-                </TouchableOpacity>
-              </View>
               <ScrollView
                 showsVerticalScrollIndicator={true}
+                bounces={false}
               >
-                {/* Logo de la empresa */}
-                <View style={styles.container}>
-                <Image  
-                  style={styles.headerImage}
-                  source={require('../assets/logo_login.png')} 
-                />
-                <View style={styles.avatarContainer}>
-                  <Text style={styles.avatarText}>{getIniciales()}</Text>
-                </View>
-
-                {/* Texto de saludo debajo */}
-                <Text style={styles.greetingText}>Hola, {saludoNombre}</Text>
-
-                {/* Vista blanca con borde redondeado invertido para crear la curva hacia abajo */}
-                <View style={styles.curvedWhite} />
-
-                <View style={styles.formContainer}>
-                  {/* Aquí iría tu formulario */}
-                </View>
-
-              </View>
-             <View
-                style={{
-                  flexDirection: 'row',
-                  justifyContent: 'center',
-                  marginVertical: 6,
-                  marginHorizontal: 20,
-                }}
-              >
-                <TouchableOpacity
-                  style={[
-                    styles.selectorButton,
-                    this.state.metodoLogin === 'password' && styles.selectorButtonSelected,
-                  ]}
-                  onPress={() => {
-                    this.setState({ metodoLogin: 'password' }, () => {
-                      this.setState({ user: '', pass: '' });
-                    });
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.selectorText,
-                      this.state.metodoLogin === 'password' && styles.selectorTextSelected,
-                    ]}
-                  >
-                    Contraseña
-                  </Text>
-                </TouchableOpacity>
-
-                <TouchableOpacity
-                  style={[
-                    styles.selectorButton,
-                    this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
-                  ]}
-                  onPress={() => {
-                    this.setState({ metodoLogin: 'biometria' }, () => {
-                      this.cargarDatosBiometria();
-                    });
-                  }}
-                >
-                  <Text
-                    style={[
-                      styles.selectorText,
-                      this.state.metodoLogin === 'biometria' && styles.selectorTextSelected,
-                    ]}
-                  >
-                    Biometría
-                  </Text>
-                </TouchableOpacity>
-              </View>
-
-              {this.state.metodoLogin === 'password' && (
-                <>
-                 {/* Campo Cédula */}
-                <View style={{ paddingHorizontal: 15, marginTop: 10 }}>
-                  <Text style={styles.loginText}>N° de Cédula</Text>
-                </View>
-                <View style={{ paddingHorizontal: 15, alignItems: 'center' }}>
-                  <TextInput
-                    value={this.state.user}
-                     style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderColor: '#ccc',
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    paddingHorizontal: 10,
-                    height: 55,
-                     borderColor: "#9e2021",
-                    width: '100%',
-                    backgroundColor: 'white',
-                  }}
-                    placeholder='1234567'
-                    keyboardType="numeric"
-                    placeholderTextColor="gray"
-                    onChangeText={(user) => this.changeUser(user)}
+                {/* Cabecera con imagen de marca */}
+                <View style={styles.hero}>
+                  <Image
+                    style={styles.headerImage}
+                    source={require('../assets/logo_login.png')}
                   />
+                  <TouchableOpacity onPress={this.handleLogout} style={styles.logoutButton}>
+                    <Icon name="sign-out" size={20} color="#9e2021" />
+                  </TouchableOpacity>
                 </View>
 
-                {/* Campo Contraseña */}
-                <View style={{ paddingHorizontal: 15, marginTop: 10 }}>
-                  <Text style={styles.loginText}>Contraseña</Text>
+                {/* Avatar superpuesto entre la imagen y la hoja blanca */}
+                <View style={styles.avatarFloating} pointerEvents="none">
+                  <View style={styles.avatarContainer}>
+                    <Text style={styles.avatarText}>{getIniciales()}</Text>
+                  </View>
                 </View>
-                <View style={{ paddingHorizontal: 15, alignItems: 'center' }}>
-                  <View style={{
-                    flexDirection: 'row',
-                    alignItems: 'center',
-                    borderColor: '#ccc',
-                    borderWidth: 1,
-                    borderRadius: 8,
-                    paddingHorizontal: 10,
-                    height: 55,
-                     borderColor: "#9e2021",
-                    width: '100%',
-                    backgroundColor: 'white',
-                  }}>
-                    <TextInput
-                      value={this.state.pass}
-                      style={{ flex: 1, color: '#000' }}
-                      onChangeText={(pass) => this.changePass(pass)}
-                      secureTextEntry={this.state.secureText}
-                      placeholder="Contraseña"
-                      placeholderTextColor="gray"
-                    />
-                    <TouchableOpacity onPress={() => this.setState({ secureText: !this.state.secureText })}>
-                      <Text style={{ fontSize: 18, color: 'gray' }}>
-                        {this.state.secureText ? '🔒' : '🔓'}
+
+                {/* Hoja blanca redondeada que contiene el formulario */}
+                <View style={styles.sheet}>
+
+                  <Text style={styles.greetingText}>Hola, {saludoNombre}</Text>
+
+                  {/* Selector de método de login */}
+                  <View style={styles.selectorTrack}>
+                    <TouchableOpacity
+                      style={[
+                        styles.selectorButton,
+                        this.state.metodoLogin === 'password' && styles.selectorButtonSelected,
+                      ]}
+                      onPress={() => {
+                        this.setState({ metodoLogin: 'password' }, () => {
+                          this.setState({ user: '', pass: '' });
+                        });
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.selectorText,
+                          this.state.metodoLogin === 'password' && styles.selectorTextSelected,
+                        ]}
+                      >
+                        Contraseña
+                      </Text>
+                    </TouchableOpacity>
+
+                    <TouchableOpacity
+                      style={[
+                        styles.selectorButton,
+                        this.state.metodoLogin === 'biometria' && styles.selectorButtonSelected,
+                      ]}
+                      onPress={() => {
+                        this.setState({ metodoLogin: 'biometria' }, () => {
+                          this.cargarDatosBiometria();
+                        });
+                      }}
+                    >
+                      <Text
+                        style={[
+                          styles.selectorText,
+                          this.state.metodoLogin === 'biometria' && styles.selectorTextSelected,
+                        ]}
+                      >
+                        Biometría
                       </Text>
                     </TouchableOpacity>
                   </View>
-                </View>
-                {/* Boton de ¿Olvidó su contraseña? */}
-                <View style={{ alignItems: 'center', marginBottom: 5, paddingHorizontal: 15 }}>
-                  <TouchableOpacity onPress={() => this.gotoSreen('RecuperarContraseña')}>
-                    <Text style={[styles.botOlv, { fontSize: 14, textAlign: 'center' }]}>
-                      ¿Olvidó su contraseña? 
-                    </Text>
-                  </TouchableOpacity>
-                </View>
-                {/* Aqui se agrega el boton de login*/}
-                <View style={{alignItems: 'center'}}>
-                  {/* bioAvaliable ? <ButLogin/> : <Buton /> */}
-                  <Buton />
-                </View>
-                </>
-              )}
-              
-              {this.state.metodoLogin === 'biometria' && (
-                <View style={{ padding: 20 }}>
-                  <TouchableOpacity onPress={this.handleBiometria} style={styles.botonAzul}>
-                    <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
-                      <Icon name="lock" size={18} color="white" style={{ marginRight: 8 }} />
-                      <Text style={{ color: 'white', fontSize: 15, fontWeight: 'bold', textAlign: 'center' }}>
-                        Autenticarse con biometría
-                      </Text>
+
+                  {this.state.metodoLogin === 'password' && (
+                    <>
+                      {/* Campo Cédula */}
+                      <View style={styles.inputField}>
+                        <Icon name="id-card" size={16} color="#9e2021" style={styles.inputIcon} />
+                        <TextInput
+                          value={this.state.user}
+                          style={styles.inputInner}
+                          placeholder='N° de Cédula'
+                          keyboardType="numeric"
+                          placeholderTextColor="#8a7476"
+                          onChangeText={(user) => this.changeUser(user)}
+                        />
+                      </View>
+
+                      {/* Campo Contraseña */}
+                      <View style={styles.inputField}>
+                        <Icon name="lock" size={17} color="#9e2021" style={styles.inputIcon} />
+                        <TextInput
+                          value={this.state.pass}
+                          style={[styles.inputInner, { flex: 1 }]}
+                          onChangeText={(pass) => this.changePass(pass)}
+                          secureTextEntry={this.state.secureText}
+                          placeholder="Contraseña"
+                          placeholderTextColor="#8a7476"
+                        />
+                        <TouchableOpacity onPress={() => this.changeSecureText()}>
+                          <Icon name={iconShow} size={17} color="#8a7476" />
+                        </TouchableOpacity>
+                      </View>
+
+                      {/* Boton de ¿Olvidó su contraseña? */}
+                      <TouchableOpacity onPress={() => this.gotoSreen('RecuperarContraseña')} style={styles.forgotWrap}>
+                        <Text style={styles.botOlv}>¿Olvidó su contraseña?</Text>
+                      </TouchableOpacity>
+
+                      {/* Aqui se agrega el boton de login*/}
+                      <View style={{ alignItems: 'center', marginTop: 8 }}>
+                        <Buton />
+                      </View>
+                    </>
+                  )}
+
+                  {this.state.metodoLogin === 'biometria' && (
+                    <View style={{ marginTop: 8 }}>
+                      <TouchableOpacity onPress={this.handleBiometria} style={styles.botonSecundario}>
+                        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center' }}>
+                          <Icon name="lock" size={18} color="#fff" style={{ marginRight: 8 }} />
+                          <Text style={styles.botonSecundarioText}>
+                            Autenticarse con biometría
+                          </Text>
+                        </View>
+                      </TouchableOpacity>
                     </View>
-                  </TouchableOpacity>
-                </View>
-              )}
+                  )}
 
-                {/* Switch para recorar contraseña */}
-                {/* <View style={{flexDirection: 'row', paddingHorizontal: 15}}>
-                  <View style={{width: '50%'}}>
+                  {/* Solicitar Accesso */}
+                  <View style={{ marginTop: 18, alignItems: 'center' }}>
+                    <View style={{ flexDirection: 'row' }}>
+                      <Text style={styles.mutedText}>¿No puedes ingresar? </Text>
+                      <TouchableOpacity onPress={() => this.gotoSreen('SolicitarAcceso')}>
+                        <Text style={styles.textAcces}>Solicitar acceso</Text>
+                      </TouchableOpacity>
+                    </View>
                   </View>
-                  <View style={{width: '40%', paddingVertical: 8}}>
-                    <Text style={styles.botOlv}>Recordar Cédula</Text>
-                  </View>
-                  <View style={{width: '10%'}}>
-                    <SwitchNumDoc/>
-                  </View>
-                </View> */}
-                
-                {/* Solicitar Accesso */}
-                <View style={{ marginTop: 5, alignItems: 'center' }}>
-                  <View style={{ flexDirection: 'row' }}>
-                    <Text>¿No puedes ingresar? </Text>
-                    <TouchableOpacity onPress={() => this.gotoSreen('SolicitarAcceso')}>
-                      <Text style={styles.textAcces}>Solicitar acceso</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-                {/* botones de info */}
-                <View style={styles.botonInf}>
 
-                  {/* Fila de Servicios */}
+                  {/* Accesos rápidos */}
                   <View style={styles.rowCol}>
-                  
+                    <TouchableOpacity onPress={() => this.gotoSreen('Sucursales')} style={styles.accesoRapido}>
+                      <Icon name='map' size={17} color="#9e2021" />
+                      <Text style={styles.accesoRapidoText}>Sucursales</Text>
+                    </TouchableOpacity>
 
-                    {/* nuestras sucursales */}
-                    <View style={{flexDirection:'column'}}>
-                      <TouchableOpacity
-                        onPress={() => this.gotoSreen('Sucursales')}
-                        style={{padding: 10, width: 100, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
-                      >
-                        <Text style={{textAlign: 'center'}}><Icon name='map' size={24} /></Text>
-                      </TouchableOpacity>
-                      <Text style={{textAlign:'center'}}>Sucursales</Text>
-                    </View>
+                    <TouchableOpacity onPress={() => Linking.openURL('tel:071204877')} style={styles.accesoRapido}>
+                      <Icon name='phone' size={17} color="#9e2021" />
+                      <Text style={styles.accesoRapidoText}>Llámanos</Text>
+                    </TouchableOpacity>
 
-                    <View style={{flexDirection:'column'}}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Linking.openURL('tel:071204877');
-                        }}
-                        style={{padding: 10, width: 100, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
-                      >
-                        <Text style={{textAlign: 'center'}}><Icon name='phone' size={24} /></Text>
-                      </TouchableOpacity>
-                      <Text style={{textAlign:'center'}}>Llámanos</Text>
-                    </View>
-                    
-                    {/* contactanos */}
-                    <View style={{flexDirection:'column'}}>
-                      <TouchableOpacity
-                        onPress={() => {
-                          Linking.openURL('mailto:info.progresar@prorgresarcorp.com.py');
-                        }}
-                        style={{padding: 10, width: 100, backgroundColor: 'rgba(155,155,155,0.2)', borderRadius:5, marginHorizontal: 5}}
-                      >
-                        <Text style={{textAlign: 'center'}}> <Icon name='envelope' size={24} /></Text>
-                      </TouchableOpacity>
-                      <Text style={{textAlign:'center'}}>Contáctanos</Text>
-                    </View>
+                    <TouchableOpacity onPress={() => Linking.openURL('mailto:info.progresar@prorgresarcorp.com.py')} style={styles.accesoRapido}>
+                      <Icon name='envelope' size={17} color="#9e2021" />
+                      <Text style={styles.accesoRapidoText}>Contáctanos</Text>
+                    </TouchableOpacity>
                   </View>
+
+                  <Text style={styles.footerText}>{getYear()} © Progresar Corporation S.A.</Text>
+                  <Text style={[styles.footerText, { marginTop: 2 }]}>Versión: {expo.version}</Text>
                 </View>
-        
-                <Text style={{textAlign: 'center', color: 'rgba(155,155,155,0.5)', marginTop: 20}}>{getYear()} © Progresar Corporation S.A.</Text>
-                <Text style={{textAlign: 'center', color: 'rgba(155,155,155,0.5)', marginTop: 5}}>Versión: {expo.version}</Text>
               </ScrollView>
               {cargando()}
+
+              <Modal
+                visible={errorModal.visible}
+                transparent
+                animationType="fade"
+                onRequestClose={this.cerrarError}
+              >
+                <View style={styles.errorOverlay}>
+                  <View style={styles.errorCard}>
+                    <View
+                      style={[
+                        styles.errorIconCircle,
+                        errorModal.success && styles.errorIconCircleSuccess,
+                      ]}
+                    >
+                      <Icon name={errorModal.success ? 'check' : 'exclamation'} size={20} color="#fff" />
+                    </View>
+                    <Text style={styles.errorTitle}>{errorModal.title}</Text>
+                    <Text style={styles.errorMessage}>{errorModal.message}</Text>
+                    <TouchableOpacity
+                      style={styles.errorButton}
+                      onPress={this.cerrarError}
+                      activeOpacity={0.85}
+                    >
+                      <Text style={styles.errorButtonText}>Aceptar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </Modal>
             </View>
-        ); 
+        );
     }
 };
 const styles = StyleSheet.create({
@@ -981,7 +956,7 @@ const styles = StyleSheet.create({
     marginBottom: 6, // antes 10
     marginTop: 6,
     paddingHorizontal: 8, // antes 10
-    borderRadius: 4, // antes 5
+    borderRadius: 8, // antes 5
     borderWidth: 0.8,
     borderColor: "#9e2021",
   },
@@ -990,11 +965,6 @@ const styles = StyleSheet.create({
   placeholderStyle: { fontSize: 13 },
   textErrorStyle: { fontSize: 13 },
   // termina el estilo del input
-
-  loginText: {
-    fontWeight: 'bold',
-    fontSize: 14,
-  },
 
   botText: {
     textAlign: "center",
@@ -1005,15 +975,20 @@ const styles = StyleSheet.create({
   botLogin: {
     backgroundColor: "#9e2021",
     padding: 6, // antes 8
-    borderRadius: 5,
-    width: 260, // antes 300
+    borderRadius: 28,
+    width: '100%',
     marginBottom: 10,
   },
 
   textAcces: {
-    color: '#000',
+    color: '#9e2021',
     fontSize: 13,
     fontWeight: 'bold',
+  },
+
+  mutedText: {
+    color: '#6b5c5d',
+    fontSize: 13,
   },
 
   logo: {
@@ -1025,22 +1000,16 @@ const styles = StyleSheet.create({
   },
 
   botOlv: {
-    color: "black",
-    marginBottom: 10,
-    marginTop: 5,
+    color: "#9e2021",
     fontSize: 13,
-  },
-
-  botonInf: {
-    marginTop: 15,
-    width: '100%',
+    fontWeight: '600',
   },
 
   rowCol: {
     flexDirection: "row",
     alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 15,
+    justifyContent: 'space-between',
+    marginTop: 18,
   },
 
   copy: {
@@ -1078,131 +1047,241 @@ const styles = StyleSheet.create({
 
   headerImage: {
     width: width,
-    height: 200, // antes 240
+    height: HEADER_HEIGHT,
     resizeMode: 'cover',
   },
 
-  curvedWhite: {
+  hero: {
+    width: '100%',
+  },
+
+  logoutButton: {
     position: 'absolute',
-    top: 200 - 35,
+    top: 50,
+    left: 18,
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+
+  avatarFloating: {
+    position: 'absolute',
+    top: HEADER_HEIGHT - SHEET_OVERLAP - 35,
     left: 0,
     right: 0,
-    height: 35,
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 35,
-    borderTopRightRadius: 35,
+    alignItems: 'center',
     zIndex: 10,
   },
 
-  formContainer: {
-    flex: 1,
-    paddingTop: 12, // antes 17
-    paddingHorizontal: 15,
+  sheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -SHEET_OVERLAP,
+    paddingTop: 45,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
 
   avatarContainer: {
-    width: 70, // antes 80
+    width: 70,
     height: 70,
     borderRadius: 35,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: '#f1e4e3',
     justifyContent: 'center',
     alignItems: 'center',
-    alignSelf: 'center',
-    marginBottom: 8,
+    borderWidth: 4,
+    borderColor: '#fff',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
 
   avatarText: {
-    fontSize: 22, // antes 26
+    fontSize: 22,
     fontWeight: 'bold',
-    color: '#333',
+    color: '#9e2021',
   },
 
   greetingText: {
-    fontSize: 13, // antes 15
+    fontSize: 17,
     textAlign: 'center',
-    fontWeight: '900',
-    color: '#333',
-    marginBottom: 15,
+    fontWeight: '800',
+    color: '#241a1a',
+    marginBottom: 20,
   },
 
-  biometricsButton: {
-    marginTop: 15,
+  selectorTrack: {
+    flexDirection: 'row',
+    backgroundColor: '#f4eeed',
+    borderRadius: 999,
+    padding: 4,
+    marginBottom: 18,
+  },
+
+  selectorButton: {
+    flex: 1,
+    paddingVertical: 9,
     alignItems: 'center',
-    backgroundColor: '#007bff',
-    paddingVertical: 10, // antes 12
-    borderRadius: 8,
-    marginHorizontal: 35,
+    borderRadius: 999,
   },
 
-  biometricsButtonText: {
+  selectorButtonSelected: {
+    backgroundColor: '#9e2021',
+    elevation: 2,
+    shadowColor: '#9e2021',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+  },
+
+  selectorText: {
+    color: '#6b5c5d',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+
+  selectorTextSelected: {
     color: '#fff',
     fontSize: 14,
     fontWeight: 'bold',
   },
 
-    selectorButton: {
+  inputField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f7f2f1',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 52,
+    marginBottom: 12,
+  },
+
+  inputIcon: {
+    marginRight: 10,
+  },
+
+  inputInner: {
     flex: 1,
-    paddingVertical: 10,        // 🔹 altura agradable al tacto
-    borderWidth: 1.3,
-    borderColor: '#9e2021',     // 🔹 mantiene coherencia con tu paleta
-    alignItems: 'center',
-    borderRadius: 10,           // 🔹 bordes más redondeados
-    marginHorizontal: 6,        // 🔹 separación entre botones
-    backgroundColor: '#fff',    // 🔹 fondo claro por defecto
-    elevation: 2,               // 🔹 sombra Android
-    shadowColor: '#000',        // 🔹 sombra iOS
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+    color: '#241a1a',
+    fontSize: 14,
   },
 
-  selectorButtonSelected: {
-  backgroundColor: '#9e2021', // 🔹 fondo rojo al estar activo
-  borderColor: '#9e2021',
-  elevation: 3,
-  shadowOpacity: 0.25,
-},
-
-  selectorText: {
-  color: '#000',              // 🔹 texto negro por defecto
-  fontSize: 14,
-  fontWeight: '500',
-},
-selectorTextSelected: {
-  color: '#fff',              // 🔹 texto blanco cuando está activo
-  fontSize: 14,
-  fontWeight: 'bold',
-},
-
-  botonBiometrico: {
-    backgroundColor: '#2e86de',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginTop: 8,
-    alignItems: 'center',
+  forgotWrap: {
+    alignSelf: 'flex-end',
+    marginBottom: 18,
   },
 
-  button: {
-    backgroundColor: '#0066cc',
-    padding: 10,
-    borderRadius: 7,
+  botonSecundario: {
+    backgroundColor: '#9e2021',
+    paddingVertical: 14,
+    paddingHorizontal: 20,
+    borderRadius: 28,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '100%',
+    elevation: 3,
+    shadowColor: '#9e2021',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+  },
+
+  botonSecundarioText: {
+    color: '#fff',
+    fontSize: 15,
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+
+  accesoRapido: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 12,
+    paddingHorizontal: 10,
+    backgroundColor: 'rgba(158, 32, 33, 0.08)',
+    borderRadius: 999,
+    flex: 1,
+    marginHorizontal: 4,
+  },
+
+  accesoRapidoText: {
+    marginLeft: 7,
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#6b5c5d',
+  },
+
+  footerText: {
+    textAlign: 'center',
+    color: '#999',
+    marginTop: 20,
+    fontSize: 12,
+  },
+
+  // 🔹 Modal de error (login)
+  errorOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(36,16,18,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  errorCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
     alignItems: 'center',
   },
-  botonAzul: {
-  backgroundColor: '#007bff', // 🔹 Azul principal (puede ser #0056b3 si querés más oscuro)
-  paddingVertical: 10,        // igual grosor que tu botón "Ingresar"
-  paddingHorizontal: 20,
-  borderRadius: 8,
-  alignItems: 'center',
-  justifyContent: 'center',
-  alignSelf: 'center',
-  width: 260,                 // opcional: podés ajustar a 220 si querés más compacto
-  elevation: 3,               // 🔹 sombra en Android
-  shadowColor: '#000',        // 🔹 sombra en iOS
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.25,
-  shadowRadius: 3.5,
-},
+  errorIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+    backgroundColor: '#9e2021',
+  },
+  errorIconCircleSuccess: {
+    backgroundColor: '#3f8f5f',
+  },
+  errorTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#241a1a',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  errorMessage: {
+    fontSize: 13.5,
+    color: '#6b5c5d',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  errorButton: {
+    backgroundColor: '#9e2021',
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+  },
+  errorButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 
 });

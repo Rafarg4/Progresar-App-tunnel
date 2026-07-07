@@ -75,5 +75,4 @@ dist/
 # @end expo-cli
 
 # Firebase / Google secrets
-*.json
 progresar-app-firebase-adminsdk-*.json

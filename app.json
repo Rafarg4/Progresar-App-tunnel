@@ -1,19 +1,11 @@
 {
   "expo": {
     "owner": "progresarcorporation",
-    "plugins": [
-      [
-        "expo-notifications",
-        {
-          "icon": "./assets/adaptive-icon.png",
-          "color": "#BF0404",
-          "mode": "production"
-        }
-      ]
-    ],
     "name": "Progresar Movil",
     "slug": "progresar-movil",
-    "version": "1.8.2",
+    "platforms": ["android"],
+    "version": "1.8.4",
+    "runtimeVersion": "1.8.4",
     "orientation": "portrait",
     "icon": "./assets/isologo.png",
     "splash": {
@@ -28,45 +20,52 @@
     "assetBundlePatterns": [
       "**/*"
     ],
-
+    "plugins": [
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "compileSdkVersion": 35,
+            "targetSdkVersion": 35,
+            "kotlinVersion": "2.1.21",
+            "gradleVersion": "8.7",
+            "androidGradlePluginVersion": "8.3.2"
+          }
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/adaptive-icon.png",
+          "color": "#BF0404",
+          "mode": "production"
+        }
+      ],
+      "expo-web-browser"
+    ],
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "com.progresarcorporation.progresarmovil",
-      "runtimeVersion": {
-        "policy": "sdkVersion"
-      },
       "infoPlist": {
         "NSFaceIDUsageDescription": "Face ID se utiliza para autenticar al usuario"
       }
     },
-
     "android": {
       "package": "com.progresarcorporation.progresarmovil",
-      "versionCode": 30,
+      "versionCode": 46,
       "googleServicesFile": "./google-services.json",
       "permissions": [
-        "POST_NOTIFICATIONS",
         "INTERNET",
-        "USER_FACING_NOTIFICATIONS"
+        "POST_NOTIFICATIONS"
       ],
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#BF0404"
-      },
-      "runtimeVersion": {
-        "policy": "appVersion"
       }
     },
-
-    "notification": {
-      "icon": "./assets/adaptive-icon.png"
-    },
-
     "web": {
-      "favicon": "./assets/isologo.png",
-      "config": {}
+      "favicon": "./assets/isologo.png"
     },
-
     "extra": {
       "eas": {
         "projectId": "865fa322-e28d-47f1-8c9d-8c8c53e0b70e"

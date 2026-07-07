@@ -3,186 +3,324 @@ import {
   View,
   Text,
   StyleSheet,
-  Image,
-  Dimensions,
+  ImageBackground,
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Alert, // 👈 importar esto
+  Modal,
 } from "react-native";
+import { FontAwesome5 } from "@expo/vector-icons";
+import { useNavigation } from "@react-navigation/native";
 
 const RecuperarContrasena = () => {
+  const navigation = useNavigation();
   const [documento, setDocumento] = useState("");
+  const [resultModal, setResultModal] = useState({ visible: false, success: true, title: "", message: "" });
+  const mostrarResultado = (success, title, message) =>
+    setResultModal({ visible: true, success, title, message });
+  const cerrarResultado = () => setResultModal((r) => ({ ...r, visible: false }));
 
   const handleSolicitarRestablecer = async () => {
     if (!documento) {
-      Alert.alert("Error", "Por favor ingrese un número de documento.");
+      mostrarResultado(false, "Error", "Por favor ingrese un número de documento.");
       return;
     }
 
     try {
-  const response = await fetch("https://api.progresarcorp.com.py/api/verificar_usuario_app", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ num_doc: documento }),
-  });
+      const response = await fetch("https://api.progresarcorp.com.py/api/verificar_usuario_app", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ num_doc: documento }),
+      });
 
-  const data = await response.json();
-  console.log("📄 Respuesta de la API:", data);
+      const data = await response.json();
+      console.log("📄 Respuesta de la API:", data);
 
-  if (response.ok && data.exists) {
-    // 👇 Aquí mostramos el mensaje que viene del backend
-    Alert.alert("Éxito", data.message || "Contraseña restablecida.");
-  } else {
-    Alert.alert("Error", data.message || "El documento ingresado no existe.");
-  }
-} catch (error) {
-  console.error("💥 Error:", error);
-  Alert.alert("Error", "Hubo un problema al consultar el servidor.");
-}
+      if (response.ok && data.exists) {
+        mostrarResultado(true, "Éxito", data.message || "Contraseña restablecida.");
+      } else {
+        mostrarResultado(false, "Error", data.message || "El documento ingresado no existe.");
+      }
+    } catch (error) {
+      console.error("💥 Error:", error);
+      mostrarResultado(false, "Error", "Hubo un problema al consultar el servidor.");
+    }
   };
 
   return (
     <View style={styles.container}>
-      {/* Cabecera */}
-     <View style={styles.headerContainer}>
-      <Image
-        source={require("../assets/inicio.png")}
-        style={styles.headerImage}
-        resizeMode="cover"
-      />
-      
-      <View style={styles.headerOverlay}>
-        <Text style={styles.headerText}>Recuperar contraseña</Text>
-        <Text style={styles.headerSubText}>
-          Ingrese su número de documento para solicitar el restablecimiento.
-        </Text>
-      </View>
-    </View>
-      {/* Contenido */}
-      <ScrollView contentContainerStyle={styles.content}>
-        <View style={styles.card}>
-          <Text style={styles.label}>Número de documento</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="Ingrese su documento"
-            value={documento}
-            onChangeText={setDocumento}
-            keyboardType="numeric"
-          />
-
-          {/* Aquí va el onPress */}
-          <TouchableOpacity style={styles.button} onPress={handleSolicitarRestablecer}>
-            <Text style={styles.buttonText}>Solicitar restablecimiento</Text>
-          </TouchableOpacity>
+      <ImageBackground
+        source={require("../assets/inicio_nuevo.png")}
+        style={styles.headerBackground}
+        imageStyle={styles.headerImage}
+      >
+        <View style={styles.headerOverlay} />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Recuperar contraseña</Text>
+          <Text style={styles.headerSubtitle}>
+            Ingresá tu número de documento para solicitar el restablecimiento
+          </Text>
         </View>
-      </ScrollView>
+      </ImageBackground>
+
+      <View style={styles.sheet}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconBadge}>
+                <FontAwesome5 name="key" size={13} color="#9e2021" />
+              </View>
+              <Text style={styles.sectionTitle}>Restablecer contraseña</Text>
+            </View>
+
+            <Text style={styles.label}>Número de documento</Text>
+            <View style={styles.inputField}>
+              <FontAwesome5 name="id-card" size={16} color="#9e2021" style={{ marginRight: 10 }} />
+              <TextInput
+                style={styles.inputInner}
+                placeholder="Ingresá tu documento"
+                placeholderTextColor="#8a7476"
+                value={documento}
+                onChangeText={setDocumento}
+                keyboardType="numeric"
+              />
+            </View>
+
+            <TouchableOpacity
+              style={styles.submitButton}
+              onPress={handleSolicitarRestablecer}
+              activeOpacity={0.85}
+            >
+              <FontAwesome5 name="paper-plane" size={14} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.submitButtonText}>Solicitar restablecimiento</Text>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+      </View>
+
+      <Modal
+        visible={resultModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={cerrarResultado}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard}>
+            <View
+              style={[
+                styles.modalIconCircle,
+                resultModal.success ? styles.modalIconSuccess : styles.modalIconError,
+              ]}
+            >
+              <FontAwesome5
+                name={resultModal.success ? "check" : "exclamation"}
+                size={20}
+                color="#fff"
+              />
+            </View>
+            <Text style={styles.modalTitle}>{resultModal.title}</Text>
+            <Text style={styles.modalMessage}>{resultModal.message}</Text>
+            <TouchableOpacity style={styles.modalButton} onPress={cerrarResultado} activeOpacity={0.85}>
+              <Text style={styles.modalButtonText}>Aceptar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </View>
   );
 };
 
-
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
 
-  // 🔹 Cabecera con imagen de fondo
-  headerContainer: {
-    position: "relative",
-    overflow: "hidden",
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    marginBottom: 20,
+  // 🔹 Encabezado
+  headerBackground: {
+    paddingTop: 60,
+    paddingHorizontal: 0,
+    paddingBottom: 40,
   },
-
-  headerImage: {
-    width: Dimensions.get("window").width,
-    height: 160,
-  },
-
-  // 🔹 Contenedor para los textos sobre la imagen
+  headerImage: {},
   headerOverlay: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(36,16,18,0.25)",
   },
-
-  headerText: {
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.88)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginLeft: 20,
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: "bold",
-    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
-    marginBottom: 4, // espacio con la descripción
   },
-
-  headerSubText: {
-    color: "#f2f2f2",
+  headerSubtitle: {
+    color: "#fff",
     fontSize: 13,
-    lineHeight: 18,
-    textShadowColor: "rgba(0,0,0,0.5)",
+    marginTop: 4,
+    opacity: 0.95,
+    textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
 
-  // 🔹 Contenido principal
-  content: {
-    paddingHorizontal: 16,
-    paddingBottom: 16,
+  // 🔹 Hoja de contenido
+  sheet: {
+    flex: 1,
+    backgroundColor: "#faf6f5",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 20,
   },
+  scrollContainer: { padding: 16 },
 
-  card: {
+  // 🔹 Card de sección
+  sectionCard: {
     backgroundColor: "#fff",
-    borderRadius: 10,
-    padding: 15,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#efe1e0",
+    borderRadius: 18,
+    padding: 16,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  sectionIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: "rgba(158,32,33,0.1)",
+    justifyContent: "center",
+    alignItems: "center",
+    marginRight: 10,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#241a1a",
   },
 
   label: {
-    fontSize: 14,
-    fontWeight: "bold",
-    marginBottom: 8,
-    color: "#333",
+    fontSize: 11.5,
+    fontWeight: "700",
+    color: "#6b5c5d",
+    textTransform: "uppercase",
+    letterSpacing: 0.3,
+    marginBottom: 6,
   },
 
-  input: {
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    padding: 10,
+  // 🔹 Input
+  inputField: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#f7f2f1",
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 50,
+    marginBottom: 18,
+  },
+  inputInner: {
+    flex: 1,
     fontSize: 14,
-    marginBottom: 15,
+    color: "#241a1a",
   },
 
-  // 🔹 Botón principal (igual al de Ingresar)
-  button: {
+  // 🔹 Botón principal
+  submitButton: {
+    flexDirection: "row",
     backgroundColor: "#9e2021",
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 8,
+    paddingVertical: 14,
+    borderRadius: 24,
     alignItems: "center",
     justifyContent: "center",
-    alignSelf: "center",
-    width: 220,
+    shadowColor: "#9e2021",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
     elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.5,
   },
-
-  buttonText: {
+  submitButtonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 15,
+    fontSize: 14.5,
+  },
+
+  // 🔹 Modal de resultado (éxito / error)
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(36,16,18,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+  },
+  modalCard: {
+    width: "100%",
+    maxWidth: 320,
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 24,
+    alignItems: "center",
+  },
+  modalIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  modalIconSuccess: {
+    backgroundColor: "#3f8f5f",
+  },
+  modalIconError: {
+    backgroundColor: "#9e2021",
+  },
+  modalTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#241a1a",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  modalMessage: {
+    fontSize: 13.5,
+    color: "#6b5c5d",
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  modalButton: {
+    backgroundColor: "#9e2021",
+    borderRadius: 20,
+    paddingVertical: 12,
+    paddingHorizontal: 32,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
 export default RecuperarContrasena;

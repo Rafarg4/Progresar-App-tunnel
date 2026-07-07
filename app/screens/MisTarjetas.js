@@ -4,50 +4,34 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
-  Dimensions,
+  ImageBackground,
   ActivityIndicator,
   TouchableOpacity
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { WalletCard } from '../components/WalletCard';
+import BottomNav from '../components/BottomNav';
 
 export default function MisTarjetas() {
   const [tarjetas, setTarjetas] = useState([]);
   const [loading, setLoading] = useState(true);
-  const coloresTarjetas = ['#FF6F61', '#26A69A', '#5C6BC0', '#FFA726', '#8D6E63'];
-  const nombresTarjeta = {
-    JM: 'CLÁSICA',
-    '1': 'DINELCO',
-    TR: 'LA TRINIDAD',
-    M2: 'PROGAR',
-    J5: 'EDT',
-    J0: 'EMPRESARIAL',
-    JW: 'MUJER',
-    FR: 'AFUNI',
-    J7: 'FEP',
-    RC: 'ROTARY',
-    RM: 'ROTARY',
-    V6: 'VISA',
-    TS: 'COMEDI',
-    LE: 'LINALU',
-    EV: 'EL VIAJERO',
-    EI: 'VISA EMPRESARIAL'
-  };
-
+  const [error, setError] = useState(null);
+  const [usuario, setUsuario] = useState('');
   const navigation = useNavigation();
 
   useEffect(() => {
     const obtenerTarjetas = async () => {
       try {
-        const usuario = await AsyncStorage.getItem('usuarioGuardado');
-        if (!usuario) {
-          console.log('Usuario no encontrado en el storage');
+        const doc = await AsyncStorage.getItem('usuarioGuardado');
+        setUsuario(doc || '');
+        if (!doc) {
+          setError('Usuario no encontrado en el almacenamiento.');
           setLoading(false);
           return;
         }
-        const response = await fetch(`https://api.progresarcorp.com.py/api/ver_tarjeta/${usuario}`);
+        const response = await fetch(`https://api.progresarcorp.com.py/api/ver_tarjeta/${doc}`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
@@ -57,6 +41,7 @@ export default function MisTarjetas() {
         }
       } catch (error) {
         console.log('Error al obtener tarjetas:', error);
+        setError('No pudimos cargar tus tarjetas.');
       } finally {
         setLoading(false);
       }
@@ -72,199 +57,162 @@ export default function MisTarjetas() {
     navigation.navigate(routeName, { nro_tarjeta: t.nro_tarjeta });
   };
 
+  const handleDetalle = (tarjeta) => {
+    const clase = String(tarjeta.clase_tarjeta ?? '');
+    if (clase === '1') {
+      navigation.navigate('DetalleBepsa', { nro_tarjeta: tarjeta.nro_tarjeta, tarjeta });
+    } else {
+      navigation.navigate('DetalleTarjetas', { tarjeta });
+    }
+  };
+
   return (
-      <View style={styles.container}>
-  <View style={styles.headerContainer}>
-    <Image
-      source={require('../assets/inicio.png')}
-      style={styles.headerImage}
-      resizeMode="cover"
-    />
-    <View style={styles.headerOverlay}>
-      <Text style={styles.headerText}>Mis Tarjetas</Text>
-      <Text style={styles.headerSubtitle}>Visualizá tus tarjetas y accedé a sus movimientos</Text>
-    </View>
-  </View>
-
-  {loading ? (
-    <View style={styles.loadingContainer}>
-      <ActivityIndicator size="large" color="#9e2021" />
-      <Text style={styles.loadingText}>Cargando tus tarjetas...</Text>
-    </View>
-  ) : (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      {tarjetas.map((tarjeta) => (
-        <View key={tarjeta.nro_tarjeta} style={styles.cardContainer}>
-          <TouchableOpacity
-            activeOpacity={0.9}
-            onPress={() => {
-              const clase = String(tarjeta.clase_tarjeta ?? '');
-              if (clase === '1') {
-                navigation.navigate('DetalleBepsa', { nro_tarjeta: tarjeta.nro_tarjeta, tarjeta });
-              } else {
-                navigation.navigate('DetalleTarjetas', { tarjeta });
-              }
-            }}
-          >
-            {/* Ícono de fondo */}
-            <FontAwesome5
-              name="credit-card"
-              size={Dimensions.get('window').width * 0.30} // 🔹 reducido 15%
-              color="rgba(158,32,33,0.3)"
-              style={styles.cardBackgroundIcon}
-            />
-
-            {/* Ícono principal */}
-            <View style={styles.cardIconContainer}>
-              <FontAwesome5 name="credit-card" size={24} color="#9e2021" />
-            </View>
-
-            {/* Texto principal */}
-            <Text style={styles.cardBrand}>
-              {nombresTarjeta[tarjeta.clase_tarjeta] || 'Desconocido'}
-            </Text>
-            <Text style={styles.cardNumber}>
-              {formatearNumero(tarjeta.nro_tarjeta)}
-            </Text>
-            <Text numberOfLines={1} ellipsizeMode="tail" style={styles.cardHolder}>
-              {tarjeta.nombre_usuario}
-            </Text>
+    <View style={styles.container}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <ImageBackground
+          source={require('../assets/inicio_nuevo.png')}
+          style={styles.headerBackground}
+          imageStyle={styles.headerImage}
+        >
+          <View style={styles.headerOverlay} />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
           </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Mis tarjetas</Text>
+            <Text style={styles.headerSubtitle}>Visualizá tus tarjetas y accedé a sus movimientos</Text>
+          </View>
+        </ImageBackground>
 
-          {/* Botón */}
-          <TouchableOpacity
-            style={styles.cardFooterButton}
-            onPress={() => handleMovimientos(tarjeta)}
-            activeOpacity={0.8}
-          >
-            <FontAwesome5 name="exchange-alt" size={14} color="#fff" style={{ marginRight: 6 }} />
-            <Text style={styles.cardFooterButtonText}>Mis movimientos</Text>
-          </TouchableOpacity>
+        <View style={styles.sheet}>
+          <View style={styles.sectionHeaderRow}>
+            <Text style={styles.sectionTitle}>Tus tarjetas</Text>
+            {tarjetas.length > 0 && (
+              <View style={styles.cardCountBadge}>
+                <Text style={styles.cardCountText}>
+                  {tarjetas.length} {tarjetas.length === 1 ? 'tarjeta' : 'tarjetas'}
+                </Text>
+              </View>
+            )}
+          </View>
+
+          {loading ? (
+            <ActivityIndicator size="large" color="#9e2021" style={{ marginVertical: 30 }} />
+          ) : error ? (
+            <Text style={styles.errorText}>{error}</Text>
+          ) : tarjetas.length === 0 ? (
+            <Text style={styles.errorText}>No tenés tarjetas activas.</Text>
+          ) : (
+            tarjetas.map((tarjeta) => (
+              <View key={tarjeta.nro_tarjeta} style={styles.cardBlock}>
+                <WalletCard
+                  tarjeta={tarjeta}
+                  active={false}
+                  onPress={() => handleDetalle(tarjeta)}
+                  onEnter={() => handleMovimientos(tarjeta)}
+                />
+              </View>
+            ))
+          )}
         </View>
-      ))}
-    </ScrollView>
-  )}
-</View>
+      </ScrollView>
 
+      <BottomNav usuario={usuario} />
+    </View>
   );
 }
-
-// Función para ocultar los dígitos del número de tarjeta
-const formatearNumero = (numero) => {
-  if (!numero || numero.length < 4) return numero;
-  return '**** **** **** ' + numero.slice(-4);
-};
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
-  headerContainer: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22
+  scrollContainer: {
+    paddingBottom: 140,
   },
 
-  headerImage: { width: Dimensions.get('window').width, height: 170 },
-
+  // 🔹 Encabezado
+  headerBackground: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  headerImage: {},
   headerOverlay: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
   },
-
-  headerText: {
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+  },
+  headerTitle: {
     color: '#fff',
-    fontSize: 22, // 🔹 antes 26
+    fontSize: 21,
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
-
   headerSubtitle: {
     color: '#fff',
-    fontSize: 13.5, // 🔹 antes 15
-    marginTop: 3,
-    opacity: 0.9,
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
     textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
 
-  scrollContainer: { padding: 16 },
-
-  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  loadingText: { color: '#9e2021', marginTop: 8, fontWeight: '500', fontSize: 13 },
-
-  cardContainer: {
-    borderRadius: 14,
-    paddingVertical: 16,
-    paddingHorizontal: 14,
-    marginVertical: 8,
-    backgroundColor: '#fff',
-    borderWidth: 1,
-    borderColor: 'rgba(158,32,33,0.15)',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 2,
+  // 🔹 Hoja de contenido, superpuesta a la foto
+  sheet: {
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 22,
+    paddingHorizontal: 16,
   },
 
-  cardBackgroundIcon: {
-    position: 'absolute',
-    right: -10,
-    bottom: -10,
-    opacity: 0.18,
-    zIndex: 0,
-  },
-
-  cardIconContainer: { marginBottom: 10, zIndex: 2 },
-
-  cardBrand: {
-    fontSize: 16, // 🔹 antes 18
-    fontWeight: 'bold',
-    color: '#9e2021',
-    marginBottom: 12,
-  },
-
-  cardNumber: {
-    fontSize: 17, // 🔹 antes 20
-    fontWeight: '600',
-    color: '#9e2021',
-    marginBottom: 6,
-  },
-
-  cardHolder: {
-    fontSize: 14.5, // 🔹 antes 16
-    color: '#9e2021',
-    fontWeight: '500',
-    maxWidth: '90%',
-  },
-
-  cardFooterButton: {
-    marginTop: 14,
-    backgroundColor: '#9e2021',
-    borderRadius: 26,
-    paddingVertical: 10, // 🔹 antes 13
-    width: '88%',
-    alignSelf: 'center',
-    alignItems: 'center',
-    justifyContent: 'center',
+  sectionHeaderRow: {
     flexDirection: 'row',
-    shadowColor: '#9e2021',
-    shadowOpacity: 0.2,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 5,
-    elevation: 3,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#241a1a',
+  },
+  cardCountBadge: {
+    backgroundColor: 'rgba(158,32,33,0.1)',
+    borderRadius: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  cardCountText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#9e2021',
+  },
+  errorText: {
+    color: '#9e2021',
+    textAlign: 'center',
+    marginVertical: 10,
   },
 
-  cardFooterButtonText: {
-    color: '#fff',
-    fontWeight: 'bold',
-    fontSize: 14, // 🔹 antes 15
-    letterSpacing: 0.4,
+  cardBlock: {
+    marginBottom: 16,
   },
 });

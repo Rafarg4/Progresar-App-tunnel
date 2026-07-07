@@ -6,21 +6,23 @@ import {
   StyleSheet,
   TouchableOpacity,
   Modal,
-  Image,
+  ImageBackground,
   Linking,
-  Dimensions,
   Platform,
   ActivityIndicator,
   Alert,
 } from "react-native";
-import { useRoute } from "@react-navigation/native";
-import * as FileSystem from 'expo-file-system';
+import { useRoute, useNavigation } from "@react-navigation/native";
+// use legacy FileSystem API to keep downloadAsync and getContentUriAsync without deprecation
+import * as FileSystem from 'expo-file-system/legacy';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
 import * as IntentLauncher from "expo-intent-launcher";
+import BottomNav from '../components/BottomNav';
+
 const Extracto = () => {
   const route = useRoute();
-  const { num_doc } = route.params || {};
+  const navigation = useNavigation();
 
   const [modalMesVisible, setModalMesVisible] = useState(false);
   const [modalAnyoVisible, setModalAnyoVisible] = useState(false);
@@ -32,23 +34,21 @@ const Extracto = () => {
   const [tarjetas, setTarjetas] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-  const [nombre, setNombre] = useState('');
   const [usuario, setUsuario] = useState('');
+
   useEffect(() => {
-  const obtenerDatos = async () => {
-    try { 
-      const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
-      const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
+    const obtenerDatos = async () => {
+      try {
+        const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
+        if (usuarioGuardado) setUsuario(usuarioGuardado);
+      } catch (error) {
+        console.log('Error al obtener datos de AsyncStorage:', error);
+      }
+    };
 
-      if (nombreGuardado) setNombre(nombreGuardado);
-      if (usuarioGuardado) setUsuario(usuarioGuardado);
-    } catch (error) {
-      console.log('Error al obtener datos de AsyncStorage:', error);
-    }
-  };
+    obtenerDatos();
+  }, []);
 
-  obtenerDatos();
-}, []);
   const fetchTarjetas = async () => {
     try {
       setLoading(true);
@@ -75,7 +75,7 @@ const Extracto = () => {
   const nombreClaseTarjeta = (clase) => {
     switch (clase) {
       case "TR": return "Trinidad";
-      case "JM":return "Clásica"
+      case "JM": return "Clásica";
       case "V6": return "Visa";
       case "RC":
       case "RM": return "Rotary";
@@ -100,205 +100,216 @@ const Extracto = () => {
     return meses[mes];
   };
 
-const descargarPDF = async (url, nombreArchivo) => {
-  try {
-    if (!url) {
-      Alert.alert("Error", "No se recibió una URL válida.");
-      return;
-    }
-
-    const safeName = nombreArchivo.replace(/[^\w.\-]/g, "_");
-    const fileUri = FileSystem.documentDirectory + safeName;
-
-    console.log("⬇️ Descargando:", url);
-    const { uri: downloadedUri, status } = await FileSystem.downloadAsync(url, fileUri);
-    if (status !== 200) {
-      Alert.alert("Error", `No se pudo descargar (HTTP ${status}).`);
-      return;
-    }
-
-    console.log("✅ PDF descargado temporalmente en:", downloadedUri);
-    Alert.alert("✅ Descargado", "El archivo fue guardado correctamente.");
-
-    // ✅ Solución: usar getContentUriAsync
-    if (Platform.OS === "android") {
-      try {
-        const cUri = await FileSystem.getContentUriAsync(downloadedUri);
-        await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
-          data: cUri, 
-          flags: 1, // FLAG_GRANT_READ_URI_PERMISSION
-          type: "application/pdf",
-        });
-      } catch (e) {
-        console.log("⚠️ No se pudo abrir visor PDF:", e);
-        Alert.alert("Aviso", "El archivo fue descargado, pero no se pudo abrir automáticamente.");
-      }
-    } else {
-      await Linking.openURL(downloadedUri);
-    }
-  } catch (error) {
-    console.error("❌ Error al descargar:", error);
-    Alert.alert("Error", "No se pudo guardar o abrir el archivo.");
-  }
-};
-
-// 🔹 función global para mapear clase_tarjeta a nombre de carpeta
-const nombreTipoTarjeta = (clase) => {
-  switch (clase) {
-    case "V6": return "Visa";
-    case "1":  return "Dinelco";
-    case "JM": return "Credicard";
-    case "TR": return "Credicard";
-    case "RC": return "Credicard";
-    case "RM": return "Credicard";
-    case "J7": return "Credicard";
-    case "EV": return "Credicard";
-    case "TS": return "Credicard";
-    case "JW": return "Credicard";
-    case "FR": return "Credicard";
-    case "J0": return "Credicard";
-    case "EI": return "Visa";
-    default:   return "Otros"; // fallback
-  }
-};
-
-const handleDownload = async () => {
-  if (
-    !tarjetaCompletaSeleccionada ||
-    mesSeleccionado === "Seleccione un mes" ||
-    anyoSeleccionado === "Seleccione un año"
-  ) {
-    Alert.alert("¡Error!", "Debe seleccionar tarjeta, mes y año antes de continuar.");
-    return;
-  }
-
-  // 🔹 Datos necesarios
-  const clase = tarjetaCompletaSeleccionada.clase_tarjeta || "";
-  const tipoTarjeta = nombreTipoTarjeta(clase);  // ej: "Visa", "Dinelco"
-  const mes = obtenerNumeroMes(mesSeleccionado); // ej: "09"
-  const nombreMes = mesSeleccionado;             // ej: "Setiembre"
-  const anho = anyoSeleccionado;
-  const nroUsuario = tarjetaCompletaSeleccionada.nro_usuario; // de tu API
-
-  try {
-    const response = await fetch("https://api.progresarcorp.com.py/generar_extracto", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        nro_usuario: nroUsuario,
-        anho,
-        mes,
-        nombreMes,
-        tipo_tarjeta: tipoTarjeta,
-      }),
-    });
-
-    const rawResponseText = await response.text();
-    console.log("📄 Respuesta cruda del servidor:", rawResponseText);
-
-    let data;
+  const descargarPDF = async (url, nombreArchivo) => {
     try {
-      data = JSON.parse(rawResponseText);
-    } catch (parseError) {
-      console.error("❌ Error al parsear JSON:", parseError);
-      throw new Error("La respuesta no es un JSON válido.");
-    }
+      if (!url) {
+        Alert.alert("Error", "No se recibió una URL válida.");
+        return;
+      }
 
-    if (response.ok && data.success) {
-      console.log("✅ URL recibida:", data.url_pdf);
+      const safeName = nombreArchivo.replace(/[^\w.\-]/g, "_");
+      const fileUri = FileSystem.documentDirectory + safeName;
 
+      console.log("⬇️ Descargando:", url);
+      const { uri: downloadedUri, status } = await FileSystem.downloadAsync(url, fileUri);
+      if (status !== 200) {
+        Alert.alert("Error", `No se pudo descargar (HTTP ${status}).`);
+        return;
+      }
+
+      console.log("✅ PDF descargado temporalmente en:", downloadedUri);
       Alert.alert(
-        "¡Éxito!",
-        "El extracto está disponible.",
+        "✅ Descargado",
+        "El archivo fue guardado correctamente.",
         [
-          { text: "Cancelar", style: "cancel" },
+          { text: "Cerrar", style: "cancel" },
           {
-            text: "Descargar PDF",
-            onPress: () =>
-              descargarPDF(
-                data.url_pdf, // 👈 usamos la URL del backend
-                data.filename || `Extracto_${tipoTarjeta}_${mes}_${anho}_${nroUsuario}.pdf`
-              ),
+            text: "Abrir",
+            onPress: async () => {
+              try {
+                if (Platform.OS === "android") {
+                  const cUri = await FileSystem.getContentUriAsync(downloadedUri);
+                  await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
+                    data: cUri,
+                    flags: 1,
+                    type: "application/pdf",
+                  });
+                } else {
+                  await Linking.openURL(downloadedUri);
+                }
+              } catch (e) {
+                console.log("⚠️ No se pudo abrir visor PDF:", e);
+                try {
+                  await Linking.openURL(url);
+                } catch (err) {
+                  console.log("⚠️ Tampoco se pudo abrir la URL remota:", err);
+                  Alert.alert("Aviso", "No se pudo abrir el archivo ni en el dispositivo ni en el navegador.");
+                }
+              }
+            },
           },
-        ]
+        ],
+        { cancelable: true }
       );
-    } else {
-      console.log("❌ Error del servidor:", data);
-      Alert.alert("Error", data.error || "No se pudo obtener el extracto.");
+    } catch (error) {
+      console.error("❌ Error al descargar:", error);
+      Alert.alert("Error", "No se pudo guardar o abrir el archivo.");
     }
-  } catch (error) {
-    console.error("💥 Error general:", error);
-    Alert.alert("Error", error.message || "Ocurrió un error inesperado.");
-  }
-};
+  };
+
+  // 🔹 función global para mapear clase_tarjeta a nombre de carpeta
+  const nombreTipoTarjeta = (clase) => {
+    switch (clase) {
+      case "V6": return "Visa";
+      case "1": return "Dinelco";
+      case "JM": return "Credicard";
+      case "TR": return "Credicard";
+      case "RC": return "Credicard";
+      case "RM": return "Credicard";
+      case "J7": return "Credicard";
+      case "EV": return "Credicard";
+      case "TS": return "Credicard";
+      case "JW": return "Credicard";
+      case "FR": return "Credicard";
+      case "J0": return "Credicard";
+      case "EI": return "Visa";
+      default: return "Otros";
+    }
+  };
+
+  const handleDownload = async () => {
+    if (
+      !tarjetaCompletaSeleccionada ||
+      mesSeleccionado === "Seleccione un mes" ||
+      anyoSeleccionado === "Seleccione un año"
+    ) {
+      Alert.alert("¡Error!", "Debe seleccionar tarjeta, mes y año antes de continuar.");
+      return;
+    }
+
+    const clase = tarjetaCompletaSeleccionada.clase_tarjeta || "";
+    const tipoTarjeta = nombreTipoTarjeta(clase);
+    const mes = obtenerNumeroMes(mesSeleccionado);
+    const nombreMes = mesSeleccionado;
+    const anho = anyoSeleccionado;
+    const nroUsuario = tarjetaCompletaSeleccionada.nro_usuario;
+
+    try {
+      const response = await fetch("https://api.progresarcorp.com.py/generar_extracto", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          nro_usuario: nroUsuario,
+          anho,
+          mes,
+          nombreMes,
+          tipo_tarjeta: tipoTarjeta,
+        }),
+      });
+
+      const rawResponseText = await response.text();
+      console.log("📄 Respuesta cruda del servidor:", rawResponseText);
+
+      let data;
+      try {
+        data = JSON.parse(rawResponseText);
+      } catch (parseError) {
+        console.error("❌ Error al parsear JSON:", parseError);
+        throw new Error("La respuesta no es un JSON válido.");
+      }
+
+      if (response.ok && data.success) {
+        console.log("✅ URL recibida:", data.url_pdf);
+
+        Alert.alert(
+          "¡Éxito!",
+          "El extracto está disponible.",
+          [
+            { text: "Cancelar", style: "cancel" },
+            {
+              text: "Descargar PDF",
+              onPress: () =>
+                descargarPDF(
+                  data.url_pdf,
+                  data.filename || `Extracto_${tipoTarjeta}_${mes}_${anho}_${nroUsuario}.pdf`
+                ),
+            },
+          ]
+        );
+      } else {
+        console.log("❌ Error del servidor:", data);
+        Alert.alert("Error", data.error || "No se pudo obtener el extracto.");
+      }
+    } catch (error) {
+      console.error("💥 Error general:", error);
+      Alert.alert("Error", error.message || "Ocurrió un error inesperado.");
+    }
+  };
 
   return (
-    
     <View style={styles.container}>
-    {/* Cabecera con imagen */}
-       <View style={styles.headerContainer}>
-        <Image
-          source={require('../assets/inicio.png')}
-          style={styles.headerImage}
-          resizeMode="cover"
-        />
-        <View style={styles.headerOverlay}>
-          <Text style={styles.headerText}>Extractos</Text>
-          <Text style={styles.headerSubText}>
-            Descargue sus extractos mensuales de tarjeta de forma rápida y segura.
-          </Text>
-        </View>
-      </View>
-      <ScrollView style={styles.scrollView}>
-          <View style={{ height: 10 }} /> 
-        {/* Card de campos y botones */}
-        <View style={styles.card}>
-          {/* Campo: Tarjeta */}
-          <Text style={styles.fieldTitle}>Tarjeta</Text>
-          <TouchableOpacity
-            onPress={() => setModalTarjetaVisible(true)}
-            style={styles.selectButton}
-          >
-            <Text style={styles.selectButtonText}>
-              {tarjetaSeleccionada || "Seleccione una tarjeta"}
-            </Text>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        <ImageBackground
+          source={require('../assets/inicio_nuevo.png')}
+          style={styles.headerBackground}
+          imageStyle={styles.headerImage}
+        >
+          <View style={styles.headerOverlay} />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
           </TouchableOpacity>
-
-          {/* Campo: Año */}
-          <Text style={styles.fieldTitle}>Año</Text>
-          <TouchableOpacity
-            onPress={() => setModalAnyoVisible(true)}
-            style={styles.selectButton}
-          >
-            <Text style={styles.selectButtonText}>
-              {anyoSeleccionado || "Seleccione un año"}
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Extractos</Text>
+            <Text style={styles.headerSubtitle}>
+              Descargá tus extractos mensuales de tarjeta de forma rápida y segura.
             </Text>
-          </TouchableOpacity>
+          </View>
+        </ImageBackground>
 
-          {/* Campo: Mes */}
-          <Text style={styles.fieldTitle}>Mes</Text>
-          <TouchableOpacity
-            onPress={() => setModalMesVisible(true)}
-            style={styles.selectButton}
-          >
-            <Text style={styles.selectButtonText}>
-              {mesSeleccionado || "Seleccione un mes"}
-            </Text>
-          </TouchableOpacity>
+        <View style={styles.sheet}>
+          <View style={styles.card}>
+            <Text style={styles.fieldTitle}>Tarjeta</Text>
+            <TouchableOpacity
+              onPress={() => setModalTarjetaVisible(true)}
+              style={styles.selectButton}
+            >
+              <Text style={styles.selectButtonText} numberOfLines={1}>
+                {tarjetaSeleccionada || "Seleccione una tarjeta"}
+              </Text>
+              <FontAwesome5 name="chevron-down" size={12} color="#9e2021" />
+            </TouchableOpacity>
 
-          {/* Footer de botones dentro del mismo card */}
-          <View style={{ borderTopWidth: 1, borderTopColor: "#ccc", marginTop: 20 }} />
-          <View style={styles.footerButtons}>
-            <TouchableOpacity onPress={handleDownload} style={styles.actionButton}>
-              <Text style={styles.buttonText}>  <FontAwesome5 name="download" size={16} color="#fff" style={styles.icon} /> Descargar</Text>
+            <Text style={styles.fieldTitle}>Año</Text>
+            <TouchableOpacity
+              onPress={() => setModalAnyoVisible(true)}
+              style={styles.selectButton}
+            >
+              <Text style={styles.selectButtonText}>
+                {anyoSeleccionado || "Seleccione un año"}
+              </Text>
+              <FontAwesome5 name="chevron-down" size={12} color="#9e2021" />
+            </TouchableOpacity>
+
+            <Text style={styles.fieldTitle}>Mes</Text>
+            <TouchableOpacity
+              onPress={() => setModalMesVisible(true)}
+              style={styles.selectButton}
+            >
+              <Text style={styles.selectButtonText}>
+                {mesSeleccionado || "Seleccione un mes"}
+              </Text>
+              <FontAwesome5 name="chevron-down" size={12} color="#9e2021" />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={handleDownload} style={styles.actionButton} activeOpacity={0.85}>
+              <FontAwesome5 name="download" size={15} color="#fff" style={{ marginRight: 8 }} />
+              <Text style={styles.buttonText}>Descargar</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
-
-      {/* Modales */}
 
       {/* Modal Tarjeta */}
       <Modal visible={modalTarjetaVisible} transparent animationType="fade">
@@ -307,7 +318,7 @@ const handleDownload = async () => {
             <Text style={styles.modalTitle}>Seleccione una tarjeta</Text>
 
             {loading ? (
-              <ActivityIndicator size="large" color="#0000ff" />
+              <ActivityIndicator size="large" color="#9e2021" />
             ) : error ? (
               <Text style={styles.errorText}>{error}</Text>
             ) : tarjetas.length === 0 ? (
@@ -326,12 +337,12 @@ const handleDownload = async () => {
                     key={index}
                     onPress={() => {
                       setTarjetaSeleccionada(tarjetaText);
-                      setTarjetaCompletaSeleccionada(tarjeta); // Guarda el objeto completo
+                      setTarjetaCompletaSeleccionada(tarjeta);
                       setModalTarjetaVisible(false);
                     }}
                     style={[styles.tarjetaItem, isSelected && styles.selectedItem]}
                   >
-                    <Text style={styles.tarjetaText}>{tarjetaText}</Text>
+                    <Text style={[styles.tarjetaText, isSelected && styles.tarjetaTextSelected]}>{tarjetaText}</Text>
                   </TouchableOpacity>
                 );
               })
@@ -360,7 +371,7 @@ const handleDownload = async () => {
                 }}
                 style={[styles.tarjetaItem, anyoSeleccionado === anyo && styles.selectedItem]}
               >
-                <Text style={styles.tarjetaText}>{anyo}</Text>
+                <Text style={[styles.tarjetaText, anyoSeleccionado === anyo && styles.tarjetaTextSelected]}>{anyo}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -379,18 +390,8 @@ const handleDownload = async () => {
           <View style={styles.modalContainer}>
             <Text style={styles.modalTitle}>Seleccione un mes</Text>
             {[
-              "Enero",
-              "Febrero",
-              "Marzo",
-              "Abril",
-              "Mayo",
-              "Junio",
-              "Julio",
-              "Agosto",
-              "Setiembre",
-              "Octubre",
-              "Noviembre",
-              "Diciembre",
+              "Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio",
+              "Julio", "Agosto", "Setiembre", "Octubre", "Noviembre", "Diciembre",
             ].map((mes, index) => (
               <TouchableOpacity
                 key={index}
@@ -400,7 +401,7 @@ const handleDownload = async () => {
                 }}
                 style={[styles.tarjetaItem, mesSeleccionado === mes && styles.selectedItem]}
               >
-                <Text style={styles.tarjetaText}>{mes}</Text>
+                <Text style={[styles.tarjetaText, mesSeleccionado === mes && styles.tarjetaTextSelected]}>{mes}</Text>
               </TouchableOpacity>
             ))}
             <TouchableOpacity
@@ -412,181 +413,188 @@ const handleDownload = async () => {
           </View>
         </View>
       </Modal>
+
+      <BottomNav usuario={usuario} />
     </View>
   );
 };
 
-
-// Estilos
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-    width: "100%",
-  },
+  container: { flex: 1, backgroundColor: "#fff" },
 
-  // 🔹 Cabecera con imagen y texto
-  headerContainer: {
-    position: "relative",
-    overflow: "hidden",
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    marginBottom: 15,
+  scrollView: { flex: 1 },
+  scrollContainer: { paddingBottom: 140 },
+
+  // 🔹 Encabezado
+  headerBackground: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  headerImage: {
-    width: Dimensions.get("window").width,
-    height: 150,
-  },
+  headerImage: {},
   headerOverlay: {
-    position: "absolute",
-    bottom: 20,
-    left: 20,
-    right: 20,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "rgba(36,16,18,0.25)",
   },
-  headerText: {
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: "rgba(255,255,255,0.88)",
+    justifyContent: "center",
+    alignItems: "center",
+    elevation: 3,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+  },
+  headerTitle: {
     color: "#fff",
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: "bold",
-    textShadowColor: "rgba(0,0,0,0.6)",
+    textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
-    marginBottom: 4,
   },
-  headerSubText: {
-    color: "#f2f2f2",
+  headerSubtitle: {
+    color: "#fff",
     fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
     lineHeight: 18,
     textShadowColor: "rgba(0,0,0,0.4)",
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
 
-  scrollView: {
-    flex: 1,
+  // 🔹 Hoja de contenido
+  sheet: {
+    backgroundColor: "#faf6f5",
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 20,
+    paddingHorizontal: 16,
   },
 
-  // 🔹 Tarjeta principal
+  // 🔹 Card principal
   card: {
-    width: "92%",
-    maxWidth: 520,
-    alignSelf: "center",
-    padding: 15,
-    marginBottom: 20,
     backgroundColor: "#fff",
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: "#efe1e0",
+    borderRadius: 18,
+    padding: 16,
   },
 
   fieldTitle: {
-    fontSize: 14,
-    fontWeight: "bold",
-    color: "#333",
-    marginBottom: 8,
+    fontSize: 12,
+    fontWeight: "600",
+    color: "#6b5c5d",
+    marginBottom: 6,
   },
 
   // 🔹 Selectores de tarjeta, año y mes
   selectButton: {
-    backgroundColor: "#ffffff",
-    borderWidth: 1,
-    borderColor: "#9e2021",
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginBottom: 10,
+    flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "center",
+    backgroundColor: "#f7f2f1",
+    paddingVertical: 13,
+    paddingHorizontal: 14,
+    borderRadius: 14,
+    marginBottom: 14,
   },
   selectButtonText: {
-    color: "#9e2021",
-    fontWeight: "bold",
-    textAlign: "center",
+    flex: 1,
+    color: "#241a1a",
+    fontWeight: "600",
     fontSize: 14,
+    marginRight: 8,
   },
 
-  // 🔹 Pie de botones (descargar, etc.)
-  footerButtons: {
-    flexDirection: "row",
-    justifyContent: "center",
-    marginTop: 20,
-  },
+  // 🔹 Botón de descarga
   actionButton: {
-    width: 220,
-    paddingVertical: 10,
-    borderRadius: 8,
+    flexDirection: "row",
+    paddingVertical: 14,
+    borderRadius: 24,
     backgroundColor: "#9e2021",
     alignItems: "center",
     justifyContent: "center",
+    marginTop: 6,
+    shadowColor: "#9e2021",
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
     elevation: 3,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.5,
   },
+
   buttonText: {
     color: "#fff",
     fontWeight: "bold",
-    fontSize: 15,
+    fontSize: 14,
   },
 
   // 🔹 Modal general
   modalOverlay: {
     flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
+    backgroundColor: "rgba(36,16,18,0.4)",
     justifyContent: "center",
     alignItems: "center",
   },
   modalContainer: {
     backgroundColor: "#fff",
-    width: "80%",
-    borderRadius: 12,
+    width: "85%",
+    borderRadius: 20,
     padding: 20,
-    elevation: 5,
   },
   modalTitle: {
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: "bold",
-    marginBottom: 12,
+    marginBottom: 14,
     textAlign: "center",
+    color: "#241a1a",
   },
   tarjetaItem: {
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderWidth: 1,
-    borderColor: "#ccc",
-    borderRadius: 8,
-    marginBottom: 10,
-    backgroundColor: "#f9f9f9",
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 14,
+    marginBottom: 8,
+    backgroundColor: "#f7f2f1",
   },
   selectedItem: {
-    borderColor: "#9e2021",
-    backgroundColor: "#ffeaea",
+    backgroundColor: "#9e2021",
   },
   tarjetaText: {
     fontSize: 14,
     textAlign: "center",
+    color: "#241a1a",
+    fontWeight: "600",
+  },
+  tarjetaTextSelected: {
+    color: "#fff",
   },
   closeButton: {
-    backgroundColor: "#9e2021",
-    paddingVertical: 10,
-    borderRadius: 8,
-    marginTop: 10,
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginTop: 6,
     alignItems: "center",
   },
   closeButtonText: {
-    color: "#fff",
+    color: "#9e2021",
     fontWeight: "bold",
     fontSize: 14,
   },
 
   errorText: {
-    color: "red",
+    color: "#9e2021",
     fontSize: 14,
     textAlign: "center",
     marginBottom: 10,
   },
 });
-
 
 export default Extracto;

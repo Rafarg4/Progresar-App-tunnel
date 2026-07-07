@@ -17,9 +17,9 @@ import {
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import BottomNav from '../components/BottomNav';
 
-// Importa desde assets en vez de URL
-const IMG_HEADER = require('../assets/inicio.png'); 
 const API_GET     = 'https://api.progresarcorp.com.py/api/ver_datos_usuario';
 const API_UPDATE  = 'https://api.progresarcorp.com.py/api/actualizar_datos_usuario';
 const API_BLOCK   = 'https://api.progresarcorp.com.py/api/bloquear_acceso';
@@ -50,9 +50,11 @@ function PerfilAvatar({ user_perfil, size = 90 }) {
 }
 
 export default function PerfilUsuario() {
+  const navigation = useNavigation();
   const [perfil, setPerfil] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [usuario, setUsuario] = useState('');
 
   // formulario editable (siempre)
   const [form, setForm] = useState({
@@ -137,6 +139,7 @@ export default function PerfilUsuario() {
 
       const usuario = await AsyncStorage.getItem('usuarioGuardado');
       if (!usuario) { setPerfil(null); Alert.alert('Atención', 'No se encontró el usuario.'); return; }
+      setUsuario(usuario);
 
       const fotoLocal = await AsyncStorage.getItem('user_perfil');
       if (fotoLocal) setUserPerfilPath(fotoLocal);
@@ -324,35 +327,42 @@ export default function PerfilUsuario() {
       <FontAwesome5
         name={ok ? 'check-circle' : 'circle'}
         size={14}
-        color={ok ? '#28a745' : '#bbb'}
+        color={ok ? '#3f8f5f' : '#d8cccb'}
         style={{ marginRight: 8 }}
       />
-      <Text style={[styles.ruleText, ok && { color: '#28a745' }]}>{text}</Text>
+      <Text style={[styles.ruleText, ok && { color: '#3f8f5f' }]}>{text}</Text>
     </View>
   );
 
   return (
    <View style={styles.container}>
-         <View style={styles.headerContainer}>
-           <Image
-                source={require('../assets/inicio.png')}   
-             style={styles.headerImage}
-             resizeMode="cover"
-           />
-           <Text style={styles.headerText}>Mi Perfil</Text>
-         </View>
-      {loading ? (
-        <View style={styles.loadingBox}><ActivityIndicator size="large" /></View>
-      ) : (
-        <ScrollView
-          contentContainerStyle={styles.scrollContainer}
-          refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#bf0404" colors={['#bf0404']} />}
-          keyboardShouldPersistTaps="handled"
-          keyboardDismissMode="on-drag"
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor="#9e2021" colors={['#9e2021']} />}
+        keyboardShouldPersistTaps="handled"
+        keyboardDismissMode="on-drag"
+      >
+        <ImageBackground
+          source={require('../assets/inicio_nuevo.png')}
+          style={styles.headerBackground}
+          imageStyle={styles.headerImage}
         >
-          {!perfil ? (
+          <View style={styles.headerOverlay} />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Mi perfil</Text>
+            <Text style={styles.headerSubtitle}>Gestioná tus datos personales y de seguridad</Text>
+          </View>
+        </ImageBackground>
+
+        <View style={styles.sheet}>
+          {loading ? (
+            <View style={styles.loadingBox}><ActivityIndicator size="large" color="#9e2021" /></View>
+          ) : !perfil ? (
             <View style={styles.emptyCard}>
-              <FontAwesome5 name="user-slash" size={36} color="#bf0404" style={{ marginBottom: 8 }} />
+              <FontAwesome5 name="user-slash" size={36} color="#9e2021" style={{ marginBottom: 8 }} />
               <Text style={styles.emptyTitle}>Sin datos de perfil</Text>
               <Text style={styles.emptyText}>No pudimos obtener la información del usuario.</Text>
             </View>
@@ -501,16 +511,16 @@ export default function PerfilUsuario() {
                       <View style={styles.modalActions}>
                         <TouchableOpacity
                           onPress={resetPassModal}
-                          style={[styles.modalBtn, { backgroundColor: '#888' }]}
+                          style={[styles.modalBtn, { backgroundColor: 'rgba(158,32,33,0.08)' }]}
                           disabled={savingPass}
                           activeOpacity={0.85}
                         >
-                          <Text style={styles.modalBtnText}>Cancelar</Text>
+                          <Text style={[styles.modalBtnText, { color: '#9e2021' }]}>Cancelar</Text>
                         </TouchableOpacity>
 
                         <TouchableOpacity
                           onPress={guardarNuevaClave}
-                          style={[styles.modalBtn, { backgroundColor: passValid(newPass) && newPass===newPass2 ? '#28a745' : '#ccc' }]}
+                          style={[styles.modalBtn, { backgroundColor: passValid(newPass) && newPass===newPass2 ? '#9e2021' : '#e3d5d4' }]}
                           disabled={savingPass || !passValid(newPass) || newPass !== newPass2}
                           activeOpacity={0.85}
                         >
@@ -524,8 +534,9 @@ export default function PerfilUsuario() {
               {/* ===================================== */}
             </>
           )}
-        </ScrollView>
-      )}
+        </View>
+      </ScrollView>
+      <BottomNav usuario={usuario} />
     </View>
   );
 }
@@ -533,32 +544,63 @@ export default function PerfilUsuario() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
-  // Header
-  headerContainer: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+  // 🔹 Encabezado
+  headerBackground: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  headerText: {
-    position: 'absolute',
-    bottom: 12,
-    left: 16,
+  headerImage: {},
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+  },
+  headerTitle: {
     color: '#fff',
-    fontSize: 20,
+    fontSize: 21,
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
-  headerImage: {
-    width: '100%',
-    height: 170,
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  // 🔹 Hoja de contenido, superpuesta a la foto
+  sheet: {
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -23,
+    padding: 16,
   },
 
   // Loading / content
-  loadingBox: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  scrollContainer: { padding: 16 },
+  loadingBox: { alignItems: 'center', paddingVertical: 60 },
+  scrollContainer: { paddingBottom: 140 },
 
   // Profile header
   profileHeader: {
@@ -572,17 +614,17 @@ const styles = StyleSheet.create({
   nameText: {
     fontSize: 18,
     fontWeight: '700',
-    color: '#333',
+    color: '#241a1a',
     marginBottom: 2,
   },
   docText: {
     fontSize: 13,
-    color: '#555',
+    color: '#6b5c5d',
     marginBottom: 2,
   },
   emailText: {
     fontSize: 13,
-    color: '#666',
+    color: '#6b5c5d',
     marginBottom: 8,
   },
 
@@ -617,28 +659,24 @@ const styles = StyleSheet.create({
   // Card
   card: {
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#efe1e0',
+    borderRadius: 18,
     padding: 16,
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
-    marginBottom: 12,
+    marginBottom: 14,
   },
 
   // Rows & inputs
   row: { marginBottom: 14 },
-  label: { fontSize: 12, color: '#666', marginBottom: 6 },
-  value: { fontSize: 16, fontWeight: '600', color: '#333' },
+  label: { fontSize: 12, color: '#6b5c5d', marginBottom: 6 },
+  value: { fontSize: 16, fontWeight: '600', color: '#241a1a' },
   input: {
-    borderWidth: 1,
-    borderColor: '#dadada',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    fontSize: 16,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: '#f7f2f1',
+    fontSize: 15,
+    color: '#241a1a',
   },
 
   // Form actions
@@ -652,32 +690,34 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: 8,
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 12,
+    paddingHorizontal: 18,
+    borderRadius: 24,
+    shadowColor: '#9e2021',
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
+    shadowRadius: 5,
+    elevation: 3,
   },
   formBtnText: { color: '#fff', fontWeight: '700', fontSize: 14 },
 
   // Empty state
   emptyCard: {
     backgroundColor: '#fff',
-    borderRadius: 14,
-    padding: 20,
+    borderWidth: 1,
+    borderColor: '#efe1e0',
+    borderRadius: 18,
+    padding: 24,
     alignItems: 'center',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 6,
     marginTop: 10,
   },
-  emptyTitle: { fontSize: 16, fontWeight: 'bold', color: '#333', marginBottom: 4 },
-  emptyText: { fontSize: 14, color: '#666', textAlign: 'center' },
+  emptyTitle: { fontSize: 16, fontWeight: 'bold', color: '#241a1a', marginBottom: 4 },
+  emptyText: { fontSize: 14, color: '#6b5c5d', textAlign: 'center' },
 
   // ===== Modal styles =====
   modalBackdrop: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.35)',
+    backgroundColor: 'rgba(36,16,18,0.4)',
     justifyContent: 'flex-end',
   },
   modalWrapper: {
@@ -685,9 +725,9 @@ const styles = StyleSheet.create({
   },
   modalCard: {
     backgroundColor: '#fff',
-    padding: 16,
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
+    padding: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 8,
@@ -700,24 +740,23 @@ const styles = StyleSheet.create({
   },
   modalSubtitle: {
     fontSize: 12,
-    color: '#666',
+    color: '#6b5c5d',
     marginTop: 4,
     marginBottom: 12,
   },
   modalLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#6b5c5d',
     marginTop: 8,
     marginBottom: 6,
   },
   modalInput: {
-    borderWidth: 1,
-    borderColor: '#dadada',
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
-    backgroundColor: '#fff',
-    fontSize: 16,
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    paddingVertical: 13,
+    backgroundColor: '#f7f2f1',
+    fontSize: 15,
+    color: '#241a1a',
   },
   rulesList: {
     marginTop: 10,
@@ -730,7 +769,7 @@ const styles = StyleSheet.create({
   },
   ruleText: {
     fontSize: 13,
-    color: '#444',
+    color: '#6b5c5d',
   },
   modalActions: {
     flexDirection: 'row',
@@ -739,9 +778,9 @@ const styles = StyleSheet.create({
     marginTop: 8,
   },
   modalBtn: {
-    paddingVertical: 10,
-    paddingHorizontal: 14,
-    borderRadius: 10,
+    paddingVertical: 11,
+    paddingHorizontal: 18,
+    borderRadius: 20,
   },
   modalBtnText: {
     color: '#fff',

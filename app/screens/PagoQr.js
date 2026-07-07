@@ -12,12 +12,12 @@ import {
   TextInput,
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
-import { BarCodeScanner } from 'expo-barcode-scanner';
 import { Picker } from '@react-native-picker/picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 
 export default function PagoQr() {
   const route = useRoute();
@@ -42,13 +42,15 @@ export default function PagoQr() {
   const [pwdInput, setPwdInput] = useState('');
 
   // 📲 Permisos cámara/galería
-  useEffect(() => {
-    (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      const galleryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
-      setHasPermission(status === 'granted' && galleryStatus.status === 'granted');
-    })();
-  }, []);
+ const [permission, requestPermission] = useCameraPermissions();
+
+useEffect(() => {
+  (async () => {
+    await requestPermission();
+    const galleryStatus = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    setHasPermission(galleryStatus.status === 'granted');
+  })();
+}, []);
 
   // 🔐 Cargar preferencia y capacidad biométrica
   useEffect(() => {
@@ -343,10 +345,14 @@ if (!response.ok) {
         {!scanned && (
           <>
             <View style={styles.cameraContainer}>
-              <BarCodeScanner
-                onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
+             <CameraView
                 style={StyleSheet.absoluteFillObject}
+                barcodeScannerSettings={{
+                  barcodeTypes: ['qr'],
+                }}
+                onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
               />
+
             </View>
 
             <TouchableOpacity style={styles.imageButton} onPress={pickImageAndScan}>

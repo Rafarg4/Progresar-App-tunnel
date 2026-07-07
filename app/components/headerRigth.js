@@ -1,7 +1,6 @@
 import React from 'react';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { View, Alert, TouchableOpacity, Text, Image} from 'react-native';
-import * as Animatable from 'react-native-animatable'
 import { Menu, MenuItem, MenuDivider } from 'react-native-material-menu';
 import { useNavigation } from '@react-navigation/native';
 import * as global from '../global'
@@ -31,25 +30,6 @@ const Salir = () => {
   return (
     <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'flex-end' }}>
       
-      {/* NOTIFICACIONES 
-      <TouchableOpacity
-        onPress={()=> gotoScreen('Usuario')} //cambiar a promociones
-      >
-        <Animatable.Text
-          animation="bounceIn"
-          easing="linear"
-          iterationCount={1}
-          style={{marginRight: 10}}
-        >
-          <Icon name="bell" size={20} color='white' />
-          <View style={{paddingBottom: 10, alignItems: 'center'}}>
-            <View style={{borderRadius: 100, backgroundColor: 'white', width: 16}}>
-              <Text style={{fontSize: 11, color: 'black', textAlign: 'center',}}>0</Text>
-            </View>
-          </View>
-        </Animatable.Text>
-      </TouchableOpacity> */}
-
       <Menu
         ref={menuRef}
         //anchor={ <Icon onPress={showMenu} name="ellipsis-v" size={25} color='white' style={{padding: 10, marginRight: 10}} />}

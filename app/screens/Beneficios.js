@@ -5,15 +5,25 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
+  ImageBackground,
   ActivityIndicator,
-  Dimensions
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNav from '../components/BottomNav';
 
 export default function Beneficios() {
+  const navigation = useNavigation();
+  const [usuario, setUsuario] = useState('');
   const [beneficios, setBeneficios] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    AsyncStorage.getItem('usuarioGuardado')
+      .then((doc) => doc && setUsuario(doc))
+      .catch((e) => console.log('Error al obtener usuario:', e));
+  }, []);
 
   useEffect(() => {
     const cargarBeneficios = async () => {
@@ -70,76 +80,106 @@ export default function Beneficios() {
 
   return (
     <View style={styles.container}>
-      {/* HEADER */}
-      <View style={styles.headerContainer}>
-        <Image
-          source={require('../assets/inicio.png')}
-          style={styles.headerImage}
-          resizeMode="cover"
-        />
-        <View style={styles.headerOverlay}>
-          <Text style={styles.headerText}>Beneficios</Text>
-          <Text style={styles.headerSubtitle}>
-            Promociones y ventajas exclusivas para vos.
-          </Text>
-        </View>
-      </View>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+        <ImageBackground
+          source={require('../assets/inicio_nuevo.png')}
+          style={styles.headerBackground}
+          imageStyle={styles.headerImage}
+        >
+          <View style={styles.headerOverlay} />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+          </TouchableOpacity>
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Beneficios</Text>
+            <Text style={styles.headerSubtitle}>
+              Promociones y ventajas exclusivas para vos
+            </Text>
+          </View>
+        </ImageBackground>
 
-      {/* CONTENIDO */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#0a7cff" />
-          <Text style={styles.loadingText}>Cargando beneficios...</Text>
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {beneficios.length > 0 ? (
+
+        <View style={styles.sheet}>
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color="#9e2021" />
+              <Text style={styles.loadingText}>Cargando beneficios...</Text>
+            </View>
+          ) : beneficios.length > 0 ? (
             beneficios.map(renderBeneficio)
           ) : (
             <Text style={styles.noDataText}>
               No hay beneficios disponibles.
             </Text>
           )}
-        </ScrollView>
-      )}
+        </View>
+      </ScrollView>
+
+      <BottomNav usuario={usuario} />
     </View>
   );
 }
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
-  headerContainer: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
+  // 🔹 Encabezado
+  headerBackground: {
+    width: '100%',
+    paddingTop: 60,
+    paddingHorizontal: 0,
+    paddingBottom: 40,
   },
-  headerImage: {
-    width: Dimensions.get('window').width,
-    height: 160
-  },
+  headerImage: {},
   headerOverlay: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
   },
-  headerText: {
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   headerSubtitle: {
     color: '#fff',
-    fontSize: 13.5,
+    fontSize: 13,
     marginTop: 4,
-    opacity: 0.9
+    opacity: 0.95,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 
-  scrollContainer: { padding: 12 },
+  // 🔹 Hoja de contenido
+  sheet: {
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 16,
+    paddingHorizontal: 12,
+    paddingBottom: 10,
+  },
 
   notificationCard: {
     backgroundColor: '#fff',
@@ -204,7 +244,7 @@ const styles = StyleSheet.create({
     alignItems: 'center'
   },
   loadingText: {
-    color: '#0a7cff',
+    color: '#6b5c5d',
     marginTop: 8
   },
   noDataText: {

@@ -14,6 +14,7 @@ import * as WebBrowser from 'expo-web-browser';
 import { ScrollView } from 'react-native-virtualized-view';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
+import BottomNav from '../components/BottomNav';
 
 export default class TarjetasScreen extends Component {
   constructor(props) {
@@ -60,112 +61,89 @@ export default class TarjetasScreen extends Component {
   }
 
   openSolicitud = () => {
-    WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
+    WebBrowser.openBrowserAsync('https://progresarcorp.com.py/tarjetas#solictar-tarjeta');
   };
 
-  renderItem = ({ item, index }) => {
+  renderItem = ({ item }) => {
     return (
-      <View style={styles.card}>
-        {/* Franja roja lateral */}
-        <View style={styles.leftStripe} />
-
-        {/* Header del item con icono */}
+      <TouchableOpacity style={styles.card} activeOpacity={0.85} onPress={this.openSolicitud}>
         <View style={styles.cardHeader}>
           <View style={styles.cardIconWrap}>
-            <FontAwesome5 name="credit-card" size={16} color="#fff" />
+            <FontAwesome5 name="credit-card" size={15} color="#9e2021" />
           </View>
           <Text style={styles.cardTitle} numberOfLines={2}>
             {item?.title || 'Tarjeta de crédito'}
           </Text>
+          <FontAwesome5 name="chevron-right" size={13} color="#6b5c5d" />
         </View>
 
-        {/* Cuerpo */}
-        <View style={styles.cardBody}>
-          {/* Beneficios */}
-          {!!item?.subtitle && (
-            <>
-              <Text style={styles.sectionTitle}>Beneficios</Text>
-              <Text style={styles.bodyText}>{item.subtitle}</Text>
-              <View style={styles.separator} />
-            </>
-          )}
+        {!!item?.subtitle && (
+          <View style={styles.cardSection}>
+            <Text style={styles.cardSectionLabel}>Beneficios</Text>
+            <Text style={styles.cardSectionText}>{item.subtitle}</Text>
+          </View>
+        )}
 
-          {/* Cobertura */}
-          <Text style={styles.sectionTitle}>Cobertura</Text>
-          {!!item?.cobertura ? (
-            <Text style={styles.bodyText}>{item.cobertura}</Text>
-          ) : (
-            <Text style={styles.bodyTextMuted}>No especificado.</Text>
-          )}
+        <View style={styles.cardSection}>
+          <Text style={styles.cardSectionLabel}>Cobertura</Text>
+          <Text style={styles.cardSectionText}>
+            {item?.cobertura || 'No especificado.'}
+          </Text>
         </View>
-
-        {/* Footer con CTA */}
-        <View style={styles.cardFooter}>
-          <TouchableOpacity
-            style={styles.footerBtn}
-            activeOpacity={0.9}
-            onPress={this.openSolicitud}
-          >
-            <FontAwesome5 name="file-signature" size={14} color="#fff" />
-            <Text style={styles.footerBtnText}>Solicitar tarjeta</Text>
-          </TouchableOpacity>
-        </View>
-      </View>
+      </TouchableOpacity>
     );
   };
 
   render() {
-    const { tarjetas, loading } = this.state;
+    const { tarjetas, loading, num_doc } = this.state;
 
     return (
       <SafeAreaView style={styles.safe}>
-        <ScrollView
-          showsVerticalScrollIndicator={false}
-          contentContainerStyle={{ paddingBottom: 20 }}
-        >
-          {/* CABECERA GENERAL con ImageBackground */}
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
           <ImageBackground
-            source={{ uri: 'https://progresarcorp.com.py/wp-content/uploads/2025/08/inicio.png' }}
+            source={require('../assets/inicio_nuevo.png')}
             style={styles.headerBackground}
-            imageStyle={{ borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
+            imageStyle={styles.headerImage}
           >
             <View style={styles.headerOverlay} />
+            <TouchableOpacity style={styles.backButton} onPress={() => this.props.navigation?.goBack()}>
+              <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+            </TouchableOpacity>
             <View style={styles.headerContent}>
-              <Text style={styles.headerTitle}>Nuestras Tarjetas</Text>
-              <Text style={styles.headerSubtitle}>
-                Elegí la tarjeta que va con vos
-              </Text>
+              <Text style={styles.headerTitle}>Nuestras tarjetas</Text>
+              <Text style={styles.headerSubtitle}>Elegí la tarjeta que va con vos</Text>
             </View>
           </ImageBackground>
 
-          {/* Loader */}
-          {loading && (
-            <View style={styles.loaderBox}>
-              <ActivityIndicator color="#bf0404" />
-              <Text style={styles.loaderText}>Cargando…</Text>
-            </View>
-          )}
+          <View style={styles.sheet}>
+            {loading && (
+              <View style={styles.loaderBox}>
+                <ActivityIndicator color="#9e2021" />
+                <Text style={styles.loaderText}>Cargando…</Text>
+              </View>
+            )}
 
-          {/* Lista */}
-          {!loading && (
-            <FlatList
-              data={tarjetas}
-              keyExtractor={(item, idx) => String(item?.id ?? idx)}
-              renderItem={this.renderItem}
-              showsVerticalScrollIndicator={false}
-              scrollEnabled={false}
-              contentContainerStyle={{ paddingTop: 10 }}
-              ListEmptyComponent={
-                <View style={styles.emptyBox}>
-                  <FontAwesome5 name="bell-slash" size={18} color="#999" />
-                  <Text style={styles.emptyText}>
-                    No hay tarjetas disponibles por el momento.
-                  </Text>
-                </View>
-              }
-            />
-          )}
+            {!loading && (
+              <FlatList
+                data={tarjetas}
+                keyExtractor={(item, idx) => String(item?.id ?? idx)}
+                renderItem={this.renderItem}
+                showsVerticalScrollIndicator={false}
+                scrollEnabled={false}
+                ListEmptyComponent={
+                  <View style={styles.emptyBox}>
+                    <FontAwesome5 name="bell-slash" size={18} color="#6b5c5d" />
+                    <Text style={styles.emptyText}>
+                      No hay tarjetas disponibles por el momento.
+                    </Text>
+                  </View>
+                }
+              />
+            )}
+          </View>
         </ScrollView>
+
+        <BottomNav usuario={num_doc} />
       </SafeAreaView>
     );
   }
@@ -174,170 +152,118 @@ export default class TarjetasScreen extends Component {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#f7f8fa',
+    backgroundColor: '#fff',
   },
 
-  /* ===== Header general ===== */
+  // 🔹 Encabezado
   headerBackground: {
     width: '100%',
-    height: 160,
-    justifyContent: 'flex-end',
+    paddingTop: 60,
+    paddingHorizontal: 0,
+    paddingBottom: 40,
   },
+  headerImage: {},
   headerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.25)',
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: 'rgba(36,16,18,0.25)',
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
   headerContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 14,
-  },
-  headerIconCircle: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    backgroundColor: 'rgba(191,4,4,0.95)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 6,
+    marginTop: 22,
+    paddingHorizontal: 20,
   },
   headerTitle: {
     color: '#fff',
-    fontSize: 26,
-    fontWeight: '800',
+    fontSize: 21,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   headerSubtitle: {
     color: '#fff',
-    fontSize: 12,
-    opacity: 0.9,
-    marginTop: 2,
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
   },
 
-  /* ===== Loader / vacío ===== */
-  loaderBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 16 },
-  loaderText: { marginTop: 6, fontSize: 12, color: '#6b7280' },
-  emptyBox: { alignItems: 'center', paddingVertical: 24, gap: 8 },
-  emptyText: { fontSize: 12, color: '#6b7280' },
+  // 🔹 Hoja de contenido
+  sheet: {
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 16,
+    paddingBottom: 10,
+  },
 
-  /* ===== Card ===== */
+  // 🔹 Loader / vacío
+  loaderBox: { alignItems: 'center', justifyContent: 'center', paddingVertical: 24 },
+  loaderText: { marginTop: 6, fontSize: 12, color: '#6b5c5d' },
+  emptyBox: { alignItems: 'center', paddingVertical: 24, gap: 8 },
+  emptyText: { fontSize: 12, color: '#6b5c5d' },
+
+  // 🔹 Card (tocable, con toda la info)
   card: {
     marginHorizontal: 16,
-    marginVertical: 10,
+    marginBottom: 12,
+    padding: 14,
     borderRadius: 16,
     backgroundColor: '#fff',
-    overflow: 'hidden',
-    // sombra
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 4 },
-    shadowRadius: 10,
-    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#efe1e0',
   },
-  leftStripe: {
-    position: 'absolute',
-    left: 0,
-    top: 0,
-    bottom: 0,
-    width: 4,
-    borderTopLeftRadius: 16,
-    borderBottomLeftRadius: 16,
-    zIndex: 1,
-  },
-
-  /* Header de cada card */
   cardHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 14,
-    paddingTop: 14,
+    marginBottom: 10,
   },
   cardIconWrap: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#9e2021',
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(158,32,33,0.1)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: 10,
+    marginRight: 12,
   },
   cardTitle: {
     flex: 1,
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#111827',
-  },
-
-  /* Cuerpo */
-  cardBody: {
-    padding: 14,
-    backgroundColor: '#fff',
-  },
-  sectionTitle: {
-    fontSize: 12,
-    color: '#6b7280',
+    fontSize: 14.5,
     fontWeight: '700',
-    marginBottom: 6,
+    color: '#241a1a',
+    marginRight: 8,
+  },
+  cardSection: {
+    marginTop: 8,
+  },
+  cardSectionLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9e2021',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+    marginBottom: 3,
   },
-  bodyText: {
+  cardSectionText: {
     fontSize: 13,
-    color: '#374151',
-    lineHeight: 19,
-  },
-  bodyTextMuted: {
-    fontSize: 13,
-    color: '#9ca3af',
-    lineHeight: 19,
-  },
-  separator: {
-    height: 1,
-    backgroundColor: '#f1f2f4',
-    marginVertical: 10,
-  },
-
-  /* Footer */
-  cardFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#f1f2f4',
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    backgroundColor: '#fff',
-  },
-  footerBtn: {
-    alignSelf: 'center',
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#9e2021',
-    borderRadius: 10,
-    paddingVertical: 10,
-    paddingHorizontal: 18,
-    minWidth: 200,
-    gap: 8,
-  },
-  footerBtnText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '800',
-    textAlign: 'center',
-  },
-
-  /* CTA global */
-  globalCta: {
-    marginTop: 6,
-    marginHorizontal: 16,
-    backgroundColor: '#bf0404',
-    paddingVertical: 12,
-    borderRadius: 12,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  globalCtaText: {
-    color: '#fff',
-    fontWeight: '800',
-    fontSize: 14,
-    textAlign: 'center',
+    color: '#6b5c5d',
+    lineHeight: 18,
   },
 });

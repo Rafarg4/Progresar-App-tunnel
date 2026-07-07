@@ -817,7 +817,7 @@ export default class LoginScreen extends Component {
             };
         
             const handleRequestCard = () => {
-                WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/');
+                WebBrowser.openBrowserAsync('https://progresarcorp.com.py/tarjetas#solictar-tarjeta');
             };
            
 
@@ -1372,7 +1372,7 @@ export default class LoginScreen extends Component {
                                     <View style={{marginTop: 15, alignItems: 'center', width: '100%'}}>
                                         <View style={{alignItems: 'center', width: '100%'}}>
                                             <TouchableOpacity
-                                                onPress={()=> {WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-tarjeta/')}}
+                                                onPress={()=> {WebBrowser.openBrowserAsync('https://progresarcorp.com.py/tarjetas#solictar-tarjeta')}}
                                                 style={{width: '100%', backgroundColor: '#9c9c9c', padding: 5, borderRadius: 5}}
                                             >
                                                 <Text style={{color: 'white', textAlign: 'center'}}>Solicitar Tarjeta</Text>
@@ -1411,7 +1411,7 @@ export default class LoginScreen extends Component {
                                     <View style={{marginTop: 15, alignItems: 'center', width: '100%'}}>
                                         <View style={{alignItems: 'center', width: '100%'}}>
                                             <TouchableOpacity
-                                                onPress={()=> {WebBrowser.openBrowserAsync('https://progresarcorp.com.py/solicitud-de-credito/')}}
+                                                onPress={()=> {WebBrowser.openBrowserAsync('https://progresarcorp.com.py/prestamos#solicitar-prestamo')}}
                                                 style={{width: '100%', backgroundColor: '#9c9c9c', padding: 5, borderRadius: 5}}
                                             >
                                                 <Text style={{color: 'white', textAlign: 'center'}}>Solicitar Préstamo</Text>

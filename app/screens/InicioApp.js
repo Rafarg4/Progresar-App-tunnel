@@ -16,48 +16,64 @@ import {
 } from 'react-native';
 import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { ImageBackground } from 'react-native';
-import { Linking, Dimensions } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { FontAwesome5 } from '@expo/vector-icons';
 import { getToken } from '../recursos/Notificaciones.js';
-import { LinearGradient } from 'expo-linear-gradient';
+import { WalletCard, formatGs } from '../components/WalletCard';
+import BottomNav from '../components/BottomNav';
 // Categorías fijas
 const categories = [
   {
     id: 1,
     name: 'Tarjetas',
-    icon: <FontAwesome name="credit-card" size={38} color="#9e2021" />,
-    backgroundIcon: <FontAwesome name="credit-card" size={100} color="rgba(158,32,33,0.4)" />, // 💪 más fuerte
-    color: '#fff',
-    description: 'Gestión de tarjetas'
+    icon: <FontAwesome name="credit-card" size={20} color="#fff" />,
+    color: '#d9a441',
   },
   {
     id: 2,
     name: 'Operaciones',
-    icon: <MaterialIcons name="account-balance-wallet" size={38} color="#9e2021" />,
-    backgroundIcon: <MaterialIcons name="account-balance-wallet" size={100} color="rgba(158,32,33,0.4)" />,
-    color: '#fff',
-    description: 'Movimientos y pagos'
+    icon: <MaterialIcons name="account-balance-wallet" size={20} color="#fff" />,
+    color: '#4d7ea8',
   },
   {
     id: 3,
     name: 'Seguros',
-    icon: <Ionicons name="shield-checkmark" size={38} color="#9e2021" />,
-    backgroundIcon: <Ionicons name="shield-checkmark" size={100} color="rgba(158,32,33,0.4)" />,
-    color: '#fff',
-    description: 'Protegé tus bienes'
+    icon: <Ionicons name="shield-checkmark" size={20} color="#fff" />,
+    color: '#4a9b6e',
   },
   {
     id: 4,
     name: 'Electrodoméstico',
-    icon: <MaterialIcons name="tv" size={38} color="#9e2021" />,
-    backgroundIcon: <MaterialIcons name="tv" size={100} color="rgba(158,32,33,0.4)" />,
-    color: '#fff',
-    description: 'Comprá con cuotas'
+    icon: <MaterialIcons name="tv" size={20} color="#fff" />,
+    color: '#8568ad',
+  },
+  {
+    id: 5,
+    name: 'Adelanto',
+    icon: <FontAwesome5 name="hand-holding-usd" size={18} color="#fff" />,
+    color: '#2f8f8a',
+  },
+  {
+    id: 6,
+    name: 'Adelanto ATM',
+    icon: <FontAwesome5 name="qrcode" size={18} color="#fff" />,
+    color: '#c0577a',
   }
 ];
 
+
+// Pasos del proceso de una solicitud de adelanto
+const PASOS_ADELANTO = [
+  { key: 'pendiente', label: 'Pendiente' },
+  { key: 'aprobado', label: 'Aprobado' },
+  { key: 'desembolsado', label: 'Desembolsado' },
+];
+
+const pasoActualIndex = (estado) => {
+  const key = String(estado || '').toLowerCase();
+  return PASOS_ADELANTO.findIndex((p) => p.key === key);
+};
 
 const getGreeting = () => {
   const now = new Date();
@@ -71,7 +87,6 @@ export default function HomeScreen() {
   const dateStr = new Date().toLocaleDateString('es-ES');
   const timeStr = new Date().toLocaleTimeString('es-ES');
   const greeting = getGreeting();
-  const [expanded, setExpanded] = useState({});
   const [loading, setLoading] = useState(true);
   const [flyers, setFlyers] = useState([]);
   const [historiaSeleccionada, setHistoriaSeleccionada] = useState(null);
@@ -79,169 +94,111 @@ export default function HomeScreen() {
   const navigation = useNavigation();
   const [nombre, setNombre] = useState('');
   const [usuario, setUsuario] = useState('');
-  const [showOptions, setShowOptions] = useState(false);
-  const { width } = Dimensions.get('window');
-  const [promos, setPromos] = useState([]);
-  const [loadingPromos, setLoadingPromos] = useState(true);
-  const [errorPromos, setErrorPromos] = useState(null);
-  const [tarjetas, setTarjetas] = useState([]);
-  const [openPendientes, setOpenPendientes] = useState(true); // abierto por defecto
-  const togglePendientes = () => setOpenPendientes(v => !v);
- const formatMoney = (value, currency = '') => {
-  if (isNaN(value)) return `${currency} 0`;
-  return `${currency} ${Number(value).toLocaleString('es-PY', {
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0
-  })}`;
-};
+  const [misTarjetas, setMisTarjetas] = useState([]);
+  const [loadingTarjetas, setLoadingTarjetas] = useState(true);
+  const [errorTarjetas, setErrorTarjetas] = useState(null);
+  const [saldosDisponibles, setSaldosDisponibles] = useState({});
+  const [activeCardIndex, setActiveCardIndex] = useState(0);
+  const [cardsExpanded, setCardsExpanded] = useState(false);
+  const [adelantoActivo, setAdelantoActivo] = useState(null);
+  const [loadingAdelanto, setLoadingAdelanto] = useState(true);
+  const [modalSalirVisible, setModalSalirVisible] = useState(false);
 
-// Acción del botón Pagar (stub)
-const onPagar = (item) => {
-  // Abrí tu flujo de pago aquí
-  Alert.alert('Pagar', `Iniciar pago por ${formatMoney(item?.saldo_mora, '$')}`);
-};
-
-  const formatGs = (val) => {
-  const n = Number(val) || 0;
-  // evita dependencias; toLocaleString suele estar ok en RN
-  return `Gs. ${Math.round(n).toLocaleString('es-PY')}`;
-};
-
-const toggleExpand = (idx) => {
-  setExpanded(prev => ({ ...prev, [idx]: !prev[idx] }));
-};
   useEffect(() => {
-    const MAX_RETRIES = 5;      // cantidad máxima de intentos
-    const RETRY_DELAY = 2000;   // 2 segundos entre intentos
-
-    const fetchPromos = async (retries = MAX_RETRIES) => {
+    const obtenerDatos = async () => {
       try {
-        setLoadingPromos(true);
-        setErrorPromos(null);
+        const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
+        const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
 
-        const res = await fetch('https://api.progresarcorp.com.py/api/promos-app', {
-          method: 'GET',
-          headers: {
-            Accept: 'application/json',
-            'X-Requested-With': 'XMLHttpRequest',
-            'Cache-Control': 'no-cache'
-          }
-        });
-
-        if (!res.ok) {
-          if (res.status === 500 && retries > 0) {
-            console.warn(`Error 500. Reintentando... (${MAX_RETRIES - retries + 1})`);
-            setTimeout(() => fetchPromos(retries - 1), RETRY_DELAY);
-            return;
-          }
-          throw new Error(`Error ${res.status}: No se pudo obtener promos`);
-        }
-
-        const data = await res.json();
-
-        // Normalizo y filtro: solo activos y con imagen
-        const items = (Array.isArray(data) ? data : [])
-          .filter(p => (p.activo || '').toLowerCase() === 'si' && p.url_imagen)
-          .map(p => ({
-            id: String(p.id),
-            title: p.title,
-            url: p.url,
-            image: p.url_imagen
-          }));
-
-        setPromos(items);
-      } catch (e) {
-        console.log('Error al obtener promos:', e?.message);
-
-        if (retries > 0) {
-          console.warn(`Reintentando... (${MAX_RETRIES - retries + 1})`);
-          setTimeout(() => fetchPromos(retries - 1), RETRY_DELAY);
-          return;
-        }
-
-        setErrorPromos('No se pudo obtener las promos.');
-        setPromos([]);
-      } finally {
-        setLoadingPromos(false);
+        if (nombreGuardado) setNombre(nombreGuardado);
+        if (usuarioGuardado) setUsuario(usuarioGuardado);
+      } catch (error) {
+        console.log('Error al obtener datos de AsyncStorage:', error);
       }
     };
-
-    fetchPromos();
+    getToken();
+    obtenerDatos();
   }, []);
-    //Para consultar varias veces
-    const MAX_RETRIES = 5; // cantidad máxima de intentos
-    const RETRY_DELAY = 2000; // 2 segundos entre intentos
 
-    const obtenerTarjetas = async (retries = MAX_RETRIES) => {
+  // Tarjetas del usuario (mismo endpoint que usa la pantalla "Mis Tarjetas")
+  useEffect(() => {
+    if (!usuario) return;
+
+    const obtenerMisTarjetas = async () => {
       try {
-        setLoading(true);
-        setError('');
+        setLoadingTarjetas(true);
+        setErrorTarjetas(null);
 
-        const usuario = await AsyncStorage.getItem('usuarioGuardado');
-        if (!usuario) {
-          setError('Usuario no encontrado en el almacenamiento.');
-          setTarjetas([]);
-          return;
-        }
-
-        const res = await fetch(
-          `https://api.progresarcorp.com.py/api/ver_notificaciones/${encodeURIComponent(usuario)}`,
-          { headers: { Accept: 'application/json' } }
-        );
-
-        if (!res.ok) {
-          if (res.status === 500 && retries > 0) {
-            console.warn(`Error 500. Reintentando... (${MAX_RETRIES - retries + 1})`);
-            setTimeout(() => obtenerTarjetas(retries - 1), RETRY_DELAY);
-            return;
-          }
-          throw new Error(`HTTP ${res.status}`);
-        }
+        const res = await fetch(`https://api.progresarcorp.com.py/api/ver_tarjeta/${usuario}`);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
         const data = await res.json();
-
-        if (Array.isArray(data)) {
-          setTarjetas(data);
-        } else if (data && (data.dias_mora != null || data.saldo_mora != null)) {
-          setTarjetas([data]);
-        } else {
-          setTarjetas([]);
-        }
-
+        const lista = Array.isArray(data) ? data : [];
+        setMisTarjetas(lista);
+        setActiveCardIndex(0);
+        cargarSaldosDisponibles(lista);
       } catch (e) {
         console.log('Error al obtener tarjetas:', e?.message);
-
-        if (retries > 0) {
-          console.warn(`Reintentando... (${MAX_RETRIES - retries + 1})`);
-          setTimeout(() => obtenerTarjetas(retries - 1), RETRY_DELAY);
-          return;
-        }
-
-        setError('No se pudo obtener las notificaciones.');
-        setTarjetas([]);
+        setErrorTarjetas('No pudimos cargar tus tarjetas.');
       } finally {
-        setLoading(false);
+        setLoadingTarjetas(false);
       }
     };
-        // lo llamás dentro de useEffect
-        useEffect(() => {
-          obtenerTarjetas();
-        }, []);
-    useEffect(() => {
-  const obtenerDatos = async () => {
-    try {
-      const nombreGuardado = await AsyncStorage.getItem('nombreUsuario');
-      const usuarioGuardado = await AsyncStorage.getItem('usuarioGuardado');
 
-      if (nombreGuardado) setNombre(nombreGuardado);
-      if (usuarioGuardado) setUsuario(usuarioGuardado);
-    } catch (error) {
-      console.log('Error al obtener datos de AsyncStorage:', error);
-    }
+    obtenerMisTarjetas();
+  }, [usuario]);
+
+  // Saldo disponible en tiempo real por tarjeta (mismo endpoint que usa "Detalle de tarjeta")
+  const cargarSaldosDisponibles = async (lista) => {
+    const entradas = await Promise.all(
+      lista.map(async (t) => {
+        try {
+          const res = await fetch(`https://api.progresarcorp.com.py/api/obtener_saldo_actual/${t.nro_tarjeta}`);
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          const data = await res.json();
+          return [t.nro_tarjeta, data?.cuenta?.disponi_adelanto ?? null];
+        } catch (e) {
+          console.log('Error al obtener saldo de la tarjeta', t.nro_tarjeta, ':', e?.message);
+          return [t.nro_tarjeta, null];
+        }
+      })
+    );
+    setSaldosDisponibles(Object.fromEntries(entradas));
   };
-    getToken();
-  obtenerDatos();
-}, []);
+
+  // Última solicitud de adelanto, para mostrar su estado en el inicio
+  const obtenerAdelantoActivo = useCallback(async () => {
+    if (!usuario) return;
+    try {
+      setLoadingAdelanto(true);
+      const res = await fetch(`https://api.progresarcorp.com.py/api/ver_solicitudes_adelanto/${usuario}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const json = await res.json();
+      const lista = Array.isArray(json) ? json : Array.isArray(json?.data) ? json.data : [];
+      const visibles = lista.filter(
+        (item) => String(item.visible ?? 'SI').toUpperCase() !== 'NO'
+      );
+      const ordenadas = [...visibles].sort(
+        (a, b) => new Date(b.fecha_solicitud) - new Date(a.fecha_solicitud)
+      );
+      setAdelantoActivo(ordenadas[0] || null);
+    } catch (e) {
+      console.log('Error al obtener el adelanto activo:', e?.message);
+    } finally {
+      setLoadingAdelanto(false);
+    }
+  }, [usuario]);
+
+  useEffect(() => {
+    obtenerAdelantoActivo();
+  }, [obtenerAdelantoActivo]);
+
+  useFocusEffect(
+    useCallback(() => {
+      obtenerAdelantoActivo();
+    }, [obtenerAdelantoActivo])
+  );
+
 const obtenerIniciales = (nombreCompleto) => {
   if (!nombreCompleto) return 'I|N'; // Por defecto: Invitado
 
@@ -331,586 +288,678 @@ const obtenerIniciales = (nombreCompleto) => {
   const mostrarHistoria = (item) => setHistoriaSeleccionada(item);
   const cerrarModal = () => setHistoriaSeleccionada(null);
 
+  const confirmarSalir = () => {
+    setModalSalirVisible(false);
+    if (navigation.canGoBack()) {
+      navigation.goBack();        // vuelve a la pantalla anterior
+    } else {
+      navigation.popToTop();      // fallback: vuelve al inicio del stack
+    }
+  };
+
+  const handleDetalleTarjeta = (tarjeta) => {
+    const clase = String(tarjeta.clase_tarjeta ?? '');
+    if (clase === '1') {
+      navigation.navigate('DetalleBepsa', { nro_tarjeta: tarjeta.nro_tarjeta, tarjeta });
+    } else {
+      navigation.navigate('DetalleTarjetas', { tarjeta });
+    }
+  };
+
+  const estadoAdelanto = String(adelantoActivo?.estado || '').toLowerCase();
+  const adelantoRechazado = estadoAdelanto === 'rechazado';
+  const pasoAdelantoIdx = pasoActualIndex(estadoAdelanto);
+
+  const ocultarAdelanto = async () => {
+    const cod = adelantoActivo?.cod_solicitud_adelanto;
+    if (!cod) return;
+    if (estadoAdelanto !== 'desembolsado' && estadoAdelanto !== 'rechazado') return; // solo se oculta al finalizar (desembolsado o rechazado)
+    const url = `https://api.progresarcorp.com.py/api/ocultar_solicitud_adelanto/${cod}`;
+    try {
+      const res = await fetch(url, { method: 'PUT' });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    } catch (e) {
+      console.log('Error al ocultar el adelanto:', e?.message);
+    } finally {
+      setAdelantoActivo(null);
+    }
+  };
+
   return (
     <View style={styles.container}>
-  <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
+      <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
-
-      {/* Encabezado tipo "Hola, Rafael + RE" */}
-      <ImageBackground
-              source={require('../assets/inicio.png')}  
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Encabezado */}
+        <ImageBackground
+          source={require('../assets/inicio_nuevo.png')}
           style={styles.headerBackground}
-          imageStyle={{ borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
+          imageStyle={styles.headerImage}
         >
+          <View style={styles.headerOverlay} />
           <View style={styles.headerContent}>
             <View>
-              <Text style={styles.hello}>Hola,</Text>
-             <Text style={styles.name}>{nombre || 'Invitado'}</Text>
+              <Text style={styles.hello}>{greeting}</Text>
+              <Text style={styles.name}>{nombre || 'Invitado'}</Text>
             </View>
-           <TouchableOpacity
-              style={styles.avatarCircle}
-              onPress={() => {
-                Alert.alert(
-                  'Cerrar sesión',
-                  '¿Estás seguro que deseas salir?',
-                  [
-                    { text: 'Cancelar', style: 'cancel' },
-                    {
-                      text: 'Aceptar',
-                      onPress: () => {
-                        if (navigation.canGoBack()) {
-                          navigation.goBack();        // vuelve a la pantalla anterior
-                        } else {
-                          navigation.popToTop();      // fallback: vuelve al inicio del stack
-                        }
-                      },
-                    },
-                  ],
-                  { cancelable: true }
-                );
-              }}
+            <TouchableOpacity
+              style={styles.logoutButton}
+              onPress={() => setModalSalirVisible(true)}
             >
-              <FontAwesome5 name="sign-out-alt" size={22} color="#fff" />
+              <FontAwesome5 name="sign-out-alt" size={18} color="#9e2021" />
             </TouchableOpacity>
           </View>
         </ImageBackground>
 
-     <ScrollView contentContainerStyle={styles.scrollContainer}>
-        {/* Historias en círculos */}
-      <View style={styles.cardDescuentos}>
-          <LinearGradient
-            colors={['#fff', '#fdeaea']} // degradado más suave
-            style={styles.headerGradient}
-          >
-            <View style={styles.titleContainer}>
-              <FontAwesome5 name="tags" size={15} color="#bf0404" style={{ marginRight: 6 }} />
-              <Text style={styles.titleText}>Descuentos de hoy</Text>
-            </View>
-            <Text style={styles.subtitleText}>Aprovechá las mejores ofertas</Text>
-          </LinearGradient>
+        {/* Hoja blanca superpuesta a la foto, con todo el contenido */}
+        <View style={styles.sheet}>
 
-          {/* Historias */}
-          <View style={styles.storiesContainer}>
+          {/* Tus tarjetas */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconBadge}>
+                  <FontAwesome5 name="credit-card" size={13} color="#9e2021" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>Tus tarjetas</Text>
+                  <Text style={styles.sectionSubtitle}>Tocá una tarjeta para ver las demás</Text>
+                </View>
+              </View>
+              {misTarjetas.length > 0 && (
+                <View style={styles.cardCountBadge}>
+                  <Text style={styles.cardCountText}>
+                    {misTarjetas.length} {misTarjetas.length === 1 ? 'tarjeta' : 'tarjetas'}
+                  </Text>
+                </View>
+              )}
+            </View>
+
+            {loadingTarjetas ? (
+              <ActivityIndicator size="large" color="#9e2021" style={{ marginVertical: 20 }} />
+            ) : errorTarjetas ? (
+              <Text style={styles.errorText}>{errorTarjetas}</Text>
+            ) : misTarjetas.length === 0 ? (
+              <Text style={styles.errorText}>No tenés tarjetas activas.</Text>
+            ) : cardsExpanded ? (
+              <View>
+                {misTarjetas.map((t, idx) => (
+                  <View key={t.nro_tarjeta} style={{ marginBottom: idx === misTarjetas.length - 1 ? 0 : 10 }}>
+                    <WalletCard
+                      tarjeta={t}
+                      active={idx === activeCardIndex}
+                      disponibleOverride={saldosDisponibles[t.nro_tarjeta]}
+                      onPress={() => {
+                        setActiveCardIndex(idx);
+                        setCardsExpanded(false);
+                      }}
+                      onEnter={() => handleDetalleTarjeta(t)}
+                    />
+                  </View>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.cardStackWrapper}>
+                {misTarjetas.length > 2 && <View style={[styles.cardPeek, styles.cardPeekBack]} />}
+                {misTarjetas.length > 1 && <View style={[styles.cardPeek, styles.cardPeekMid]} />}
+                <WalletCard
+                  tarjeta={misTarjetas[activeCardIndex] || misTarjetas[0]}
+                  active={false}
+                  disponibleOverride={
+                    saldosDisponibles[(misTarjetas[activeCardIndex] || misTarjetas[0])?.nro_tarjeta]
+                  }
+                  onPress={() => {
+                    if (misTarjetas.length > 1) setCardsExpanded(true);
+                  }}
+                  onEnter={() => handleDetalleTarjeta(misTarjetas[activeCardIndex] || misTarjetas[0])}
+                />
+              </View>
+            )}
+          </View>
+
+          {/* Estado de la solicitud de adelanto (no se muestra si fue rechazada) */}
+          {!loadingAdelanto && adelantoActivo && (
+            <TouchableOpacity
+              style={styles.sectionCard}
+              activeOpacity={0.85}
+              onPress={() => {
+                navigation.navigate('SolicitudAdelanto');
+                ocultarAdelanto();
+              }}
+            >
+              <TouchableOpacity
+                style={styles.closeAdelantoButton}
+                hitSlop={{ top: 10, bottom: 10, left: 10, right: 10 }}
+                onPress={ocultarAdelanto}
+              >
+                <FontAwesome5 name="times" size={12} color="#6b5c5d" />
+              </TouchableOpacity>
+
+              <View style={styles.sectionHeaderRow}>
+                <View style={styles.sectionHeader}>
+                  <View style={styles.sectionIconBadge}>
+                    <FontAwesome5
+                      name={adelantoRechazado ? 'exclamation-circle' : 'hand-holding-usd'}
+                      size={13}
+                      color="#9e2021"
+                    />
+                  </View>
+                  <View>
+                    <Text style={styles.sectionTitle}>Tu adelanto</Text>
+                    <Text style={styles.sectionSubtitle}>
+                      {adelantoRechazado ? 'Solicitud rechazada' : formatGs(adelantoActivo.monto)}
+                    </Text>
+                  </View>
+                </View>
+                <FontAwesome5 name="chevron-right" size={13} color="#6b5c5d" />
+              </View>
+
+              {adelantoRechazado ? (
+                <View style={styles.rechazoBox}>
+                  <Text style={styles.rechazoText}>
+                    {adelantoActivo.motivo_rechazo || 'Tu solicitud de adelanto fue rechazada.'}
+                  </Text>
+                </View>
+              ) : (
+                <>
+                  <View style={styles.stepperCirclesRow}>
+                    {PASOS_ADELANTO.map((paso, idx) => {
+                      const esUltimoPaso = idx === PASOS_ADELANTO.length - 1;
+                      const isActive = idx <= pasoAdelantoIdx;
+                      const isDone = idx < pasoAdelantoIdx || (idx === pasoAdelantoIdx && esUltimoPaso);
+                      return (
+                        <React.Fragment key={paso.key}>
+                          <View style={[styles.stepperCircle, isActive && styles.stepperCircleActive]}>
+                            {isDone ? (
+                              <FontAwesome5 name="check" size={10} color="#fff" />
+                            ) : (
+                              <Text style={[styles.stepperNumber, isActive && styles.stepperNumberActive]}>
+                                {idx + 1}
+                              </Text>
+                            )}
+                          </View>
+                          {!esUltimoPaso && (
+                            <View style={[styles.stepperLine, idx < pasoAdelantoIdx && styles.stepperLineActive]} />
+                          )}
+                        </React.Fragment>
+                      );
+                    })}
+                  </View>
+                  <View style={styles.stepperLabelsRow}>
+                    {PASOS_ADELANTO.map((paso, idx) => (
+                      <Text
+                        key={paso.key}
+                        style={[styles.stepperLabel, idx <= pasoAdelantoIdx && styles.stepperLabelActive]}
+                      >
+                        {paso.label}
+                      </Text>
+                    ))}
+                  </View>
+                </>
+              )}
+            </TouchableOpacity>
+          )}
+
+          {/* Accesos rápidos */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeader}>
+              <View style={styles.sectionIconBadge}>
+                <FontAwesome5 name="th-large" size={13} color="#9e2021" />
+              </View>
+              <View>
+                <Text style={styles.sectionTitle}>Accesos rápidos</Text>
+                <Text style={styles.sectionSubtitle}>Todo lo que necesitás en un solo lugar</Text>
+              </View>
+            </View>
+
+            <View style={styles.categoryContainer}>
+              {categories.map(cat => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={styles.categoryItem}
+                  activeOpacity={0.7}
+                  onPress={() => {
+                    if (cat.name === 'Tarjetas') {
+                      navigation.navigate('MisTarjetas');
+                      } else if (cat.name === 'Seguros') {
+                      navigation.navigate('MisSeguros');
+                      } else if (cat.name === 'Operaciones') {
+                      navigation.navigate('MisOperaciones');
+                      } else if (cat.name === 'Electrodoméstico') {
+                      navigation.navigate('MisElectrodomesticos');
+                      } else if (cat.name === 'Adelanto') {
+                      navigation.navigate('SolicitudAdelanto');
+                      } else if (cat.name === 'Adelanto ATM') {
+                      navigation.navigate('AtmQr');
+                      } else {
+                      console.log(cat.name);
+                    }
+                  }}
+                >
+                  <View style={[styles.categoryIconCircle, { backgroundColor: cat.color }]}>
+                    {cat.icon}
+                  </View>
+                  <Text style={styles.categoryLabel}>{cat.name}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Descuentos de hoy */}
+          <View style={styles.sectionCard}>
+            <View style={styles.sectionHeaderRow}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconBadge}>
+                  <FontAwesome5 name="tags" size={13} color="#9e2021" />
+                </View>
+                <View>
+                  <Text style={styles.sectionTitle}>Descuentos de hoy</Text>
+                  <Text style={styles.sectionSubtitle}>Aprovechá las mejores ofertas</Text>
+                </View>
+              </View>
+              <TouchableOpacity onPress={() => navigation.navigate('Beneficios')}>
+                <Text style={styles.seeAllText}>Ver todos</Text>
+              </TouchableOpacity>
+            </View>
+
             {loading ? (
-              <ActivityIndicator size="large" color="#bf0404" />
+              <ActivityIndicator size="large" color="#9e2021" style={{ marginVertical: 20 }} />
             ) : error ? (
-              <Text style={{ color: 'red', textAlign: 'center' }}>{error}</Text>
+              <Text style={styles.errorText}>{error}</Text>
             ) : (
               <FlatList
                 data={flyers}
                 horizontal
                 showsHorizontalScrollIndicator={false}
                 keyExtractor={(item) => item.id.toString()}
-                contentContainerStyle={{ paddingHorizontal: 20 }}
+                contentContainerStyle={{ paddingRight: 4 }}
                 renderItem={({ item }) => (
                   <TouchableOpacity
                     onPress={() => mostrarHistoria(item)}
-                    style={styles.storyCircle}
+                    style={styles.discountCard}
+                    activeOpacity={0.85}
                   >
-                    <Image source={{ uri: item.imagen }} style={styles.storyImage} />
+                    <View style={styles.discountBadge}>
+                      <Text style={styles.discountBadgeText}>Click aquí!</Text>
+                    </View>
+                    <Image source={{ uri: item.imagen }} style={styles.discountImage} />
                   </TouchableOpacity>
                 )}
               />
             )}
           </View>
         </View>
-
-        {/* Modal de historia */}
-        {historiaSeleccionada && (
-          <Modal visible animationType="fade" transparent onRequestClose={cerrarModal}>
-            <View style={styles.modalContainer}>
-              <View style={styles.modalContent}>
-                <TouchableOpacity onPress={cerrarModal} style={styles.closeButton}>
-                  <Text style={styles.closeText}>Cerrar</Text>
-                </TouchableOpacity>
-                <TouchableOpacity onPress={cerrarModal} style={styles.modalImageContainer}>
-                  <Image source={{ uri: historiaSeleccionada.imagen }} style={styles.modalImage} />
-                </TouchableOpacity>
-              </View>
-            </View> 
-          </Modal>
-        )}
-
-        {/* Categorías */}
-      <View style={styles.categoryContainer}>
-        {categories.map(cat => (
-          <TouchableOpacity
-            key={cat.id}
-            style={[styles.categoryBox, { backgroundColor: cat.color }]}
-            onPress={() => {
-              if (cat.name === 'Tarjetas') {
-                navigation.navigate('MisTarjetas');
-                } else if (cat.name === 'Seguros') {
-                navigation.navigate('MisSeguros');
-                } else if (cat.name === 'Operaciones') {
-                navigation.navigate('MisOperaciones');
-                } else if (cat.name === 'Electrodoméstico') {
-                navigation.navigate('MisElectrodomesticos');
-                } else {
-                console.log(cat.name);
-              }
-            }}
-          >
-            <View style={styles.categoryBackgroundIcon}>
-              {cat.backgroundIcon}
-            </View>
-            {cat.icon}
-            <Text style={styles.categoryText}>{cat.name}</Text>
-            <Text style={styles.categorySubText}>{cat.description}</Text>
-          </TouchableOpacity>
-        ))}
-      </View>
-     
-      {/* Carrusel de Promos */}
-      <View style={styles.cardPromos}>
-      <LinearGradient
-        colors={['#fff', '#fdeaea']}
-        style={styles.headerGradient}
-      >
-    <View style={styles.titleContainer}>
-      <FontAwesome5 name="gift" size={20} color="#bf0404" style={{ marginRight: 6 }} />
-      <Text style={styles.titleText}>Promos destacadas</Text>
-    </View>
-    <Text style={styles.subtitleText}>Descubrí las promociones de la semana</Text>
-  </LinearGradient>
-
-  {/* Carrusel directamente dentro de la card */}
-  {loadingPromos ? (
-    <ActivityIndicator size="large" color="#bf0404" style={{ marginVertical: 20 }} />
-  ) : errorPromos ? (
-    <Text style={{ color: 'red', textAlign: 'center' }}>{errorPromos}</Text>
-  ) : (
-    <FlatList
-      data={promos}
-      horizontal
-      pagingEnabled
-      showsHorizontalScrollIndicator={false}
-      keyExtractor={(item) => item.id.toString()}
-      contentContainerStyle={{ paddingHorizontal: 10, paddingBottom: 10 }}
-      renderItem={({ item }) => (
-        <TouchableOpacity
-          activeOpacity={0.9}
-          onPress={() => item.url && Linking.openURL(item.url)}
-        >
-          <Image
-            source={{ uri: item.image }}
-            style={[styles.carouselImage, { width: width * 0.9 }]}
-          />
-        </TouchableOpacity>
-      )}
-    />
-  )}
-</View>
-
-
       </ScrollView>
-      {/* Opciones flotantes */}
-      {showOptions && (
-        <View style={styles.optionsContainer}>
-        <TouchableOpacity
-            style={styles.optionButton}
-            onPress={() => {
-              setShowOptions(false);
-              navigation.navigate('Beneficios');
-            }}
-          >
-          <Ionicons name="gift-outline" size={20} color="#fff" />
-            <Text style={styles.optionText}>Beneficios</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.optionButton}
-            onPress={() => {
-              setShowOptions(false);
-              navigation.navigate('Electrodomesticos');
-            }}
-          >
-            <Ionicons name="pricetag-outline" size={20} color="#fff" />
-            <Text style={styles.optionText}>Electrodomésticos</Text>
-          </TouchableOpacity>
 
-         <TouchableOpacity
-            style={styles.optionButton}
-            onPress={() => {
-              setShowOptions(false);
-               navigation.navigate('Tarjetas');
-            }}
-          >
-            <Ionicons name="card-outline" size={20} color="#fff" />
-            <Text style={styles.optionText}>Tarjeta</Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={styles.optionButton}
-            onPress={() => {
-              setShowOptions(false);
-               navigation.navigate('Financiero');
-            }}
-          >
-            <Ionicons name="wallet" size={20} color="#fff" />
-            <Text style={styles.optionText}>Financiero</Text>
-          </TouchableOpacity>
-        </View>
+      {/* Modal de historia */}
+      {historiaSeleccionada && (
+        <Modal visible animationType="fade" transparent onRequestClose={cerrarModal}>
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <TouchableOpacity onPress={cerrarModal} style={styles.closeButton}>
+                <Text style={styles.closeText}>Cerrar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity onPress={cerrarModal} style={styles.modalImageContainer}>
+                <Image source={{ uri: historiaSeleccionada.imagen }} style={styles.modalImage} />
+              </TouchableOpacity>
+            </View>
+          </View>
+        </Modal>
       )}
-      {/* Barra de navegación inferior */}
-    <View style={styles.bottomNavContainer}>
-      <View style={styles.bottomNavStyled}> 
 
-         {/* Icono QR */}
-       <TouchableOpacity
-          onPress={() => {
-            console.log('NAV -> Qr con params:', { num_doc: String(usuario) });
-            navigation.navigate('PagoQr', { num_doc: String(usuario) });
-          }}
-        >
-          <Ionicons name="qr-code" size={24} color="#fff" />
-        </TouchableOpacity>
+      {/* Modal de confirmación para cerrar sesión */}
+      <Modal
+        visible={modalSalirVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModalSalirVisible(false)}
+      >
+        <View style={styles.confirmOverlay}>
+          <View style={styles.confirmCard}>
+            <View style={[styles.confirmIconCircle, styles.confirmIconWarning]}>
+              <FontAwesome5 name="sign-out-alt" size={20} color="#fff" />
+            </View>
+            <Text style={styles.confirmTitle}>Cerrar sesión</Text>
+            <Text style={styles.confirmMessage}>¿Estás seguro que deseas salir?</Text>
 
+            <View style={styles.confirmButtonsRow}>
+              <TouchableOpacity
+                style={[styles.confirmButton, styles.confirmButtonSecondary]}
+                onPress={() => setModalSalirVisible(false)}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmButtonSecondaryText}>Cancelar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.confirmButton}
+                onPress={confirmarSalir}
+                activeOpacity={0.85}
+              >
+                <Text style={styles.confirmButtonText}>Aceptar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
-        {/* Icono University */}
-        <TouchableOpacity onPress={() => navigation.navigate('AtmQr')}>
-          <FontAwesome5 name="university" size={24} color="#fff" />
-        </TouchableOpacity>
-
-        {/* Botón central */}
-        <TouchableOpacity
-          style={styles.centerButton}
-          onPress={() => setShowOptions(!showOptions)}
-        >
-          <Ionicons name={showOptions ? 'close' : 'add'} size={28} color="#fff" />
-        </TouchableOpacity>
-
-        {/* Icono Usuario */}
-        <TouchableOpacity onPress={() => navigation.navigate('Notificaciones')}>
-         <FontAwesome5 name="exchange-alt" size={24} color="#fff" />
-        </TouchableOpacity>
-        {/* Icono Usuario */}
-        <TouchableOpacity onPress={() => navigation.navigate('PerfilUsuario')}>
-          <FontAwesome5 name="user" size={24} color="#fff" />
-        </TouchableOpacity>
-
-      </View>
+      <BottomNav usuario={usuario} />
     </View>
-    </View>
-    
+
   );
 }
 // Estilos
 const styles = StyleSheet.create({
-  bottomNavContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    alignItems: 'center'
-  },
-  bottomNavStyled: {
-    flexDirection: 'row',
-    backgroundColor: '#9e2021',
-    borderRadius: 40,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    width: '100%',
-    elevation: 8
-  },
-  cardPromos: {
-    marginHorizontal: 10,
-    marginVertical: 38,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-    overflow: 'hidden',
-    paddingBottom: 10, // agrega espacio final al carrusel
-  },
-  headerGradient: {
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f2',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  titleText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#222',
-  },
-  subtitleText: {
-    fontSize: 13,
-    color: '#777',
-    marginTop: 2,
-  },
-  carouselImage: {
-    height: 180,
-    borderRadius: 15,
-    resizeMode: 'cover',
-    alignSelf: 'center',
-    marginVertical: 8,
-  },
-
-   cardDescuentos: {
-    marginHorizontal: 10,
-    marginVertical: 15,
-    borderRadius: 18,
-    backgroundColor: '#fff',
-    shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 3 },
-    elevation: 4,
-    overflow: 'hidden',
-  },
-  headerGradient: {
-    paddingVertical: 12,
-    paddingHorizontal: 18,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f2',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  titleText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#222',
-  },
-  subtitleText: {
-    fontSize: 13,
-    color: '#777',
-    marginTop: 2,
-  },
-  storiesContainer: {
-    backgroundColor: '#fff',
-    paddingVertical: 10,
-  },
-
-  headerGradient: {
-    paddingVertical: 15,
-    paddingHorizontal: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#f2f2f2',
-  },
-  titleContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  titleEmoji: {
-    fontSize: 24,
-    marginRight: 6,
-  },
-  titleText: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    color: '#222',
-  },
-  subtitleText: {
-    fontSize: 13,
-    color: '#666',
-    marginTop: 2,
-  },
-  storiesContainer: {
-    backgroundColor: '#fff',
-    paddingVertical: 12,
-  },
-  centerButton: {
-    backgroundColor: '#9e2021',
-    width: 58,
-    height: 58,
-    borderRadius: 29,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginTop: -30,
-    elevation: 10
-  },
-  optionsContainer: {
-    position: 'absolute',
-    bottom: 100, // arriba de la barra
-    alignSelf: 'center',
-    alignItems: 'center',
-    gap: 10
-  },
-  optionButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#9e2021',
-    borderRadius: 20,
-    paddingVertical: 8,
-    paddingHorizontal: 14,
-    elevation: 5
-  },
-  optionText: {
-    color: '#fff',
-    marginLeft: 8
-  }, 
   container: { flex: 1, backgroundColor: '#fff' },
-  headerContainer: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
-    backgroundColor: 'transparent'
-  },
-  card: {
-    flex: 0.3,          // ocupa el 30% del alto
-    width: '80%',       // 90% del ancho de pantalla
-    backgroundColor: '#eee',
-    borderRadius: 12,
-    padding: 16,
-  },
-    carouselWrapper: {
-    width: '100%',
-    alignItems: 'center',
-    marginTop: 10,
-    marginBottom: 5,
-  },
-  carouselContainer: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    overflow: 'hidden',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    width: '90%',    // o '85%' / '80%'
-    maxWidth: 435,
-  },
-  carouselImage: {
-    height: 160,
-    resizeMode: 'cover',
-  },
+
   scrollContainer: {
     paddingBottom: 140
   },
+
+  // 🔹 Encabezado
   headerBackground: {
-  paddingTop: 95,
-  paddingHorizontal: 20,
-  paddingBottom: 20,
-  borderBottomLeftRadius: 20,
-  borderBottomRightRadius: 20,
-  overflow: 'hidden'
-},
-headerContent: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center'
-},
+    paddingTop: 95,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  headerImage: {},
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   hello: {
     color: '#fff',
-    fontSize: 22
+    fontSize: 16,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
   name: {
     color: '#fff',
     fontWeight: 'bold',
-    fontSize: 19
+    fontSize: 21,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
   },
- avatarCircle: {
-  width: 40,
-  height: 40,
-  borderRadius: 25,
-  backgroundColor: '#9e2021',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-
-  avatarText: {
-    color: '#0D47A1',
-    fontWeight: 'bold'
-  },
-  storiesContainer: {
-    paddingVertical: 15
-  },
-  storyCircle: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    borderWidth: 2,
-    borderColor: '#F44336',
+  logoutButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 10
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  storyImage: {
-    width: 54,
-    height: 54,
-    borderRadius: 27
-  },
-  categoryContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-around',
-    paddingHorizontal: 8
-  },
- categoryBox: {
-  width: '47%',
-  aspectRatio: 1.7,
-  borderRadius: 20,
-  padding: 16,
-  marginVertical: 10,
-  justifyContent: 'flex-start',
-  alignItems: 'flex-start',
-  elevation: 6,
-  overflow: 'hidden',         // ✅ importante para recortar el icono de fondo
-  position: 'relative' 
-},
-categoryIcon: {
-  marginBottom: 10
-},
- categoryText: {
-    marginTop: 8,
-    fontSize: 16,
-    fontWeight: '700',
-    color: '#9e2021', // rojo institucional
-  },
-  categorySubText: {
-    fontSize: 13,
-    color: '#9e2021', // rojo institucional
-    opacity: 0.85,
-    textAlign: 'center',
-  },
-categoryBackgroundIcon: {
-  position: 'absolute',
-  right: -20,
-  bottom: -20,
-  opacity: 0.15,
-  zIndex: 0
-},
 
-  bottomNavContainer: {
-    position: 'absolute',
-    bottom: 20,
-    left: 20,
-    right: 20,
-    alignItems: 'center'
+  // 🔹 Hoja de contenido, superpuesta a la foto
+  sheet: {
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 22,
+    paddingHorizontal: 16,
   },
-  bottomNavStyled: {
+
+  // 🔹 Card de sección, con borde visible (Descuentos / Accesos / Promos)
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#efe1e0',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
+  },
+  sectionHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: '#333',
-    borderRadius: 40,
-    paddingVertical: 14,
-    paddingHorizontal: 40,
     justifyContent: 'space-between',
     alignItems: 'center',
-    width: '100%',
-    elevation: 8
+    marginBottom: 14,
   },
-  centerButton: {
-    backgroundColor: '#9e2021',
-    width: 58,
-    height: 58,
-    borderRadius: 29,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  sectionIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(158,32,33,0.1)',
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: -30,
-    elevation: 10
+    marginRight: 10,
   },
+  sectionTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#241a1a',
+  },
+  sectionSubtitle: {
+    fontSize: 12,
+    color: '#6b5c5d',
+    marginTop: 1,
+  },
+  seeAllText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#9e2021',
+  },
+  errorText: {
+    color: '#9e2021',
+    textAlign: 'center',
+    marginVertical: 10,
+  },
+
+  // 🔹 Seguimiento de la solicitud de adelanto
+  closeAdelantoButton: {
+    position: 'absolute',
+    top: 10,
+    right: 10,
+    zIndex: 2,
+    padding: 4,
+  },
+  stepperCirclesRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  stepperCircle: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    backgroundColor: '#f0e4e3',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  stepperCircleActive: {
+    backgroundColor: '#9e2021',
+  },
+  stepperNumber: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#6b5c5d',
+  },
+  stepperNumberActive: {
+    color: '#fff',
+  },
+  stepperLine: {
+    flex: 1,
+    height: 3,
+    backgroundColor: '#f0e4e3',
+    marginHorizontal: 4,
+  },
+  stepperLineActive: {
+    backgroundColor: '#9e2021',
+  },
+  stepperLabelsRow: {
+    flexDirection: 'row',
+    marginTop: 6,
+  },
+  stepperLabel: {
+    flex: 1,
+    fontSize: 10.5,
+    color: '#6b5c5d',
+    textAlign: 'center',
+  },
+  stepperLabelActive: {
+    color: '#241a1a',
+    fontWeight: '700',
+  },
+  rechazoBox: {
+    backgroundColor: 'rgba(158,32,33,0.08)',
+    borderRadius: 12,
+    padding: 12,
+  },
+  rechazoText: {
+    fontSize: 12.5,
+    color: '#9e2021',
+    lineHeight: 18,
+  },
+
+  // 🔹 Tus tarjetas
+  cardCountBadge: {
+    backgroundColor: 'rgba(158,32,33,0.1)',
+    borderRadius: 14,
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+  },
+  cardCountText: {
+    fontSize: 11.5,
+    fontWeight: '700',
+    color: '#9e2021',
+  },
+  cardStackWrapper: {
+    position: 'relative',
+  },
+  cardPeek: {
+    position: 'absolute',
+    left: 8,
+    right: 8,
+    height: 14,
+    borderRadius: 16,
+    backgroundColor: 'rgba(158,32,33,0.08)',
+  },
+  cardPeekMid: {
+    bottom: -7,
+  },
+  cardPeekBack: {
+    bottom: -12,
+    left: 16,
+    right: 16,
+    backgroundColor: 'rgba(158,32,33,0.05)',
+  },
+
+  // 🔹 Descuentos de hoy
+  discountCard: {
+    width: 100,
+    marginRight: 12,
+  },
+  discountBadge: {
+    position: 'absolute',
+    top: 6,
+    left: 6,
+    zIndex: 1,
+    backgroundColor: '#9e2021',
+    borderRadius: 8,
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+  },
+  discountBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '700',
+  },
+  discountImage: {
+    width: 100,
+    height: 90,
+    borderRadius: 14,
+    backgroundColor: '#f0e4e3',
+  },
+
+  // 🔹 Carrusel de promos
+  carouselImage: {
+    height: 170,
+    borderRadius: 16,
+    resizeMode: 'cover',
+  },
+
+  // 🔹 Modal de confirmación (cerrar sesión)
+  confirmOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(36,16,18,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 30,
+  },
+  confirmCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+  },
+  confirmIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  confirmIconWarning: {
+    backgroundColor: '#9e2021',
+  },
+  confirmTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#241a1a',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  confirmMessage: {
+    fontSize: 13.5,
+    color: '#6b5c5d',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  confirmButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  confirmButton: {
+    flex: 1,
+    backgroundColor: '#9e2021',
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  confirmButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  confirmButtonSecondary: {
+    backgroundColor: 'rgba(158,32,33,0.08)',
+  },
+  confirmButtonSecondaryText: {
+    color: '#9e2021',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+
+  // 🔹 Modal de historia
   modalContainer: {
     flex: 1,
     backgroundColor: 'rgba(0,0,0,0.8)',
@@ -918,368 +967,66 @@ categoryBackgroundIcon: {
     alignItems: 'center'
   },
   modalContent: {
-  width: '100%',
-  height: '100%',
-  backgroundColor: '#000', // Fondo oscuro tipo Instagram
-  justifyContent: 'center',
-  alignItems: 'center'
-},
-modalImage: {
-  width: '100%',
-  height: '100%',
-  resizeMode: 'contain'
-},
-closeButton: {
-  position: 'absolute',
-  top: 40,
-  right: 20,
-  backgroundColor: 'rgba(0,0,0,0.6)',
-  padding: 10,
-  borderRadius: 20,
-  zIndex: 1
-},
-closeText: {
-  color: '#fff',
-  fontWeight: 'bold'
-},
-modalImageContainer: {
-  flex: 1,
-  width: '100%',
-  justifyContent: 'center',
-  alignItems: 'center'
-},
-sectionTitle: {
-  fontSize: 18,
-  fontWeight: 'bold',
-  marginHorizontal: 20,
-  marginTop: 10,
-  marginBottom: 5,
-  color: '#333'
-},
-productCard: {
-  width: 220,
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  marginRight: 16,
-  padding: 10,
-  elevation: 3
-},
-productImage: {
-  width: '100%',
-  height: 120,
-  borderRadius: 8,
-  marginBottom: 10
-},
-productBrand: {
-  fontSize: 10,
-  color: '#888'
-},
-productName: {
-  fontSize: 14,
-  fontWeight: 'bold',
-  marginVertical: 4
-},
-productPrice: {
-  fontSize: 12,
-  color: '#4CAF50'
-},
-productButtons: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: 10
-},
-whatsappButton: {
-  backgroundColor: '#25D366',
-  paddingVertical: 6,
-  paddingHorizontal: 10,
-  borderRadius: 8
-},
-cartButton: {
-  backgroundColor: '#bf0404',
-  paddingVertical: 6,
-  paddingHorizontal: 10,
-  borderRadius: 8
-},
-cartButtonText: {
-  color: '#fff',
-  fontSize: 12,
-  fontWeight: 'bold'
-},
-badgeNuevo: {
-  position: 'absolute',
-  top: 10,
-  left: 10,
-  backgroundColor: 'red',
-  paddingHorizontal: 6,
-  paddingVertical: 2,
-  borderRadius: 6,
-  zIndex: 1
-},
-badgeText: {
-  color: 'white',
-  fontWeight: 'bold',
-  fontSize: 10
-},
-imageProducto: {
-  width: 120,
-  height: 120,
-  marginBottom: 10
-},
-marcaProducto: {
-  fontWeight: 'bold',
-  color: '#444',
-  marginBottom: 4
-},
-nombreProducto: {
-  textAlign: 'center',
-  fontWeight: '600',
-  marginBottom: 5
-},
-precioProducto: {
-  color: '#c00',
-  fontWeight: 'bold',
-  marginBottom: 10
-},
-botonProducto: {
-  borderWidth: 1,
-  borderColor: '#c00',
-  borderRadius: 5,
-  paddingVertical: 5,
-  paddingHorizontal: 10
-},
-botonTextoProducto: {
-  color: '#c00',
-  fontWeight: '600'
-}, 
-accordionTitle: {
-  fontSize: 16,
-  fontWeight: '700',
-  color: '#333',
-  marginBottom: 8,
-},
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
+  modalImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'contain'
+  },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    padding: 10,
+    borderRadius: 20,
+    zIndex: 1
+  },
+  closeText: {
+    color: '#fff',
+    fontWeight: 'bold'
+  },
+  modalImageContainer: {
+    flex: 1,
+    width: '100%',
+    justifyContent: 'center',
+    alignItems: 'center'
+  },
 
-accordionItem: {
-  borderWidth: 1,
-  borderColor: '#eee',
-  borderRadius: 10,
-  marginBottom: 10,
-  overflow: 'hidden',
-  backgroundColor: '#fff',
-},
-
-accordionHeader: {
-  paddingHorizontal: 12,
-  paddingVertical: 12,
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#fafafa',
-},
-
-accordionHeaderTitle: {
-  fontSize: 14,
-  fontWeight: '700',
-  color: '#333',
-},
-
-accordionHeaderSub: {
-  fontSize: 12,
-  color: '#666',
-  marginTop: 2,
-},
-
-accordionContent: {
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-  backgroundColor: '#fff',
-  borderTopWidth: 1,
-  borderTopColor: '#f0f0f0',
-},
-
-rowLine: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  paddingVertical: 6,
-},
-
-rowLabel: {
-  fontSize: 13,
-  color: '#666',
-},
-
-rowValue: {
-  fontSize: 13,
-  color: '#333',
-  fontWeight: '600',
-},
-
-loadingBoxSm: {
-  paddingVertical: 12,
-  alignItems: 'center',
-  justifyContent: 'center',
-},
-
-loadingText: {
-  marginTop: 6,
-  fontSize: 12,
-  color: '#666',
-},
-
-emptyText: {
-  fontSize: 12,
-  color: '#666',
-},
-pendingHeaderText: {
-  fontSize: 14,
-  fontWeight: '700',
-  color: '#222',
-  marginBottom: 8,
-},
-
-pendingContainer: {
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  padding: 19, // 👈 antes era 29, ahora 15
-},
-pendingCard: {
-  position: 'relative',
-  backgroundColor: '#ffffffff',
-  borderRadius: 12,
-  padding: 12,
-  marginBottom: 10,
-  // sombra sutil
-  shadowColor: '#000',
-  shadowOpacity: 0.06,
-  shadowOffset: { width: 0, height: 2 },
-  shadowRadius: 6,
-  elevation: 2,
-},
-
-leftStripe: {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  bottom: 0,
-  width: 4,
-  borderTopLeftRadius: 12,
-  borderBottomLeftRadius: 12,
-  backgroundColor: '#e53935', // rojo
-},
-
-pendingRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-},
-
-pendingTitleRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  gap: 6,
-  marginBottom: 6,
-},
-
-pendingTitle: {
-  fontSize: 14,
-  fontWeight: '800',
-  color: '#d32f2f', // rojo título
-},
-
-pendingText: {
-  fontSize: 13,
-  color: '#444',
-  lineHeight: 18,
-},
-
-payBtn: {
-  backgroundColor: '#1e88e5', // azul
-  paddingVertical: 8,
-  paddingHorizontal: 14,
-  borderRadius: 16,
-  alignSelf: 'flex-start',
-},
-payBtnText: {
-  color: '#ffffffff',
-  fontWeight: '700',
-  fontSize: 13,
-},
-groupHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  paddingVertical: 10,
-  paddingHorizontal: 0,
-  borderWidth: 1,
-  borderColor: '#fff',
-  marginBottom: 8,
-  width: '92%',        // 👈 ancho controlado
-  alignSelf: 'center', // 👈 centrado
-},
-
-groupHeader: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center', // Centra horizontalmente todo el contenido
-  backgroundColor: '#ffffffff',
-  borderRadius: 12,
-  paddingVertical: 12,
-  paddingHorizontal: 16,
-  borderWidth: 1,
-  borderColor: '#ffe0e0',
-  marginBottom: 8,
-},
-
-groupTitle: {
-  fontSize: 15,
-  fontWeight: '800',
-  color: '#b40303',
-  textAlign: 'center', // Asegura que el texto esté centrado
-},
-
-groupCount: {
-  marginLeft: 6,
-  fontSize: 13,
-  color: '#b40303',
-  fontWeight: '700',
-},
-pendingCard: {
-  position: 'relative',
-  backgroundColor: '#ffffffff',
-  borderRadius: 12,
-  padding: 12,
-  marginBottom: 10,
-  shadowColor: '#000',
-  shadowOpacity: 0.06,
-  shadowOffset: { width: 0, height: 2 },
-  shadowRadius: 6,
-  elevation: 2,
-},
-leftStripe: {
-  position: 'absolute',
-  left: 0,
-  top: 0,
-  bottom: 0,
-  width: 4,
-  borderTopLeftRadius: 12,
-  borderBottomLeftRadius: 12,
-  backgroundColor: '#e53935',
-},
-
-pendingRow: { flexDirection: 'row', alignItems: 'center' },
-pendingTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 6 },
-pendingTitle: { fontSize: 14, fontWeight: '800', color: '#d32f2f' },
-pendingText: { fontSize: 13, color: '#444', lineHeight: 18 },
-
-payBtn: {
-  backgroundColor: '#1e88e5',
-  paddingVertical: 8,
-  paddingHorizontal: 14,
-  borderRadius: 16,
-  alignSelf: 'flex-start',
-},
-payBtnText: { color: '#fff', fontWeight: '700', fontSize: 13 },
-
-loadingBoxSm: { paddingVertical: 12, alignItems: 'center', justifyContent: 'center' },
-loadingText: { marginTop: 6, fontSize: 12, color: '#666' },
-emptyBox: { paddingVertical: 12, alignItems: 'center', gap: 6 },
-emptyText: { fontSize: 12, color: '#666' },
+  // 🔹 Categorías
+  categoryContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    rowGap: 16,
+    columnGap: 12,
+  },
+  categoryItem: {
+    alignItems: 'center',
+    width: '26%',
+  },
+  categoryIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 2,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.15,
+    shadowRadius: 3,
+  },
+  categoryLabel: {
+    marginTop: 8,
+    fontSize: 11.5,
+    fontWeight: '600',
+    color: '#241a1a',
+    textAlign: 'center',
+  },
 });

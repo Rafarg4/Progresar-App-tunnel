@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, Alert, Modal, TouchableOpacity, ScrollView, TextInput } from 'react-native';
-import { BarCodeScanner } from 'expo-barcode-scanner';
+import { CameraView, useCameraPermissions } from 'expo-camera';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useNavigation } from '@react-navigation/native'; // Importar useNavigation
 const AdelantoQr = ({ route, navigation }) => {
@@ -16,10 +16,12 @@ const AdelantoQr = ({ route, navigation }) => {
   const [password, setPassword] = useState('');
   const [clientPassword, setClientPassword] = useState('');
   const [decodedData, setDecodedData] = useState(null);
+  const [permission, requestPermission] = useCameraPermissions();
+
   useEffect(() => {
     (async () => {
-      const { status } = await BarCodeScanner.requestPermissionsAsync();
-      setHasPermission(status === 'granted');
+      await requestPermission();
+      setHasPermission(permission?.granted);
     })();
   }, []);
 
@@ -274,7 +276,7 @@ ${responseCode} - ${responseDescription}
       
       </Text>
 
-      {!scanned && !modalVisible && (
+     {!scanned && !modalVisible && (
         <>
           <BarCodeScanner
             onBarCodeScanned={scanned ? undefined : handleBarCodeScanned}
@@ -287,6 +289,7 @@ ${responseCode} - ${responseDescription}
           </View>
         </>
       )}
+
 <Modal
   visible={modalVisible}
   animationType="slide"

@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, ActivityIndicator, Alert, ScrollView } from 'react-native';
-import { FontAwesome } from '@expo/vector-icons';
+import { View, Text, TouchableOpacity, ImageBackground, StyleSheet, Alert, ScrollView } from 'react-native';
+import { FontAwesome, FontAwesome5 } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import BottomNav from '../components/BottomNav';
 
 const AtmQr = () => {
   const navigation = useNavigation();
@@ -28,128 +29,173 @@ const AtmQr = () => {
   }, []);
 
   const handleStart = () => {
-  if (!usuario) {
-    Alert.alert('Falta usuario', 'No se puede continuar sin el usuario.');
-    return;
-  }
-  // Enviar como nro_doc
-  navigation.navigate('AdelantoQr', { nro_doc: String(usuario) });
-};
+    if (!usuario) {
+      Alert.alert('Falta usuario', 'No se puede continuar sin el usuario.');
+      return;
+    }
+    navigation.navigate('AdelantoQr', { num_doc: String(usuario) });
+  };
 
   return (
-    <View style={{ flex: 1, backgroundColor: '#fff' }}>
-      {/* Cabecera con imagen como en otras pantallas */}
-      <ImageBackground
-         source={require('../assets/inicio.png')}  
-        style={styles.header}
-        resizeMode="cover"
-        imageStyle={styles.headerImage}
-      >
-        <View style={styles.headerOverlay} />
-        <Text style={styles.headerTitle}>Adelanto en ATM</Text>
-      </ImageBackground>
-
-      <ScrollView contentContainerStyle={{ padding: 16 }}>
-        <View style={styles.stepsContainer}>
-          <View style={styles.step}>
-            <FontAwesome name="qrcode" size={39} color="#9e2021" />
-            <Text style={styles.stepText}>
-              <Text style={styles.stepBold}>Paso 1:</Text> Escanear QR generado por el cajero
-            </Text>
-          </View>
-
-          <View style={styles.step}>
-            <FontAwesome name="credit-card" size={30} color="#9e2021" />
-            <Text style={styles.stepText}>
-              <Text style={styles.stepBold}>Paso 2:</Text> Seleccionar la cuenta de la cual quiera realizar el adelanto
-            </Text>
-          </View>
-
-          <View style={styles.step}>
-            <FontAwesome name="money" size={30} color="#9e2021" />
-            <Text style={styles.stepText}>
-              <Text style={styles.stepBold}>Paso 3:</Text> Seleccionar el monto en el ATM
-            </Text>
-          </View>
-
-          <View style={styles.step}>
-            <FontAwesome name="check" size={30} color="#9e2021" />
-            <Text style={styles.stepText}>
-              <Text style={styles.stepBold}>Paso 4:</Text> Retirar el dinero
-            </Text>
-          </View>
-
-          <View style={styles.step}>
-            <FontAwesome name="exclamation-triangle" size={30} color="#9e2021" />
-            <Text style={styles.stepText}>
-              <Text style={styles.stepBold}>Nota:</Text> Este apartado solo realiza la autenticación al ATM; no quedarán registrados los movimientos.
-            </Text>
-          </View>
-
-          <View style={styles.separator} />
-          <TouchableOpacity
-            style={styles.button}
-            onPress={() => {
-              if (!usuario) {
-                Alert.alert('Falta usuario', 'No se puede continuar sin el usuario.');
-                return;
-              }
-              navigation.navigate('AdelantoQr', { num_doc: String(usuario) });
-            }}
-          >
-            <FontAwesome name="qrcode" size={24} color="white" />
-            <Text style={styles.buttonText}>Iniciar</Text>
+    <View style={styles.container}>
+      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 140 }}>
+        <ImageBackground
+          source={require('../assets/inicio_nuevo.png')}
+          style={styles.headerBackground}
+          imageStyle={styles.headerImage}
+        >
+          <View style={styles.headerOverlay} />
+          <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+            <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
           </TouchableOpacity>
-          {usuario ? (
-            <Text style={{ marginTop: 10, textAlign: 'center' }}>
-            </Text>
-          ) : null}
+          <View style={styles.headerContent}>
+            <Text style={styles.headerTitle}>Adelanto en ATM</Text>
+            <Text style={styles.headerSubtitle}>Retirá tu adelanto sin tarjeta</Text>
+          </View>
+        </ImageBackground>
+
+        <View style={styles.sheet}>
+          <View style={styles.sectionCard}>
+            <View style={styles.step}>
+              <FontAwesome name="qrcode" size={30} color="#9e2021" />
+              <Text style={styles.stepText}>
+                <Text style={styles.stepBold}>Paso 1: </Text>Escanear QR generado por el cajero
+              </Text>
+            </View>
+
+            <View style={styles.step}>
+              <FontAwesome name="credit-card" size={26} color="#9e2021" />
+              <Text style={styles.stepText}>
+                <Text style={styles.stepBold}>Paso 2: </Text>Seleccionar la cuenta de la cual quiera realizar el adelanto
+              </Text>
+            </View>
+
+            <View style={styles.step}>
+              <FontAwesome name="money" size={26} color="#9e2021" />
+              <Text style={styles.stepText}>
+                <Text style={styles.stepBold}>Paso 3: </Text>Seleccionar el monto en el ATM
+              </Text>
+            </View>
+
+            <View style={styles.step}>
+              <FontAwesome name="check" size={26} color="#9e2021" />
+              <Text style={styles.stepText}>
+                <Text style={styles.stepBold}>Paso 4: </Text>Retirar el dinero
+              </Text>
+            </View>
+
+            <View style={[styles.step, { marginBottom: 0 }]}>
+              <FontAwesome name="exclamation-triangle" size={26} color="#9e2021" />
+              <Text style={styles.stepText}>
+                <Text style={styles.stepBold}>Nota: </Text>Este apartado solo realiza la autenticación al ATM; no quedarán registrados los movimientos.
+              </Text>
+            </View>
+          </View>
+
+          <TouchableOpacity style={styles.submitButton} onPress={handleStart} activeOpacity={0.85}>
+            <FontAwesome name="qrcode" size={18} color="#fff" style={{ marginRight: 8 }} />
+            <Text style={styles.submitButtonText}>Iniciar</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <BottomNav usuario={usuario} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
-  // Cabecera
-  header: { height: 160, justifyContent: 'flex-end', paddingHorizontal: 16, paddingBottom: 12 },
-  headerImage: { borderBottomLeftRadius: 20, borderBottomRightRadius: 20 },
+  container: { flex: 1, backgroundColor: '#fff' },
+
+  // 🔹 Encabezado
+  headerBackground: {
+    width: '100%',
+    paddingTop: 60,
+    paddingHorizontal: 0,
+    paddingBottom: 40,
+  },
+  headerImage: {},
   headerOverlay: {
     ...StyleSheet.absoluteFillObject,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
+    backgroundColor: 'rgba(36,16,18,0.25)',
   },
-  headerTitle: {
-    color: '#fff', fontSize: 22, fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.6)', textShadowOffset: { width: 1, height: 1 }, textShadowRadius: 3
-  },
-
-  stepsContainer: {
-    width: '100%',
-    backgroundColor: '#fff',
-    borderRadius: 10,
-    padding: 20,
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 20,
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-    elevation: 5,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 21,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  // 🔹 Hoja de contenido
+  sheet: {
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 20,
+    paddingHorizontal: 16,
+  },
+
+  // 🔹 Card de sección
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#efe1e0',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
   },
   step: { flexDirection: 'row', alignItems: 'center', marginBottom: 20 },
-  stepText: { marginLeft: 10, fontSize: 14 },
-  stepBold: { fontWeight: 'bold', fontSize: 12 },
-  separator: { height: 1, backgroundColor: '#ccc', marginVertical: 10, width: '100%' },
-  button: {
+  stepText: { flex: 1, marginLeft: 12, fontSize: 13.5, color: '#241a1a' },
+  stepBold: { fontWeight: 'bold', color: '#9e2021' },
+
+  submitButton: {
     flexDirection: 'row',
-    alignSelf: 'center',
-    alignItems: 'center',
     backgroundColor: '#9e2021',
-    paddingVertical: 10,
-    paddingHorizontal: 20,
-    borderRadius: 5,
-    marginTop: 20,
+    paddingVertical: 14,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#9e2021',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
   },
-  buttonText: { color: 'white', fontSize: 16, marginLeft: 10 },
+  submitButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14.5,
+  },
 });
 
 export default AtmQr;

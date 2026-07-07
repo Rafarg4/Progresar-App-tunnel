@@ -5,17 +5,27 @@ import {
   StyleSheet,
   ScrollView,
   TouchableOpacity,
-  Image,
+  ImageBackground,
   ActivityIndicator,
-  Dimensions
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { formatGs } from '../components/WalletCard';
+import BottomNav from '../components/BottomNav';
+
+const tabs = [
+  { id: 'transacciones', nombre: 'Transacciones' },
+  { id: 'pagos', nombre: 'Débitos' },
+  { id: 'adelantos', nombre: 'Adelantos' },
+];
 
 export default function Notificaciones() {
+  const navigation = useNavigation();
   const [notificaciones, setNotificaciones] = useState([]);
   const [loading, setLoading] = useState(true);
   const [categoria, setCategoria] = useState('transacciones');
+  const [usuario, setUsuario] = useState('');
 
   const obtenerNombreClase = (clase) => {
     switch (clase) {
@@ -33,19 +43,14 @@ export default function Notificaciones() {
     }
   };
 
-  const tabs = [
-    { id: 'transacciones', nombre: 'Transacciones' },
-    { id: 'pagos', nombre: 'Débitos' },
-    { id: 'adelantos', nombre: 'Adelantos' },
-  ];
-
   useEffect(() => {
     const cargarDatos = async () => {
       try {
-        const usuario = await AsyncStorage.getItem('usuarioGuardado');
-        if (!usuario) return;
+        const doc = await AsyncStorage.getItem('usuarioGuardado');
+        if (!doc) return;
+        setUsuario(doc);
 
-        const response = await fetch(`https://api.progresarcorp.com.py/api/notificaciones/${usuario}`);
+        const response = await fetch(`https://api.progresarcorp.com.py/api/notificaciones/${doc}`);
         const data = await response.json();
         setNotificaciones(data);
       } catch (error) {
@@ -61,7 +66,7 @@ export default function Notificaciones() {
   const formatearHora = (horaStr) => {
     if (!horaStr) return '';
     horaStr = String(horaStr).padStart(6, '0');
-    return `${horaStr.substring(0,2)}:${horaStr.substring(2,4)}:${horaStr.substring(4,6)}`;
+    return `${horaStr.substring(0, 2)}:${horaStr.substring(2, 4)}:${horaStr.substring(4, 6)}`;
   };
 
   const filtrarNotificaciones = () => {
@@ -73,19 +78,19 @@ export default function Notificaciones() {
   const renderNotificacion = (n, i) => {
     const tipo = String(n.tipotransaccion);
 
-    // ✅ Caso especial: tipo 50 (Crédito / Operación exitosa)
+    // Caso especial: tipo 50 (Crédito / Operación exitosa)
     if (tipo === '50') {
       return (
         <View key={i} style={styles.notificationCard}>
           <View style={styles.iconColumn}>
-            <View style={[styles.iconCircle, { backgroundColor: '#0a8f0a' }]}>
+            <View style={[styles.iconCircle, { backgroundColor: '#3f8f5f' }]}>
               <FontAwesome5 name="check-circle" size={16} color="#fff" />
             </View>
-            <View style={[styles.verticalLine, { backgroundColor: '#0a8f0a' }]} />
+            <View style={[styles.verticalLine, { backgroundColor: '#3f8f5f' }]} />
           </View>
 
           <View style={styles.notificationContent}>
-            <Text style={[styles.notificationTitle, { color: '#0a8f0a' }]}>
+            <Text style={[styles.notificationTitle, { color: '#3f8f5f' }]}>
               Su pago, Gracias - {obtenerNombreClase(n.clasetarjeta)}
             </Text>
             <Text numberOfLines={1} style={styles.notificationConcepto}>
@@ -94,10 +99,8 @@ export default function Notificaciones() {
             <Text numberOfLines={1} style={styles.notificationSubtext}>
               {n.nombrecomercio}
             </Text>
-
-            {/* ✅ Sin signo "-" */}
-            <Text style={[styles.notificationMonto, { color: '#0a8f0a' }]}>
-              {parseInt(n.importe).toLocaleString('es-PY')} Gs.
+            <Text style={[styles.notificationMonto, { color: '#3f8f5f' }]}>
+              {formatGs(n.importe)}
             </Text>
           </View>
 
@@ -109,12 +112,11 @@ export default function Notificaciones() {
       );
     }
 
-    // ✅ Débitos & Adelantos (tu lógica original)
+    // Débitos & Adelantos
     const esAdelanto = tipo === '1';
     const iconName = esAdelanto ? 'university' : 'credit-card';
     const titulo = esAdelanto ? 'Adelanto en efectivo' : 'Débito en Tarjeta';
-    const colorIcono = esAdelanto ? '#004d99' : '#9e2021';
-    const colorLinea = esAdelanto ? '#004d99' : '#d10000';
+    const colorIcono = esAdelanto ? '#4d7ea8' : '#9e2021';
 
     return (
       <View key={i} style={styles.notificationCard}>
@@ -122,16 +124,14 @@ export default function Notificaciones() {
           <View style={[styles.iconCircle, { backgroundColor: colorIcono }]}>
             <FontAwesome5 name={iconName} size={16} color="#fff" />
           </View>
-          <View style={[styles.verticalLine, { backgroundColor: colorLinea }]} />
+          <View style={[styles.verticalLine, { backgroundColor: colorIcono }]} />
         </View>
 
         <View style={styles.notificationContent}>
           <Text style={styles.notificationTitle}>{titulo} - {obtenerNombreClase(n.clasetarjeta)}</Text>
           <Text numberOfLines={1} style={styles.notificationConcepto}>{n.descripcion}</Text>
           <Text numberOfLines={1} style={styles.notificationSubtext}>{n.nombrecomercio}</Text>
-          <Text style={styles.notificationMonto}>
-            - {parseInt(n.importe).toLocaleString('es-PY')} Gs.
-          </Text>
+          <Text style={styles.notificationMonto}>-{formatGs(n.importe)}</Text>
         </View>
 
         <View style={styles.notificationRight}>
@@ -146,42 +146,55 @@ export default function Notificaciones() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.headerContainer}>
-        <Image source={require('../assets/inicio.png')} style={styles.headerImage} resizeMode="cover" />
-        <View style={styles.headerOverlay}>
-          <Text style={styles.headerText}>Transacciones</Text>
+      <ImageBackground
+        source={require('../assets/inicio_nuevo.png')}
+        style={styles.headerBackground}
+        imageStyle={styles.headerImage}
+      >
+        <View style={styles.headerOverlay} />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Transacciones</Text>
           <Text style={styles.headerSubtitle}>
             Visualizá tus últimos movimientos de manera rápida y ordenada.
           </Text>
         </View>
+      </ImageBackground>
+
+      <View style={styles.sheet}>
+        <View style={styles.tabsContainer}>
+          {tabs.map((tab) => (
+            <TouchableOpacity
+              key={tab.id}
+              style={[styles.tabButton, categoria === tab.id && styles.tabButtonActive]}
+              onPress={() => setCategoria(tab.id)}
+            >
+              <Text style={[styles.tabText, categoria === tab.id && styles.tabTextActive]}>
+                {tab.nombre}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </View>
+
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#9e2021" />
+            <Text style={styles.loadingText}>Cargando notificaciones...</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+            {notificacionesFiltradas.length > 0 ? (
+              notificacionesFiltradas.map(renderNotificacion)
+            ) : (
+              <Text style={styles.noDataText}>No hay notificaciones disponibles.</Text>
+            )}
+          </ScrollView>
+        )}
       </View>
 
-      <View style={styles.tabsContainer}>{tabs.map((tab) => (
-        <TouchableOpacity
-          key={tab.id}
-          style={[styles.tabButton, categoria === tab.id && styles.tabButtonActive]}
-          onPress={() => setCategoria(tab.id)}
-        >
-          <Text style={[styles.tabText, categoria === tab.id && styles.tabTextActive]}>
-            {tab.nombre}
-          </Text>
-        </TouchableOpacity>
-      ))}</View>
-
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#9e2021" />
-          <Text style={styles.loadingText}>Cargando notificaciones...</Text>
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {notificacionesFiltradas.length > 0 ? (
-            notificacionesFiltradas.map(renderNotificacion)
-          ) : (
-            <Text style={styles.noDataText}>No hay notificaciones disponibles.</Text>
-          )}
-        </ScrollView>
-      )}
+      <BottomNav usuario={usuario} />
     </View>
   );
 }
@@ -189,63 +202,107 @@ export default function Notificaciones() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
-  headerContainer: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 22,
-    borderBottomRightRadius: 22,
+  // 🔹 Encabezado
+  headerBackground: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  headerImage: { width: Dimensions.get('window').width, height: 160 },
-  headerOverlay: { position: 'absolute', bottom: 16, left: 16, right: 16 },
-  headerText: {
+  headerImage: {},
+  headerOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
+  },
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+  },
+  headerTitle: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
-  headerSubtitle: { color: '#fff', fontSize: 13.5, marginTop: 4, opacity: 0.9 },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
 
-  tabsContainer: { flexDirection: 'row', justifyContent: 'center', backgroundColor: '#f5f6f8', paddingVertical: 10 },
-  tabButton: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 20, marginHorizontal: 6, backgroundColor: '#e6e6e6' },
+  // 🔹 Hoja de contenido
+  sheet: {
+    flex: 1,
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 18,
+  },
+
+  // 🔹 Tabs
+  tabsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    marginBottom: 14,
+  },
+  tabButton: {
+    paddingVertical: 9,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    marginHorizontal: 4,
+    backgroundColor: 'rgba(158,32,33,0.08)',
+  },
   tabButtonActive: { backgroundColor: '#9e2021' },
-  tabText: { color: '#444', fontSize: 14, fontWeight: '500' },
+  tabText: { color: '#9e2021', fontSize: 13, fontWeight: '600' },
   tabTextActive: { color: '#fff' },
 
-  scrollContainer: { padding: 12 },
+  scrollContainer: { paddingHorizontal: 16, paddingBottom: 140 },
 
   notificationCard: {
     backgroundColor: '#fff',
-    borderRadius: 14,
+    borderRadius: 16,
     padding: 14,
-    marginVertical: 6,
+    marginBottom: 10,
     borderWidth: 1,
-    borderColor: 'rgba(158,32,33,0.15)',
+    borderColor: '#efe1e0',
     flexDirection: 'row',
     alignItems: 'flex-start',
-    shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 3,
-    elevation: 2,
   },
 
   iconColumn: { alignItems: 'center', marginRight: 14 },
   iconCircle: { width: 38, height: 38, borderRadius: 19, alignItems: 'center', justifyContent: 'center', marginBottom: 6 },
-  verticalLine: { width: 2, height: 65, borderRadius: 2, opacity: 0.6 },
+  verticalLine: { width: 2, height: 65, borderRadius: 2, opacity: 0.3 },
 
   notificationContent: { flex: 1 },
-  notificationTitle: { fontWeight: 'bold', color: '#9e2021', marginBottom: 3, fontSize: 15 },
-  notificationConcepto: { color: '#333', fontSize: 13 },
-  notificationSubtext: { color: '#666', fontSize: 12.5 },
-  notificationMonto: { color: '#d10000', fontWeight: 'bold', fontSize: 14, marginTop: 6 },
+  notificationTitle: { fontWeight: 'bold', color: '#9e2021', marginBottom: 3, fontSize: 14.5 },
+  notificationConcepto: { color: '#241a1a', fontSize: 13 },
+  notificationSubtext: { color: '#6b5c5d', fontSize: 12.5 },
+  notificationMonto: { color: '#9e2021', fontWeight: 'bold', fontSize: 14, marginTop: 6 },
 
   notificationRight: { alignItems: 'flex-end', justifyContent: 'center' },
-  notificationFecha: { color: '#777', fontSize: 12 },
-  notificationHora: { color: '#777', fontSize: 12, marginTop: 2 },
+  notificationFecha: { color: '#6b5c5d', fontSize: 12 },
+  notificationHora: { color: '#6b5c5d', fontSize: 12, marginTop: 2 },
 
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: '#9e2021', marginTop: 8 },
-  noDataText: { color: '#555', textAlign: 'center', marginTop: 30, fontSize: 14 },
+  noDataText: { color: '#6b5c5d', textAlign: 'center', marginTop: 30, fontSize: 14 },
 });

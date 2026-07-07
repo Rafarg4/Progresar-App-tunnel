@@ -4,31 +4,34 @@ import {
   Text,
   StyleSheet,
   ScrollView,
-  Image,
-  Dimensions,
+  ImageBackground,
   ActivityIndicator,
   TouchableOpacity,
-  Alert
+  Alert,
 } from 'react-native';
 import { FontAwesome5 } from '@expo/vector-icons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation } from '@react-navigation/native';
+import BottomNav from '../components/BottomNav';
 
 export default function MisElectrodomesticos() {
   const [electros, setElectros] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [usuario, setUsuario] = useState('');
   const navigation = useNavigation();
 
   const cargarElectros = async () => {
     try {
       setLoading(true);
-      const usuario = await AsyncStorage.getItem('usuarioGuardado');
-      if (!usuario) {
+      const doc = await AsyncStorage.getItem('usuarioGuardado');
+      if (!doc) {
         console.log('Usuario no encontrado');
         setElectros([]);
         return;
       }
-      const response = await fetch(`https://api.progresarcorp.com.py/api/ver_electrodomesticos/${usuario}`);
+      setUsuario(doc);
+
+      const response = await fetch(`https://api.progresarcorp.com.py/api/ver_electrodomesticos/${doc}`);
       const data = await response.json();
 
       if (Array.isArray(data)) {
@@ -53,86 +56,97 @@ export default function MisElectrodomesticos() {
 
   return (
     <View style={styles.container}>
-      {/* Header con subtítulo */}
-      <View style={styles.headerContainer}>
-        <Image
-          source={require('../assets/Electro.png')}
-          style={styles.headerImage}
-          resizeMode="cover"
-        />
-        <View style={styles.headerOverlay}>
-          <Text style={styles.headerText}>Mis Electrodomésticos</Text>
+      <ImageBackground
+        source={require('../assets/Electro.png')}
+        style={styles.headerBackground}
+        imageStyle={styles.headerImage}
+      >
+        <View style={styles.headerOverlay} />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Mis Electrodomésticos</Text>
           <Text style={styles.headerSubtitle}>Visualizá tus compras y cuotas vigentes</Text>
         </View>
+      </ImageBackground>
+
+      <View style={styles.sheet}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#9e2021" />
+            <Text style={styles.loadingText}>Cargando tus electrodomésticos...</Text>
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+            {electros.length === 0 ? (
+              <View style={styles.emptyCard}>
+                <FontAwesome5 name="tv" size={36} color="#9e2021" style={{ marginBottom: 12 }} />
+                <Text style={styles.emptyTitle}>Sin electrodomésticos</Text>
+                <Text style={styles.emptyText}>
+                  No encontramos electrodomésticos asociados a tu usuario por ahora.
+                </Text>
+
+                <TouchableOpacity style={styles.emptyButton} onPress={cargarElectros}>
+                  <FontAwesome5 name="redo" size={14} color="#fff" style={{ marginRight: 8 }} />
+                  <Text style={styles.emptyButtonText}>Reintentar</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              electros.map((item, index) => {
+                const key = `${item.cod_cliente || 'cli'}-${item.nro_comprobante || index}-${index}`;
+                return (
+                  <View
+                    key={key}
+                    style={styles.electroCard}
+                    // Ingreso al detalle deshabilitado por el momento
+                    // onPress={() =>
+                    //   navigation.navigate('DetalleElectro', {
+                    //     cod_cliente: item.cod_cliente,
+                    //     nro_comprobante: item.nro_comprobante,
+                    //     nro_cuota: item.nro_cuota
+                    //   })
+                    // }
+                  >
+                    <View style={styles.electroHeader}>
+                      <View style={styles.electroIconBadge}>
+                        <FontAwesome5 name="tv" size={13} color="#9e2021" />
+                      </View>
+                      <Text style={styles.electroTitle}>Comprobante #{item.nro_comprobante}</Text>
+                      {/* <FontAwesome5 name="chevron-right" size={13} color="#6b5c5d" /> */}
+                    </View>
+
+                    <View style={styles.row}>
+                      <Text style={styles.label}>Tipo</Text>
+                      <Text style={styles.value}>{item.tipo_comprobante || '-'} - Crédito</Text>
+                    </View>
+                    <View style={styles.row}>
+                      <Text style={styles.label}>Fecha origen</Text>
+                      <Text style={styles.value}>{item.fec_origen || '-'}</Text>
+                    </View>
+                    <View style={styles.row}>
+                      <Text style={styles.label}>Cuotas</Text>
+                      <Text style={styles.value}>{item.nro_cuota}</Text>
+                    </View>
+                    <View style={styles.row}>
+                      <Text style={styles.label}>Monto total</Text>
+                      <Text style={styles.value}>{Number(item.monto_cuota || 0).toLocaleString()} Gs</Text>
+                    </View>
+                    <View style={[styles.row, { marginBottom: 0 }]}>
+                      <Text style={styles.label}>Saldo pendiente</Text>
+                      <Text style={[styles.value, styles.valuePositive]}>
+                        {Number(item.saldo_cuota || 0).toLocaleString()} Gs
+                      </Text>
+                    </View>
+                  </View>
+                );
+              })
+            )}
+          </ScrollView>
+        )}
       </View>
 
-      {/* Contenido */}
-      {loading ? (
-        <View style={styles.loadingContainer}>
-          <ActivityIndicator size="large" color="#9e2021" />
-          <Text style={styles.loadingText}>Cargando tus electrodomésticos...</Text>
-        </View>
-      ) : (
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {electros.length === 0 ? (
-            <View style={styles.emptyCard}>
-              <FontAwesome5 name="inbox" size={40} color="#9e2021" style={{ marginBottom: 10 }} />
-              <Text style={styles.emptyTitle}>Sin Electrodomésticos</Text>
-              <Text style={styles.emptyText}>
-                No encontramos electrodomésticos asociados a tu usuario por ahora.
-              </Text>
-
-              <TouchableOpacity style={styles.emptyButton} onPress={cargarElectros}>
-                <FontAwesome5 name="redo" size={16} color="#fff" />
-                <Text style={styles.emptyButtonText}>Reintentar</Text>
-              </TouchableOpacity>
-            </View>
-          ) : (
-            electros.map((item, index) => {
-              const key = `${item.cod_cliente || 'cli'}-${item.nro_comprobante || index}-${index}`;
-              return (
-                <TouchableOpacity
-                  key={key}
-                  style={styles.cardContainer}
-                  activeOpacity={0.9}
-                  onPress={() =>
-                    navigation.navigate('DetalleElectro', {
-                      cod_cliente: item.cod_cliente,
-                      nro_comprobante: item.nro_comprobante,
-                      nro_cuota: item.nro_cuota
-                    })
-                  }
-                >
-                  {/* Ícono de fondo */}
-                  <FontAwesome5
-                    name="tv"
-                    size={Dimensions.get('window').width * 0.35}
-                    color="rgba(158,32,33,0.25)"
-                    style={styles.cardBackgroundIcon}
-                  />
-
-                  {/* Ícono principal */}
-                  <View style={styles.cardIconContainer}>
-                    <FontAwesome5 name="tv" size={26} color="#9e2021" />
-                  </View>
-
-                  {/* Texto principal */}
-                  <Text style={styles.cardBrand}>Comprobante #{item.nro_comprobante}</Text>
-                  <Text style={styles.cardDetail}>Tipo: {item.tipo_comprobante || '-'} - Crédito</Text>
-                  <Text style={styles.cardDetail}>Fecha origen: {item.fec_origen || '-'}</Text>
-                  <Text style={styles.cardDetail}>Cuotas: {item.nro_cuota}</Text>
-                  <Text style={styles.cardDetail}>
-                    Monto total: {Number(item.monto_cuota || 0).toLocaleString()} Gs
-                  </Text>
-                  <Text style={styles.cardDetail}>
-                    Saldo pendiente: {Number(item.saldo_cuota || 0).toLocaleString()} Gs
-                  </Text>
-                </TouchableOpacity>
-              );
-            })
-          )}
-        </ScrollView>
-      )}
+      <BottomNav usuario={usuario} />
     </View>
   );
 }
@@ -140,122 +154,154 @@ export default function MisElectrodomesticos() {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
 
-  // HEADER
-  headerContainer: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25,
+  // 🔹 Encabezado
+  headerBackground: {
+    paddingTop: 60,
+    paddingHorizontal: 0,
+    paddingBottom: 40,
   },
-  headerImage: { width: Dimensions.get('window').width, height: 170 },
+  headerImage: {},
   headerOverlay: {
-    position: 'absolute',
-    bottom: 16,
-    left: 16,
-    right: 16,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
   },
-  headerText: {
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+  },
+  headerContent: {
+    marginTop: 22,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
     color: '#fff',
-    fontSize: 22,
+    fontSize: 21,
     fontWeight: 'bold',
-    textShadowColor: 'rgba(0,0,0,0.6)',
+    textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 3,
   },
   headerSubtitle: {
     color: '#fff',
-    fontSize: 13.5,
-    marginTop: 3,
-    opacity: 0.9,
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
     textShadowColor: 'rgba(0,0,0,0.4)',
     textShadowOffset: { width: 1, height: 1 },
     textShadowRadius: 2,
   },
 
-  // LOADING
+  // 🔹 Hoja de contenido
+  sheet: {
+    flex: 1,
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 20,
+  },
+
   loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   loadingText: { color: '#9e2021', marginTop: 10, fontWeight: '500' },
 
-  // CONTENIDO
-  scrollContainer: { padding: 16 },
+  scrollContainer: { padding: 16, paddingBottom: 140 },
 
-  // TARJETAS
-  cardContainer: {
-    borderRadius: 16,
-    padding: 16,
-    marginBottom: 14,
+  // 🔹 Cards de electrodoméstico
+  electroCard: {
     backgroundColor: '#fff',
     borderWidth: 1,
-    borderColor: 'rgba(158,32,33,0.15)',
-    shadowColor: '#000',
-    shadowOpacity: 0.10,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
-    elevation: 3,
-    position: 'relative',
+    borderColor: '#efe1e0',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
   },
-  cardBackgroundIcon: {
-    position: 'absolute',
-    right: 5,
-    bottom: 30,
-    opacity: 0.18,
-    zIndex: 0,
+  electroHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  cardIconContainer: { marginBottom: 10, zIndex: 2 },
-
-  cardBrand: {
-    fontSize: 16,
+  electroIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(158,32,33,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  electroTitle: {
+    flex: 1,
+    fontSize: 15,
     fontWeight: 'bold',
-    color: '#9e2021',
+    color: '#241a1a',
+  },
+
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 10,
   },
-  cardDetail: {
-    fontSize: 14,
-    color: '#9e2021',
-    marginBottom: 3,
-    fontWeight: '500',
+  label: {
+    fontSize: 13,
+    color: '#6b5c5d',
+  },
+  value: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#241a1a',
+  },
+  valuePositive: {
+    color: '#3f8f5f',
   },
 
-  // ESTADO VACÍO
+  // 🔹 Estado vacío
   emptyCard: {
-    borderRadius: 16,
-    padding: 20,
-    marginTop: 40,
+    borderRadius: 18,
+    padding: 24,
+    marginTop: 30,
     backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#efe1e0',
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.1,
-    shadowOffset: { width: 0, height: 2 },
-    shadowRadius: 4,
   },
   emptyTitle: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: 'bold',
-    color: '#9e2021',
+    color: '#241a1a',
     marginBottom: 4,
     textAlign: 'center',
   },
   emptyText: {
-    fontSize: 13.5,
-    color: '#555',
+    fontSize: 13,
+    color: '#6b5c5d',
     textAlign: 'center',
-    marginBottom: 14,
-    paddingHorizontal: 20,
+    marginBottom: 16,
+    paddingHorizontal: 10,
   },
   emptyButton: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: '#9e2021',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: 24,
     shadowColor: '#9e2021',
-    shadowOpacity: 0.25,
-    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowOffset: { width: 0, height: 3 },
     shadowRadius: 5,
     elevation: 3,
   },
-  emptyButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8, fontSize: 14 },
+  emptyButtonText: { color: '#fff', fontWeight: 'bold', fontSize: 14 },
 });

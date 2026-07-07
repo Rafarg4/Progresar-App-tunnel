@@ -39,6 +39,7 @@ import DetallePago from '../screens/DetallePago'
 import MisOperaciones from '../screens/MisOperaciones'
 import Beneficios from '../screens/Beneficios'
 import DetalleTarjetas from '../screens/DetalleTarjetas'
+import SolicitudAdelanto from '../screens/Solicitud_adelanto'
 import DetalleOperaciones from '../screens/DetalleOperaciones'
 import MisSeguros from '../screens/MisSeguros'
 import MisElectrodomesticos from '../screens/MisElectrodomesticos'
@@ -142,10 +143,10 @@ function App() {
 
             <Stack.Screen name="Sucursales" component={Sucursales} options={
                 {
-                    headerTintColor: "white",
-                    headerStyle: { backgroundColor: '#bf0404' },
+                    headerShown: false, // ✅ OCULTA TODO EL HEADER
+                    gestureEnabled: true
                 }
-            }/> 
+            }/>
 
             <Stack.Screen name="Detalle TC" component={DetaTC} options={
                 {
@@ -321,6 +322,14 @@ function App() {
                     component={DetalleTarjetas}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+            <Stack.Screen
+                    name="SolicitudAdelanto"
+                    component={SolicitudAdelanto}
+                    options={{
+                        headerShown: false,
                         gestureEnabled: true
                     }}
                     />

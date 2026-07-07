@@ -5,15 +5,17 @@ import {
   StyleSheet,
   ScrollView,
   ActivityIndicator,
-  Image,
+  ImageBackground,
   TouchableOpacity,
   LayoutAnimation,
   Platform,
   UIManager,
-  Dimensions
 } from 'react-native';
-import { useRoute } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { FontAwesome5 } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { formatGs } from '../components/WalletCard';
+import BottomNav from '../components/BottomNav';
 
 if (Platform.OS === 'android') {
   UIManager.setLayoutAnimationEnabledExperimental?.(true);
@@ -21,6 +23,7 @@ if (Platform.OS === 'android') {
 
 export default function DetalleOperaciones() {
   const route = useRoute();
+  const navigation = useNavigation();
   const { cod_cliente, nro_comprobante } = route.params;
 
   const [cuotas, setCuotas] = useState([]);
@@ -29,15 +32,21 @@ export default function DetalleOperaciones() {
   const [total, setTotal] = useState(0);
   const [saldo, setSaldo] = useState(0);
   const [diasAtraso, setDiasAtraso] = useState(0);
-  const [filtro, setFiltro] = useState('todos'); 
+  const [filtro, setFiltro] = useState('todos');
+  const [usuario, setUsuario] = useState('');
+
   const cuotasFiltradas = cuotas.filter(cuota => {
-  const pagado = Number(cuota.saldo_cuota) === 0;
-  if (filtro === 'pagados') return pagado;
-  if (filtro === 'pendientes') return !pagado;
-  return true;
-  });  
+    const pagado = Number(cuota.saldo_cuota) === 0;
+    if (filtro === 'pagados') return pagado;
+    if (filtro === 'pendientes') return !pagado;
+    return true;
+  });
 
-
+  useEffect(() => {
+    AsyncStorage.getItem('usuarioGuardado')
+      .then((doc) => doc && setUsuario(doc))
+      .catch((e) => console.log('Error al obtener usuario:', e));
+  }, []);
 
   useEffect(() => {
     const fetchDetalle = async () => {
@@ -68,11 +77,10 @@ export default function DetalleOperaciones() {
     const saldo = cuotas.reduce((sum, c) => sum + Number(c.saldo_cuota || 0), 0);
 
     const hoy = new Date();
-    const cuotasVencidas = cuotas
-      .filter(c => {
-        const venc = new Date(c.fec_vencimiento.split('/').reverse().join('-'));
-        return venc < hoy && Number(c.saldo_cuota) > 0;
-      });
+    const cuotasVencidas = cuotas.filter(c => {
+      const venc = new Date(c.fec_vencimiento.split('/').reverse().join('-'));
+      return venc < hoy && Number(c.saldo_cuota) > 0;
+    });
 
     let diasAtraso = 0;
     if (cuotasVencidas.length > 0) {
@@ -93,267 +101,309 @@ export default function DetalleOperaciones() {
 
   return (
     <View style={styles.container}>
-      {/* Cabecera con imagen */}
-      <View style={styles.headerContainer}>
-        <Image
-            source={require('../assets/inicio.png')}  
-          style={styles.headerImage}
-          resizeMode="cover"
-        />
-        <View style={styles.headerOverlay}>
-          <FontAwesome5 name="file-invoice" size={24} color="#fff" />
-          <Text style={styles.headerText}>Detalle de Operación #{nro_comprobante}</Text>
+      <ImageBackground
+        source={require('../assets/inicio_nuevo.png')}
+        style={styles.headerBackground}
+        imageStyle={styles.headerImage}
+      >
+        <View style={styles.headerOverlay} />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Detalle de operación</Text>
+          <Text style={styles.headerSubtitle}>Comprobante #{nro_comprobante}</Text>
         </View>
-      </View>
+      </ImageBackground>
 
-      {loading ? (
-        <ActivityIndicator size="large" style={{ marginTop: 40 }} />
-      ) : (
-        
-        <ScrollView contentContainerStyle={styles.scrollContainer}>
-            <View style={styles.resumenContainer}>
+      <View style={styles.sheet}>
+        {loading ? (
+          <View style={styles.loadingContainer}>
+            <ActivityIndicator size="large" color="#9e2021" />
+          </View>
+        ) : (
+          <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+            {/* Filtro de cuotas */}
             <View style={styles.filterContainer}>
-            <TouchableOpacity
-                style={[styles.filterButton, filtro === 'todos' && styles.activeFilter]}
+              <TouchableOpacity
+                style={[styles.filterButton, filtro === 'todos' && styles.filterButtonActive]}
                 onPress={() => setFiltro('todos')}
-            >
-                <Text style={styles.filterText}>Todos</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[styles.filterButton, filtro === 'pagados' && styles.activeFilter]}
+              >
+                <Text style={[styles.filterText, filtro === 'todos' && styles.filterTextActive]}>Todos</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterButton, filtro === 'pagados' && styles.filterButtonActive]}
                 onPress={() => setFiltro('pagados')}
-            >
-                <Text style={styles.filterText}>Pagados</Text>
-            </TouchableOpacity>
-
-            <TouchableOpacity
-                style={[styles.filterButton, filtro === 'pendientes' && styles.activeFilter]}
+              >
+                <Text style={[styles.filterText, filtro === 'pagados' && styles.filterTextActive]}>Pagados</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.filterButton, filtro === 'pendientes' && styles.filterButtonActive]}
                 onPress={() => setFiltro('pendientes')}
-            >
-                <Text style={styles.filterText}>Pendientes</Text>
-            </TouchableOpacity>
+              >
+                <Text style={[styles.filterText, filtro === 'pendientes' && styles.filterTextActive]}>Pendientes</Text>
+              </TouchableOpacity>
             </View>
-            </View>
-          {/* Acordeón de cuotas */}
-            {cuotasFiltradas.map((cuota, index) => {
-            const isPagado = Number(cuota.saldo_cuota) === 0;
-            const badgeText = isPagado ? 'Pagado' : 'Pendiente';
-            const badgeStyle = isPagado ? styles.badgePagado : styles.badgePendiente;
 
-            return (
-                <TouchableOpacity key={index} onPress={() => toggleExpand(index)} activeOpacity={0.9}>
-                <View style={styles.cuotaBox}>
+            {/* Acordeón de cuotas */}
+            {cuotasFiltradas.map((cuota, index) => {
+              const isPagado = Number(cuota.saldo_cuota) === 0;
+              const expanded = expandedIndex === index;
+
+              return (
+                <TouchableOpacity key={index} onPress={() => toggleExpand(index)} activeOpacity={0.85}>
+                  <View style={styles.cuotaCard}>
                     <View style={styles.row}>
-                    <Text style={styles.label}>
+                      <Text style={styles.cuotaTitle}>
                         Cuota {cuota.nro_cuota}/{cuota.nro_cuota_cab}
-                    </Text>
-                    <View style={styles.statusRow}>
-                        <View style={[styles.badge, badgeStyle]}>
-                        <Text style={styles.badgeText}>{badgeText}</Text>
+                      </Text>
+                      <View style={styles.statusRow}>
+                        <View style={[styles.badge, isPagado ? styles.badgePagado : styles.badgePendiente]}>
+                          <Text style={styles.badgeText}>{isPagado ? 'Pagado' : 'Pendiente'}</Text>
                         </View>
                         <FontAwesome5
-                        name={expandedIndex === index ? 'chevron-up' : 'chevron-down'}
-                        size={16}
-                        color="#555"
-                        style={{ marginLeft: 8 }}
+                          name={expanded ? 'chevron-up' : 'chevron-down'}
+                          size={13}
+                          color="#6b5c5d"
+                          style={{ marginLeft: 10 }}
                         />
-                    </View>
+                      </View>
                     </View>
 
-                    {expandedIndex === index && (
-                    <>
-                        <Text style={styles.detail}>Fecha de cuota: {cuota.fec_origen}</Text>
-                        <Text style={styles.detail}>Fecha de Vencimiento: {cuota.fec_vencimiento}</Text>
-                        <Text style={styles.detail}>Monto cuota: {Number(cuota.monto_cuota).toLocaleString()} Gs</Text>
-                        <Text style={styles.detail}>Saldo cuota: {Number(cuota.saldo_cuota).toLocaleString()} Gs</Text>
-                    </>
+                    {expanded && (
+                      <View style={styles.cuotaDetails}>
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Fecha de cuota</Text>
+                          <Text style={styles.value}>{cuota.fec_origen}</Text>
+                        </View>
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Fecha de vencimiento</Text>
+                          <Text style={styles.value}>{cuota.fec_vencimiento}</Text>
+                        </View>
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Monto cuota</Text>
+                          <Text style={styles.value}>{formatGs(cuota.monto_cuota)}</Text>
+                        </View>
+                        <View style={[styles.row, { marginBottom: 0 }]}>
+                          <Text style={styles.label}>Saldo cuota</Text>
+                          <Text style={[styles.value, !isPagado && styles.valueNegative]}>
+                            {formatGs(cuota.saldo_cuota)}
+                          </Text>
+                        </View>
+                      </View>
                     )}
-                </View>
+                  </View>
                 </TouchableOpacity>
-            );
+              );
             })}
+
             {/* Resumen */}
-          <View style={styles.resumenContainer}>
-            <Text style={styles.resumenTitulo}>Resumen de la operación</Text>
+            <View style={styles.sectionCard}>
+              <View style={styles.sectionHeader}>
+                <View style={styles.sectionIconBadge}>
+                  <FontAwesome5 name="file-invoice" size={13} color="#9e2021" />
+                </View>
+                <Text style={styles.sectionTitle}>Resumen de la operación</Text>
+              </View>
 
-            <View style={styles.resumenFila}>
-                <Text style={styles.labelResumen}>Total operación:</Text>
-                <Text style={styles.valorResumen}>{total.toLocaleString()} Gs</Text>
+              <View style={styles.row}>
+                <Text style={styles.label}>Total operación</Text>
+                <Text style={styles.value}>{formatGs(total)}</Text>
+              </View>
+              <View style={styles.row}>
+                <Text style={styles.label}>Saldo pendiente</Text>
+                <Text style={[styles.value, styles.valueNegative]}>{formatGs(saldo)}</Text>
+              </View>
+              <View style={[styles.row, { marginBottom: 0 }]}>
+                <Text style={styles.label}>Días de atraso</Text>
+                <Text style={[styles.value, diasAtraso > 0 && styles.valueNegative]}>
+                  {diasAtraso} día{diasAtraso === 1 ? '' : 's'}
+                </Text>
+              </View>
             </View>
+          </ScrollView>
+        )}
+      </View>
 
-            <View style={styles.resumenFila}>
-                <Text style={styles.labelResumen}>Saldo pendiente:</Text>
-                <Text style={styles.valorResumen}>{saldo.toLocaleString()} Gs</Text>
-            </View>
-
-            <View style={styles.resumenFila}>
-                <Text style={styles.labelResumen}>Días de atraso:</Text>
-                <Text style={styles.valorResumen}>{diasAtraso} día(s)</Text>
-            </View>
-
-            <View style={styles.resumenFila}>
-                <Text style={styles.labelResumen}>Total saldo:</Text>
-                <Text style={styles.valorResumen}>{saldo.toLocaleString()} Gs</Text>
-            </View>
-            </View>
-        </ScrollView>
-      )}
+      <BottomNav usuario={usuario} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
-  headerContainer: {
-    position: 'relative',
-    overflow: 'hidden',
-    borderBottomLeftRadius: 25,
-    borderBottomRightRadius: 25
+
+  // 🔹 Encabezado
+  headerBackground: {
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 40,
   },
-  statusRow: {
-  flexDirection: 'row',
-  alignItems: 'center'
-},
-badge: {
-  borderRadius: 12,
-  paddingHorizontal: 10,
-  paddingVertical: 4,
-},
-badgeText: {
-  fontSize: 12,
-  fontWeight: 'bold',
-  color: '#fff'
-},
-badgePagado: {
-  backgroundColor: '#4CAF50' // verde
-},
-badgePendiente: {
-  backgroundColor: '#FFC107' // amarillo
-},
-  headerImage: {
-    width: Dimensions.get('window').width,
-    height: 180
-  },
+  headerImage: {},
   headerOverlay: {
-    position: 'absolute',
-    bottom: 15,
-    left: 20,
-    flexDirection: 'row',
-    alignItems: 'center'
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
   },
-  headerText: {
-    color: '#fff',
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginLeft: 10,
-    textShadowColor: 'rgba(0,0,0,0.7)',
-    textShadowOffset: { width: 1, height: 1 },
-    textShadowRadius: 3
-  },
-  scrollContainer: { padding: 16 },
-  summaryBox: {
-    padding: 16,
-    backgroundColor: '#e3f2fd',
-    marginBottom: 16,
-    borderRadius: 10
-  },
-  summaryText: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginBottom: 4
-  },
-  cuotaBox: {
-    backgroundColor: '#fff',
-    padding: 14,
-    borderRadius: 10,
-    marginBottom: 12,
-    elevation: 3, // Android
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.15,
+    shadowOpacity: 0.2,
     shadowRadius: 4,
   },
+  headerContent: {
+    marginTop: 22,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 21,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  // 🔹 Hoja de contenido
+  sheet: {
+    flex: 1,
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 20,
+  },
+
+  loadingContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+  scrollContainer: { padding: 16, paddingBottom: 140 },
+
+  // 🔹 Filtro de cuotas
+  filterContainer: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(158,32,33,0.08)',
+    borderRadius: 20,
+    padding: 4,
+    marginBottom: 16,
+  },
+  filterButton: {
+    flex: 1,
+    paddingVertical: 9,
+    borderRadius: 16,
+    alignItems: 'center',
+  },
+  filterButtonActive: {
+    backgroundColor: '#9e2021',
+  },
+  filterText: {
+    color: '#9e2021',
+    fontWeight: '600',
+    fontSize: 13,
+  },
+  filterTextActive: {
+    color: '#fff',
+  },
+
+  // 🔹 Cuotas
+  cuotaCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#efe1e0',
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 10,
+  },
+  statusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  badge: {
+    borderRadius: 12,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  badgeText: {
+    fontSize: 11.5,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  badgePagado: {
+    backgroundColor: '#3f8f5f',
+  },
+  badgePendiente: {
+    backgroundColor: '#d9a441',
+  },
+  cuotaTitle: {
+    fontWeight: 'bold',
+    fontSize: 14,
+    color: '#241a1a',
+  },
+  cuotaDetails: {
+    marginTop: 12,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f5eceb',
+  },
+
+  // 🔹 Resumen
+  sectionCard: {
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#efe1e0',
+    borderRadius: 18,
+    padding: 16,
+    marginTop: 6,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  sectionIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(158,32,33,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  sectionTitle: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#241a1a',
+  },
+
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center'
+    alignItems: 'center',
+    marginBottom: 10,
   },
   label: {
-    fontWeight: 'bold',
-    fontSize: 15,
-    color: '#333'
-  },
-  detail: {
-    marginTop: 4,
     fontSize: 13,
-    color: '#444'
+    color: '#6b5c5d',
   },
-  footerBox: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#ccc',
-    backgroundColor: '#fafafa'
+  value: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#241a1a',
   },
-  footerText: {
-    textAlign: 'center',
-    fontWeight: 'bold',
-    fontSize: 15,
-    color: '#333'
+  valueNegative: {
+    color: '#9e2021',
   },
-filterContainer: {
-  flexDirection: 'row',
-  marginBottom: 16,
-  paddingHorizontal: 10,
-  gap: 8
-},
-filterButton: {
-  flex: 1,
-  paddingVertical: 10,
-  backgroundColor: '#f0f0f0',
-  borderRadius: 8,
-  alignItems: 'center'
-},
-activeFilter: {
-  backgroundColor: '#cad1faff'
-},
-filterText: {
-  color: '#333',
-  fontWeight: 'bold'
-},
-resumenContainer: {
-  backgroundColor: '#fff',
-  padding: 16,
-  borderRadius: 12,
-  marginBottom: 20,
-  elevation: 2, // Android
-  shadowColor: '#000', // iOS
-  shadowOffset: { width: 0, height: 2 },
-  shadowOpacity: 0.15,
-  shadowRadius: 3.5,
-},
-
-resumenTitulo: {
-  fontSize: 16,
-  fontWeight: 'bold',
-  marginBottom: 12,
-  color: '#333',
-  textAlign: 'center'
-},
-resumenFila: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginBottom: 8
-},
-labelResumen: {
-  fontWeight: '600',
-  fontSize: 14,
-  color: '#555'
-},
-valorResumen: {
-  fontSize: 14,
-  color: '#111',
-  fontWeight: 'bold'
-}
-
 });

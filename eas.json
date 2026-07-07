@@ -5,10 +5,8 @@
   "build": {
     "production": {
       "android": {
-        //Para apk
-        //"buildType": "apk",
-       "buildType": "app-bundle",
-        "image": "latest"                // ✅ fuerza entorno Android 15 (API 35) + soporte 16 KB
+        "buildType": "app-bundle",
+        "image": "latest"
       },
       "ios": {
         "enterpriseProvisioning": "adhoc"
@@ -18,8 +16,8 @@
     "development": {
       "distribution": "internal",
       "android": {
-        "buildType": "app-bundle",
-        "image": "latest"                // ✅ también aplica para builds internos
+        "buildType": "apk",
+        "image": "latest"
       },
       "ios": {
         "buildConfiguration": "Debug"
@@ -30,7 +28,7 @@
       "distribution": "internal",
       "android": {
         "buildType": "app-bundle",
-        "image": "latest"                // ✅ garantiza coherencia con los builds previos
+        "image": "latest"
       },
       "ios": {
         "simulator": false
@@ -42,10 +40,6 @@
     "production": {
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json"
-      },
-      "ios": {
-        "appleId": "tu-correo@dominio.com",
-        "ascAppId": "1234567890"
       }
     }
   }
