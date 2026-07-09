@@ -61,6 +61,16 @@ export default function BottomNav({ usuario }) {
             <FontAwesome5 name="university" size={18} color="#fff" />
             <Text style={styles.optionText}>Adelanto</Text>
           </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.optionButton}
+            onPress={() => {
+              setShowOptions(false);
+              navigation.navigate('Promociones');
+            }}
+          >
+            <Ionicons name="megaphone-outline" size={20} color="#fff" />
+            <Text style={styles.optionText}>Promociones</Text>
+          </TouchableOpacity>
         </View>
       )}
 

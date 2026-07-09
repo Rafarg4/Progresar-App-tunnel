@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, ScrollView, StyleSheet, TouchableOpacity, ImageBackground, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { useRoute, useNavigation } from '@react-navigation/native';
@@ -50,11 +50,20 @@ const DetaProcard = () => {
   const [loading, setLoading] = useState(true);
   const [deudaTotal, setDeudaTotal] = useState(0);
   const [usuario, setUsuario] = useState('');
+  const monthScrollRef = useRef(null);
 
   useEffect(() => {
     AsyncStorage.getItem('usuarioGuardado')
       .then((doc) => doc && setUsuario(doc))
       .catch((e) => console.log('Error al obtener usuario:', e));
+  }, []);
+
+  // El mes actual siempre queda al final de la lista: llevamos el scroll ahí
+  // para que se vea seleccionado sin que el usuario tenga que desplazarse.
+  useEffect(() => {
+    requestAnimationFrame(() => {
+      monthScrollRef.current?.scrollToEnd({ animated: false });
+    });
   }, []);
 
   useEffect(() => {
@@ -126,6 +135,7 @@ const DetaProcard = () => {
 
           {/* Selector de meses */}
           <ScrollView
+            ref={monthScrollRef}
             horizontal
             showsHorizontalScrollIndicator={false}
             style={styles.monthSelectorWrapper}

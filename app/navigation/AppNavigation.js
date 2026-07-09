@@ -38,6 +38,7 @@ import PagoQr from '../screens/PagoQr'
 import DetallePago from '../screens/DetallePago'
 import MisOperaciones from '../screens/MisOperaciones'
 import Beneficios from '../screens/Beneficios'
+import Promociones from '../screens/Promociones'
 import DetalleTarjetas from '../screens/DetalleTarjetas'
 import SolicitudAdelanto from '../screens/Solicitud_adelanto'
 import DetalleOperaciones from '../screens/DetalleOperaciones'
@@ -223,6 +224,14 @@ function App() {
             <Stack.Screen
                     name="Beneficios"
                     component={Beneficios}
+                    options={{
+                        headerShown: false, // ✅ OCULTA TODO EL HEADER
+                        gestureEnabled: true
+                    }}
+                    />
+            <Stack.Screen
+                    name="Promociones"
+                    component={Promociones}
                     options={{
                         headerShown: false, // ✅ OCULTA TODO EL HEADER
                         gestureEnabled: true

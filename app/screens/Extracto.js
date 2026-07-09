@@ -10,7 +10,6 @@ import {
   Linking,
   Platform,
   ActivityIndicator,
-  Alert,
 } from "react-native";
 import { useRoute, useNavigation } from "@react-navigation/native";
 // use legacy FileSystem API to keep downloadAsync and getContentUriAsync without deprecation
@@ -35,6 +34,30 @@ const Extracto = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [usuario, setUsuario] = useState('');
+
+  const [resultModal, setResultModal] = useState({
+    visible: false,
+    success: true,
+    title: '',
+    message: '',
+    confirmLabel: 'Aceptar',
+    onConfirm: null,
+    cancelLabel: null,
+  });
+
+  const mostrarResultado = (success, title, message, options = {}) => {
+    setResultModal({
+      visible: true,
+      success,
+      title,
+      message,
+      confirmLabel: options.confirmLabel || 'Aceptar',
+      onConfirm: options.onConfirm || null,
+      cancelLabel: options.cancelLabel || null,
+    });
+  };
+
+  const cerrarResultado = () => setResultModal((r) => ({ ...r, visible: false }));
 
   useEffect(() => {
     const obtenerDatos = async () => {
@@ -103,7 +126,7 @@ const Extracto = () => {
   const descargarPDF = async (url, nombreArchivo) => {
     try {
       if (!url) {
-        Alert.alert("Error", "No se recibió una URL válida.");
+        mostrarResultado(false, "Error", "No se recibió una URL válida.");
         return;
       }
 
@@ -113,47 +136,40 @@ const Extracto = () => {
       console.log("⬇️ Descargando:", url);
       const { uri: downloadedUri, status } = await FileSystem.downloadAsync(url, fileUri);
       if (status !== 200) {
-        Alert.alert("Error", `No se pudo descargar (HTTP ${status}).`);
+        mostrarResultado(false, "Error", `No se pudo descargar (HTTP ${status}).`);
         return;
       }
 
       console.log("✅ PDF descargado temporalmente en:", downloadedUri);
-      Alert.alert(
-        "✅ Descargado",
-        "El archivo fue guardado correctamente.",
-        [
-          { text: "Cerrar", style: "cancel" },
-          {
-            text: "Abrir",
-            onPress: async () => {
-              try {
-                if (Platform.OS === "android") {
-                  const cUri = await FileSystem.getContentUriAsync(downloadedUri);
-                  await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
-                    data: cUri,
-                    flags: 1,
-                    type: "application/pdf",
-                  });
-                } else {
-                  await Linking.openURL(downloadedUri);
-                }
-              } catch (e) {
-                console.log("⚠️ No se pudo abrir visor PDF:", e);
-                try {
-                  await Linking.openURL(url);
-                } catch (err) {
-                  console.log("⚠️ Tampoco se pudo abrir la URL remota:", err);
-                  Alert.alert("Aviso", "No se pudo abrir el archivo ni en el dispositivo ni en el navegador.");
-                }
-              }
-            },
-          },
-        ],
-        { cancelable: true }
-      );
+      mostrarResultado(true, "Descargado", "El archivo fue guardado correctamente.", {
+        cancelLabel: "Cerrar",
+        confirmLabel: "Abrir",
+        onConfirm: async () => {
+          try {
+            if (Platform.OS === "android") {
+              const cUri = await FileSystem.getContentUriAsync(downloadedUri);
+              await IntentLauncher.startActivityAsync("android.intent.action.VIEW", {
+                data: cUri,
+                flags: 1,
+                type: "application/pdf",
+              });
+            } else {
+              await Linking.openURL(downloadedUri);
+            }
+          } catch (e) {
+            console.log("⚠️ No se pudo abrir visor PDF:", e);
+            try {
+              await Linking.openURL(url);
+            } catch (err) {
+              console.log("⚠️ Tampoco se pudo abrir la URL remota:", err);
+              mostrarResultado(false, "Aviso", "No se pudo abrir el archivo ni en el dispositivo ni en el navegador.");
+            }
+          }
+        },
+      });
     } catch (error) {
       console.error("❌ Error al descargar:", error);
-      Alert.alert("Error", "No se pudo guardar o abrir el archivo.");
+      mostrarResultado(false, "Error", "No se pudo guardar o abrir el archivo.");
     }
   };
 
@@ -183,7 +199,7 @@ const Extracto = () => {
       mesSeleccionado === "Seleccione un mes" ||
       anyoSeleccionado === "Seleccione un año"
     ) {
-      Alert.alert("¡Error!", "Debe seleccionar tarjeta, mes y año antes de continuar.");
+      mostrarResultado(false, "¡Error!", "Debe seleccionar tarjeta, mes y año antes de continuar.");
       return;
     }
 
@@ -223,28 +239,22 @@ const Extracto = () => {
       if (response.ok && data.success) {
         console.log("✅ URL recibida:", data.url_pdf);
 
-        Alert.alert(
-          "¡Éxito!",
-          "El extracto está disponible.",
-          [
-            { text: "Cancelar", style: "cancel" },
-            {
-              text: "Descargar PDF",
-              onPress: () =>
-                descargarPDF(
-                  data.url_pdf,
-                  data.filename || `Extracto_${tipoTarjeta}_${mes}_${anho}_${nroUsuario}.pdf`
-                ),
-            },
-          ]
-        );
+        mostrarResultado(true, "¡Éxito!", "El extracto está disponible.", {
+          cancelLabel: "Cancelar",
+          confirmLabel: "Descargar PDF",
+          onConfirm: () =>
+            descargarPDF(
+              data.url_pdf,
+              data.filename || `Extracto_${tipoTarjeta}_${mes}_${anho}_${nroUsuario}.pdf`
+            ),
+        });
       } else {
         console.log("❌ Error del servidor:", data);
-        Alert.alert("Error", data.error || "No se pudo obtener el extracto.");
+        mostrarResultado(false, "Error", data.error || "No se pudo obtener el extracto.");
       }
     } catch (error) {
       console.error("💥 Error general:", error);
-      Alert.alert("Error", error.message || "Ocurrió un error inesperado.");
+      mostrarResultado(false, "Error", error.message || "Ocurrió un error inesperado.");
     }
   };
 
@@ -410,6 +420,59 @@ const Extracto = () => {
             >
               <Text style={styles.closeButtonText}>Cancelar</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Modal de resultado (éxito / error) */}
+      <Modal
+        visible={resultModal.visible}
+        transparent
+        animationType="fade"
+        onRequestClose={cerrarResultado}
+      >
+        <View style={styles.resultOverlay}>
+          <View style={styles.resultCard}>
+            <View
+              style={[
+                styles.resultIconCircle,
+                resultModal.success ? styles.resultIconSuccess : styles.resultIconError,
+              ]}
+            >
+              <FontAwesome5
+                name={resultModal.success ? 'check' : 'exclamation'}
+                size={20}
+                color="#fff"
+              />
+            </View>
+            <Text style={styles.resultTitle}>{resultModal.title}</Text>
+            <Text style={styles.resultMessage}>{resultModal.message}</Text>
+
+            <View style={styles.resultButtonsRow}>
+              {!!resultModal.cancelLabel && (
+                <TouchableOpacity
+                  style={[styles.resultButton, styles.resultButtonSecondary, { flex: 1 }]}
+                  onPress={cerrarResultado}
+                  activeOpacity={0.85}
+                >
+                  <Text style={[styles.resultButtonSecondaryText, { textAlign: 'center' }]}>
+                    {resultModal.cancelLabel}
+                  </Text>
+                </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.resultButton, { flex: 1 }]}
+                onPress={() => {
+                  cerrarResultado();
+                  resultModal.onConfirm?.();
+                }}
+                activeOpacity={0.85}
+              >
+                <Text style={[styles.resultButtonText, { textAlign: 'center' }]}>
+                  {resultModal.confirmLabel}
+                </Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -594,6 +657,75 @@ const styles = StyleSheet.create({
     fontSize: 14,
     textAlign: "center",
     marginBottom: 10,
+  },
+
+  // 🔹 Modal de resultado (éxito / error)
+  resultOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(36,16,18,0.45)",
+    justifyContent: "center",
+    alignItems: "center",
+    padding: 30,
+  },
+  resultCard: {
+    width: "100%",
+    maxWidth: 320,
+    backgroundColor: "#fff",
+    borderRadius: 24,
+    padding: 24,
+    alignItems: "center",
+  },
+  resultIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: 14,
+  },
+  resultIconSuccess: {
+    backgroundColor: "#3f8f5f",
+  },
+  resultIconError: {
+    backgroundColor: "#9e2021",
+  },
+  resultTitle: {
+    fontSize: 17,
+    fontWeight: "bold",
+    color: "#241a1a",
+    marginBottom: 6,
+    textAlign: "center",
+  },
+  resultMessage: {
+    fontSize: 13.5,
+    color: "#6b5c5d",
+    textAlign: "center",
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  resultButtonsRow: {
+    flexDirection: "row",
+    gap: 10,
+    width: "100%",
+  },
+  resultButton: {
+    backgroundColor: "#9e2021",
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: "center",
+  },
+  resultButtonText: {
+    color: "#fff",
+    fontWeight: "bold",
+    fontSize: 14,
+  },
+  resultButtonSecondary: {
+    backgroundColor: "rgba(158,32,33,0.08)",
+  },
+  resultButtonSecondaryText: {
+    color: "#9e2021",
+    fontWeight: "bold",
+    fontSize: 14,
   },
 });
 

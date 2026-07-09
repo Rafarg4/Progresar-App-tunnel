@@ -611,7 +611,7 @@ const obtenerIniciales = (nombreCompleto) => {
                   <Text style={styles.sectionSubtitle}>Aprovechá las mejores ofertas</Text>
                 </View>
               </View>
-              <TouchableOpacity onPress={() => navigation.navigate('Beneficios')}>
+              <TouchableOpacity onPress={() => navigation.navigate('Promociones')}>
                 <Text style={styles.seeAllText}>Ver todos</Text>
               </TouchableOpacity>
             </View>
