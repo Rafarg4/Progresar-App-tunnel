@@ -32,6 +32,79 @@ const estadoInfo = (estado) => {
 
 const OPCIONES_CUOTAS = [1, 3, 6, 12];
 
+// Bases y condiciones - Adelanto de Efectivo (Tarjeta de Crédito PROGRESAR CORPORATION SA)
+const TERMINOS_INTRO =
+  'Al solicitar un Adelanto de Efectivo con la Tarjeta de Crédito PROGRESAR CORPORATION SA, el titular declara haber leído, comprendido y aceptado las siguientes Bases y Condiciones:';
+
+const TERMINOS_ADELANTO = [
+  {
+    titulo: '1. Objeto',
+    texto:
+      'El Adelanto de Efectivo consiste en la utilización de la línea de crédito disponible de la Tarjeta de Crédito PROGRESAR CORPORATION SA mediante la acreditación de fondos en una cuenta bancaria o billetera electrónica habilitada.',
+  },
+  {
+    titulo: '2. Solicitud y autorización',
+    texto: 'El titular solicita voluntariamente el Adelanto de Efectivo y autoriza de forma expresa e irrevocable a PROGRESAR CORPORATION SA a:',
+    items: [
+      'Debitar de la línea de crédito de su tarjeta el monto solicitado.',
+      'Aplicar los intereses, comisiones, impuestos y demás cargos establecidos en el Contrato de Tarjeta de Crédito y en el Tarifario vigente.',
+      'Procesar la operación conforme a sus políticas internas y a la normativa vigente.',
+    ],
+  },
+  {
+    titulo: '3. Acreditación de fondos',
+    texto:
+      'El importe será acreditado únicamente en una cuenta bancaria cuyo titular coincida con el titular de la Tarjeta de Crédito PROGRESAR CORPORATION S.A. PROGRESAR CORPORATION S.A. no realizará acreditaciones a cuentas de terceros bajo ninguna circunstancia.',
+  },
+  {
+    titulo: '4. Verificación de identidad',
+    texto:
+      'El titular autoriza a PROGRESAR CORPORATION SA a realizar todas las validaciones de identidad, autenticación, biometría, consultas documentales y demás controles que considere necesarios para prevenir fraudes y garantizar la seguridad de la operación.',
+  },
+  {
+    titulo: '5. Prevención de Lavado de Activos',
+    texto: 'El titular declara que:',
+    items: [
+      'Los fondos obtenidos serán destinados exclusivamente a actividades lícitas.',
+      'La información y documentación proporcionadas son verdaderas y actualizadas.',
+      'Autoriza a PROGRESAR CORPORATION S.A. a realizar los controles establecidos por la normativa vigente en materia de prevención de lavado de activos, financiamiento del terrorismo y financiamiento de la proliferación de armas de destrucción masiva.',
+      'Comprende que PROGRESAR CORPORATION S.A. podrá requerir documentación adicional o rechazar la operación cuando existan inconsistencias, alertas de riesgo o exigencias regulatorias.',
+    ],
+  },
+  {
+    titulo: '6. Disponibilidad y aprobación',
+    texto: 'Toda solicitud estará sujeta a:',
+    items: [
+      'Disponibilidad de línea de crédito.',
+      'Políticas internas de PROGRESAR CORPORATION SA.',
+    ],
+    nota: 'La recepción de la solicitud no implica la aprobación automática de la operación.',
+  },
+  {
+    titulo: '7. Carácter definitivo',
+    texto:
+      'Una vez procesado el débito y realizada la acreditación, la operación tendrá carácter definitivo y no podrá ser anulada ni revertida, salvo error comprobable atribuible a PROGRESAR CORPORATION SA.',
+  },
+  {
+    titulo: '8. Obligación de pago',
+    texto:
+      'El titular reconoce que el Adelanto de Efectivo constituye una utilización de su línea de crédito y se obliga a abonar el capital, intereses, comisiones (9% más IVA), impuestos y demás cargos por cada Operación de Adelanto realizada conforme al Contrato de Tarjeta de Crédito y al Tarifario vigente.',
+  },
+  {
+    titulo: '9. Protección de datos',
+    texto:
+      'El titular autoriza a PROGRESAR CORPORATION SA a tratar, verificar y conservar sus datos personales y la información de la operación para fines de identificación, evaluación crediticia, prevención de fraude, cumplimiento normativo y demás finalidades relacionadas con la prestación del servicio.',
+  },
+  {
+    titulo: '10. Aceptación',
+    texto:
+      'El titular manifiesta su conformidad plena con las presentes Bases y Condiciones y autoriza la ejecución del Adelanto de Efectivo.',
+  },
+];
+
+const TERMINOS_AUTORIZACION =
+  'Autorizo expresamente a PROGRESAR CORPORATION SA a verificar mi identidad, validar la titularidad de la cuenta bancaria informada, consultar la información necesaria para el procesamiento de esta operación y conservar el registro electrónico de mi solicitud, conforme a la normativa vigente y a las políticas internas de la entidad.';
+
 export default function SolicitudAdelanto() {
   const route = useRoute();
   const navigation = useNavigation();
@@ -368,12 +441,27 @@ export default function SolicitudAdelanto() {
                 <Text style={styles.sectionTitle}>Términos y condiciones</Text>
               </View>
 
-              <Text style={styles.emptyText}>
-                Para solicitar un adelanto en efectivo contra tu tarjeta, necesitamos tu
-                aceptación de los términos y condiciones del servicio de adelantos. Al aceptar,
-                autorizás a Progresar a descontar el monto solicitado más los intereses
-                correspondientes en las cuotas acordadas.
-              </Text>
+              <Text style={styles.termIntro}>{TERMINOS_INTRO}</Text>
+
+              {TERMINOS_ADELANTO.map((seccion) => (
+                <View key={seccion.titulo} style={styles.termSection}>
+                  <Text style={styles.termSectionTitle}>{seccion.titulo}</Text>
+                  <Text style={styles.termParagraph}>{seccion.texto}</Text>
+
+                  {seccion.items?.map((item, idx) => (
+                    <View key={idx} style={styles.termBulletRow}>
+                      <Text style={styles.termBulletDot}>•</Text>
+                      <Text style={styles.termBulletText}>{item}</Text>
+                    </View>
+                  ))}
+
+                  {!!seccion.nota && <Text style={styles.termNote}>{seccion.nota}</Text>}
+                </View>
+              ))}
+
+              <View style={styles.termAuthBox}>
+                <Text style={styles.termAuthText}>{TERMINOS_AUTORIZACION}</Text>
+              </View>
 
               <TouchableOpacity
                 style={[styles.submitButton, aceptando && { opacity: 0.6 }]}
@@ -772,6 +860,63 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: '#6b5c5d',
     marginBottom: 8,
+  },
+
+  // 🔹 Bases y condiciones del adelanto
+  termIntro: {
+    fontSize: 13,
+    color: '#6b5c5d',
+    lineHeight: 19,
+    marginBottom: 16,
+  },
+  termSection: {
+    marginBottom: 14,
+  },
+  termSectionTitle: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#241a1a',
+    marginBottom: 4,
+  },
+  termParagraph: {
+    fontSize: 12.5,
+    color: '#6b5c5d',
+    lineHeight: 18,
+  },
+  termBulletRow: {
+    flexDirection: 'row',
+    marginTop: 6,
+    paddingLeft: 4,
+  },
+  termBulletDot: {
+    fontSize: 12.5,
+    color: '#9e2021',
+    marginRight: 8,
+    lineHeight: 18,
+  },
+  termBulletText: {
+    flex: 1,
+    fontSize: 12.5,
+    color: '#6b5c5d',
+    lineHeight: 18,
+  },
+  termNote: {
+    fontSize: 12,
+    color: '#9e2021',
+    fontStyle: 'italic',
+    marginTop: 6,
+  },
+  termAuthBox: {
+    backgroundColor: 'rgba(158,32,33,0.06)',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 18,
+  },
+  termAuthText: {
+    fontSize: 12.5,
+    color: '#241a1a',
+    lineHeight: 18,
+    fontWeight: '600',
   },
 
   // 🔹 Chips de tarjeta / cuotas

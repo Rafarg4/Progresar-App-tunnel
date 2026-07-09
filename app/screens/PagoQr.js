@@ -13,11 +13,12 @@ import {
 } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Picker } from '@react-native-picker/picker';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, FontAwesome5 } from '@expo/vector-icons';
 import { useRoute, useNavigation } from '@react-navigation/native';
 import * as LocalAuthentication from 'expo-local-authentication';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { CameraView, useCameraPermissions } from 'expo-camera';
+import BottomNav from '../components/BottomNav';
 
 export default function PagoQr() {
   const route = useRoute();
@@ -324,116 +325,164 @@ if (!response.ok) {
     }
   };
 
-  if (hasPermission === null) return <Text style={styles.center}>Solicitando permisos...</Text>;
-  if (hasPermission === false) return <Text style={styles.center}>Permisos de cámara o galería no otorgados.</Text>;
-
   return (
     <View style={styles.container}>
-      {/* Cabecera */}
       <ImageBackground
-        source={require('../assets/inicio.png')}
+        source={require('../assets/inicio_nuevo.png')}
         style={styles.headerBackground}
-        imageStyle={{ borderBottomLeftRadius: 20, borderBottomRightRadius: 20 }}
+        imageStyle={styles.headerImage}
       >
-        <View style={styles.headerOverlay}>
-          <Ionicons name="qr-code-outline" size={32} color="#fff" style={{ marginRight: 10 }} />
-          <Text style={styles.headerText}>Escanear Código QR</Text>
+        <View style={styles.headerOverlay} />
+        <TouchableOpacity style={styles.backButton} onPress={() => navigation.goBack()}>
+          <FontAwesome5 name="arrow-left" size={16} color="#9e2021" />
+        </TouchableOpacity>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Pago con QR</Text>
+          <Text style={styles.headerSubtitle}>Escaneá el código para pagar</Text>
         </View>
       </ImageBackground>
 
-      <ScrollView contentContainerStyle={{ paddingBottom: 90 }}>
-        {!scanned && (
-          <>
-            <View style={styles.cameraContainer}>
-             <CameraView
-                style={StyleSheet.absoluteFillObject}
-                barcodeScannerSettings={{
-                  barcodeTypes: ['qr'],
-                }}
-                onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
-              />
-
+      <View style={styles.sheet}>
+        <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+          {hasPermission === null ? (
+            <View style={styles.loadingBox}>
+              <ActivityIndicator size="large" color="#9e2021" />
+              <Text style={styles.loadingText}>Solicitando permisos...</Text>
             </View>
-
-            <TouchableOpacity style={styles.imageButton} onPress={pickImageAndScan}>
-              <Ionicons name="image-outline" size={22} color="#fff" />
-              <Text style={styles.imageButtonText}>Seleccionar imagen de QR</Text>
-            </TouchableOpacity>
-          </>
-        )}
-
-        {scanned && (
-          <>
-            {isLoading ? (
-              <View style={styles.loadingBox}>
-                <ActivityIndicator size="large" color="#9e2021" />
-                <Text style={styles.loadingText}>Procesando...</Text>
-              </View>
-            ) : clientes.length > 0 ? (
-              <View style={styles.cardPickerBox}>
-                <View style={styles.cardPickerHeader}>
-                  <Ionicons name="card-outline" size={20} color="#9e2021" />
-                  <Text style={styles.label}>Seleccione una tarjeta asociada</Text>
-                </View>
-                <Picker
-                  selectedValue={selectedTarjeta}
-                  onValueChange={(itemValue) => setSelectedTarjeta(itemValue)}
-                  style={styles.picker}
-                >
-                  <Picker.Item label="Selecciona una opción" value={null} />
-                  {clientes.map((cliente, index) => (
-                    <Picker.Item
-                      key={index}
-                      label={`${cliente.claseTarjeta} - ${cliente.numeroTarjeta}`}
-                      value={cliente}
+          ) : hasPermission === false ? (
+            <View style={styles.emptyCard}>
+              <FontAwesome5 name="camera" size={32} color="#9e2021" style={{ marginBottom: 12 }} />
+              <Text style={styles.emptyTitle}>Permisos necesarios</Text>
+              <Text style={styles.emptyText}>
+                Necesitamos acceso a la cámara y a la galería para poder escanear el código QR.
+              </Text>
+            </View>
+          ) : (
+            <>
+              {!scanned && (
+                <>
+                  <View style={styles.cameraContainer}>
+                    <CameraView
+                      style={StyleSheet.absoluteFillObject}
+                      barcodeScannerSettings={{
+                        barcodeTypes: ['qr'],
+                      }}
+                      onBarcodeScanned={scanned ? undefined : handleBarCodeScanned}
                     />
-                  ))}
-                </Picker>
-              </View>
-            ) : (
-              <Text style={styles.noData}>No se encontraron tarjetas.</Text>
-            )}
+                  </View>
 
-            {selectedTarjeta && (
-              <>
-                <View style={styles.infoBox}>
-                  <Text style={styles.infoTitle}>Detalles de la tarjeta:</Text>
-                  <Text>Clase: {selectedTarjeta.claseTarjeta}</Text>
-                  <Text>Número: {selectedTarjeta.numeroTarjeta}</Text>
-                  <Text>Descripción: {selectedTarjeta.descripcionClaseTarjeta?.trim?.() || ''}</Text>
-                  <Text>Cliente: {selectedTarjeta.nombreCliente}</Text>
-                </View>
-
-                <View style={styles.buttonRow}>
-                  <TouchableOpacity
-                    style={[styles.button, styles.confirmButton, (authLoading || isLoading) && { opacity: 0.6 }]}
-                    disabled={authLoading || isLoading}
-                    onPress={handleConfirmarPress}
-                  >
-                    <Ionicons name="checkmark-circle" size={20} color="#fff" />
-                    <Text style={styles.buttonText}>
-                      {authLoading ? 'Autenticando...' : 'Confirmar'}
-                    </Text>
+                  <TouchableOpacity style={styles.submitButton} onPress={pickImageAndScan} activeOpacity={0.85}>
+                    <Ionicons name="image-outline" size={18} color="#fff" style={{ marginRight: 8 }} />
+                    <Text style={styles.submitButtonText}>Seleccionar imagen de QR</Text>
                   </TouchableOpacity>
+                </>
+              )}
 
-                  <TouchableOpacity
-                    style={[styles.button, styles.secondaryButton]}
-                    onPress={() => {
-                      setScanned(false);
-                      setClientes([]);
-                      setSelectedTarjeta(null);
-                      setAuthPassed(false);
-                    }}
-                  >
-                    <Ionicons name="qr-code" size={20} color="#fff" />
-                    <Text style={styles.buttonText}>Escanear otro</Text>
-                  </TouchableOpacity>
-                </View>
-              </>
-            )}
-          </>
-        )}
-      </ScrollView>
+              {scanned && (
+                <>
+                  {isLoading ? (
+                    <View style={styles.loadingBox}>
+                      <ActivityIndicator size="large" color="#9e2021" />
+                      <Text style={styles.loadingText}>Procesando...</Text>
+                    </View>
+                  ) : clientes.length > 0 ? (
+                    <View style={styles.sectionCard}>
+                      <View style={styles.sectionHeader}>
+                        <View style={styles.sectionIconBadge}>
+                          <Ionicons name="card-outline" size={14} color="#9e2021" />
+                        </View>
+                        <Text style={styles.sectionTitle}>Seleccioná una tarjeta asociada</Text>
+                      </View>
+                      <Picker
+                        selectedValue={selectedTarjeta}
+                        onValueChange={(itemValue) => setSelectedTarjeta(itemValue)}
+                        style={styles.picker}
+                      >
+                        <Picker.Item label="Selecciona una opción" value={null} />
+                        {clientes.map((cliente, index) => (
+                          <Picker.Item
+                            key={index}
+                            label={`${cliente.claseTarjeta} - ${cliente.numeroTarjeta}`}
+                            value={cliente}
+                          />
+                        ))}
+                      </Picker>
+                    </View>
+                  ) : (
+                    <View style={styles.emptyCard}>
+                      <Text style={styles.emptyText}>No se encontraron tarjetas.</Text>
+                    </View>
+                  )}
+
+                  {selectedTarjeta && (
+                    <>
+                      <View style={styles.sectionCard}>
+                        <View style={styles.sectionHeader}>
+                          <View style={styles.sectionIconBadge}>
+                            <Ionicons name="information-circle-outline" size={14} color="#9e2021" />
+                          </View>
+                          <Text style={styles.sectionTitle}>Detalles de la tarjeta</Text>
+                        </View>
+
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Clase</Text>
+                          <Text style={styles.value}>{selectedTarjeta.claseTarjeta}</Text>
+                        </View>
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Número</Text>
+                          <Text style={styles.value}>{selectedTarjeta.numeroTarjeta}</Text>
+                        </View>
+                        <View style={styles.row}>
+                          <Text style={styles.label}>Descripción</Text>
+                          <Text style={styles.value}>
+                            {selectedTarjeta.descripcionClaseTarjeta?.trim?.() || '-'}
+                          </Text>
+                        </View>
+                        <View style={[styles.row, { marginBottom: 0 }]}>
+                          <Text style={styles.label}>Cliente</Text>
+                          <Text style={styles.value}>{selectedTarjeta.nombreCliente}</Text>
+                        </View>
+                      </View>
+
+                      <TouchableOpacity
+                        style={[styles.submitButton, (authLoading || isLoading) && { opacity: 0.6 }]}
+                        disabled={authLoading || isLoading}
+                        onPress={handleConfirmarPress}
+                        activeOpacity={0.85}
+                      >
+                        {authLoading ? (
+                          <ActivityIndicator size="small" color="#fff" />
+                        ) : (
+                          <>
+                            <Ionicons name="checkmark-circle" size={18} color="#fff" style={{ marginRight: 8 }} />
+                            <Text style={styles.submitButtonText}>Confirmar</Text>
+                          </>
+                        )}
+                      </TouchableOpacity>
+
+                      <TouchableOpacity
+                        style={styles.botonSecundario}
+                        onPress={() => {
+                          setScanned(false);
+                          setClientes([]);
+                          setSelectedTarjeta(null);
+                          setAuthPassed(false);
+                        }}
+                        activeOpacity={0.85}
+                      >
+                        <Ionicons name="qr-code" size={18} color="#9e2021" style={{ marginRight: 8 }} />
+                        <Text style={styles.botonSecundarioText}>Escanear otro</Text>
+                      </TouchableOpacity>
+                    </>
+                  )}
+                </>
+              )}
+            </>
+          )}
+        </ScrollView>
+      </View>
+
+      <BottomNav usuario={num_doc} />
 
       {/* 🔐 Modal contraseña */}
       <Modal
@@ -442,37 +491,47 @@ if (!response.ok) {
         animationType="fade"
         onRequestClose={() => setPwdModalVisible(false)}
       >
-        <View style={styles.modalBackdrop}>
-          <View style={styles.modalCard}>
-            <Text style={styles.modalTitle}>Confirmar con contraseña</Text>
-            <Text style={styles.modalSubtitle}>Ingresa tu contraseña de la app para continuar.</Text>
+        <View style={styles.resultOverlay}>
+          <View style={styles.resultCard}>
+            <View style={styles.resultIconCircle}>
+              <Ionicons name="lock-closed" size={20} color="#fff" />
+            </View>
+            <Text style={styles.resultTitle}>Confirmar con contraseña</Text>
+            <Text style={styles.resultMessage}>Ingresá tu contraseña de la app para continuar.</Text>
 
-            <TextInput
-              value={pwdInput}
-              onChangeText={setPwdInput}
-              placeholder="Contraseña"
-              secureTextEntry
-              style={styles.modalInput}
-              autoCapitalize="none"
-            />
+            <View style={styles.inputField}>
+              <TextInput
+                value={pwdInput}
+                onChangeText={setPwdInput}
+                placeholder="Contraseña"
+                placeholderTextColor="#8a7476"
+                secureTextEntry
+                autoCapitalize="none"
+                style={styles.inputInner}
+              />
+            </View>
 
-            <View style={styles.modalRow}>
+            <View style={styles.resultButtonsRow}>
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalCancel]}
+                style={[styles.resultButton, styles.resultButtonSecondary, { flex: 1 }]}
                 onPress={() => setPwdModalVisible(false)}
                 disabled={authLoading}
+                activeOpacity={0.85}
               >
-                <Text style={styles.modalBtnText}>Cancelar</Text>
+                <Text style={[styles.resultButtonSecondaryText, { textAlign: 'center' }]}>Cancelar</Text>
               </TouchableOpacity>
 
               <TouchableOpacity
-                style={[styles.modalBtn, styles.modalOk, authLoading && { opacity: 0.7 }]}
+                style={[styles.resultButton, { flex: 1 }, authLoading && { opacity: 0.7 }]}
                 onPress={handlePasswordOk}
                 disabled={authLoading}
+                activeOpacity={0.85}
               >
-                <Text style={styles.modalBtnText}>
-                  {authLoading ? 'Validando...' : 'Confirmar'}
-                </Text>
+                {authLoading ? (
+                  <ActivityIndicator size="small" color="#fff" />
+                ) : (
+                  <Text style={[styles.resultButtonText, { textAlign: 'center' }]}>Confirmar</Text>
+                )}
               </TouchableOpacity>
             </View>
           </View>
@@ -485,133 +544,262 @@ if (!response.ok) {
 // Estilos
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#fff' },
+
+  // 🔹 Encabezado
   headerBackground: {
-    paddingTop: 95,
-    paddingHorizontal: 20,
-    paddingBottom: 25,
-    borderBottomLeftRadius: 20,
-    borderBottomRightRadius: 20,
-    overflow: 'hidden',
+    paddingTop: 60,
+    paddingHorizontal: 0,
+    paddingBottom: 40,
   },
+  headerImage: {},
   headerOverlay: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'flex-start',
-    paddingLeft: 20,
-    paddingTop: 10,
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(36,16,18,0.25)',
   },
-  headerText: { color: '#fff', fontSize: 20, fontWeight: 'bold' },
-  cameraContainer: {
-    height: 500,
-    marginHorizontal: 20,
-    marginTop: 50,
-    borderRadius: 30,
-    overflow: 'hidden',
-    borderWidth: 3,
-    borderColor: '#9e2021',
-  },
-  imageButton: {
-    flexDirection: 'row',
+  backButton: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    backgroundColor: 'rgba(255,255,255,0.88)',
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#9e2021',
-    marginHorizontal: 80,
-    marginTop: 20,
-    paddingVertical: 12,
-    borderRadius: 10,
+    marginLeft: 20,
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
   },
-  imageButtonText: { color: '#fff', fontWeight: 'bold', marginLeft: 8 },
-  cardPickerBox: {
-    marginHorizontal: 20,
-    marginTop: 25,
-    backgroundColor: '#fff7f7',
+  headerContent: {
+    marginTop: 22,
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
+    color: '#fff',
+    fontSize: 21,
+    fontWeight: 'bold',
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 3,
+  },
+  headerSubtitle: {
+    color: '#fff',
+    fontSize: 13,
+    marginTop: 4,
+    opacity: 0.95,
+    textShadowColor: 'rgba(0,0,0,0.4)',
+    textShadowOffset: { width: 1, height: 1 },
+    textShadowRadius: 2,
+  },
+
+  // 🔹 Hoja de contenido
+  sheet: {
+    flex: 1,
+    backgroundColor: '#faf6f5',
+    borderTopLeftRadius: 28,
+    borderTopRightRadius: 28,
+    marginTop: -24,
+    paddingTop: 20,
+  },
+  scrollContainer: { padding: 16, paddingBottom: 140 },
+
+  // 🔹 Cámara
+  cameraContainer: {
+    height: 420,
+    borderRadius: 20,
+    overflow: 'hidden',
     borderWidth: 1,
-    borderColor: '#9e2021',
-    borderRadius: 12,
-    paddingVertical: 15,
-    paddingHorizontal: 10,
+    borderColor: '#efe1e0',
+    marginBottom: 16,
   },
-  cardPickerHeader: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
-  label: { fontWeight: 'bold', color: '#333' },
-  picker: {
+
+  // 🔹 Card de sección
+  sectionCard: {
     backgroundColor: '#fff',
-    borderRadius: 10,
     borderWidth: 1,
-    borderColor: '#ccc',
+    borderColor: '#efe1e0',
+    borderRadius: 18,
+    padding: 16,
+    marginBottom: 14,
   },
-  infoBox: {
-    marginHorizontal: 20,
-    marginTop: 25,
-    backgroundColor: '#fff2f2',
-    borderWidth: 1,
-    borderColor: '#9e2021',
-    borderRadius: 10,
-    padding: 15,
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
   },
-  infoTitle: { fontWeight: 'bold', color: '#9e2021', marginBottom: 5 },
-  buttonRow: {
+  sectionIconBadge: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: 'rgba(158,32,33,0.1)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 10,
+  },
+  sectionTitle: {
+    flex: 1,
+    fontSize: 14.5,
+    fontWeight: 'bold',
+    color: '#241a1a',
+  },
+  picker: {
+    backgroundColor: '#f7f2f1',
+    borderRadius: 14,
+  },
+
+  row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: 30,
-    marginTop: 25,
+    alignItems: 'center',
+    marginBottom: 10,
   },
-  button: {
-    flex: 1,
+  label: {
+    fontSize: 13,
+    color: '#6b5c5d',
+  },
+  value: {
+    fontSize: 13.5,
+    fontWeight: '700',
+    color: '#241a1a',
+  },
+
+  // 🔹 Botones
+  submitButton: {
     flexDirection: 'row',
+    backgroundColor: '#9e2021',
+    paddingVertical: 14,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+    shadowColor: '#9e2021',
+    shadowOffset: { width: 0, height: 3 },
+    shadowOpacity: 0.3,
+    shadowRadius: 5,
+    elevation: 3,
+  },
+  submitButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14.5,
+  },
+  botonSecundario: {
+    flexDirection: 'row',
+    backgroundColor: 'rgba(158,32,33,0.08)',
+    paddingVertical: 14,
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  botonSecundarioText: {
+    color: '#9e2021',
+    fontWeight: 'bold',
+    fontSize: 14.5,
+  },
+
+  // 🔹 Loading / vacío
+  loadingBox: { alignItems: 'center', paddingVertical: 40 },
+  loadingText: { color: '#9e2021', marginTop: 10, fontWeight: '500' },
+  emptyCard: {
+    borderRadius: 18,
+    padding: 24,
+    backgroundColor: '#fff',
+    borderWidth: 1,
+    borderColor: '#efe1e0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#241a1a',
+    marginBottom: 4,
+    textAlign: 'center',
+  },
+  emptyText: {
+    fontSize: 13,
+    color: '#6b5c5d',
+    textAlign: 'center',
+  },
+
+  // 🔹 Input (modal contraseña)
+  inputField: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f7f2f1',
+    borderRadius: 14,
+    paddingHorizontal: 14,
+    height: 50,
+    width: '100%',
+    marginBottom: 20,
+  },
+  inputInner: {
+    flex: 1,
+    fontSize: 14,
+    color: '#241a1a',
+  },
+
+  // 🔹 Modal (mismo estilo que el resto de la app)
+  resultOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(36,16,18,0.45)',
     justifyContent: 'center',
     alignItems: 'center',
-    gap: 8,
-    paddingVertical: 12,
-    borderRadius: 10,
+    padding: 30,
   },
-  modalBackdrop: {
-  flex: 1,
-  backgroundColor: 'rgba(0,0,0,0.5)',
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-modalCard: {
-  width: '85%',
-  backgroundColor: '#fff',
-  borderRadius: 12,
-  padding: 18,
-},
-modalTitle: {
-  fontSize: 18,
-  fontWeight: '700',
-  color: '#333',
-},
-modalSubtitle: {
-  marginTop: 6,
-  color: '#666',
-},
-modalInput: {
-  marginTop: 14,
-  borderWidth: 1,
-  borderColor: '#ddd',
-  borderRadius: 8,
-  paddingHorizontal: 12,
-  paddingVertical: 10,
-},
-modalRow: {
-  flexDirection: 'row',
-  justifyContent: 'flex-end',
-  marginTop: 16,
-},
-modalBtn: {
-  paddingVertical: 10,
-  paddingHorizontal: 14,
-  borderRadius: 8,
-  marginLeft: 10,
-},
-modalCancel: { backgroundColor: '#888' },
-modalOk: { backgroundColor: '#9e2021' },
-modalBtnText: { color: '#fff', fontWeight: '600' },
-  confirmButton: { backgroundColor: '#28a745', marginRight: 10 },
-  secondaryButton: { backgroundColor: '#9e2021', marginLeft: 10 },
-  buttonText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
-  loadingBox: { alignItems: 'center', marginTop: 40 },
-  loadingText: { color: '#9e2021', marginTop: 10, fontWeight: 'bold' },
-  noData: { textAlign: 'center', color: '#9e2021', marginTop: 20 },
-  center: { flex: 1, textAlign: 'center', textAlignVertical: 'center' },
+  resultCard: {
+    width: '100%',
+    maxWidth: 320,
+    backgroundColor: '#fff',
+    borderRadius: 24,
+    padding: 24,
+    alignItems: 'center',
+  },
+  resultIconCircle: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 14,
+    backgroundColor: '#9e2021',
+  },
+  resultTitle: {
+    fontSize: 17,
+    fontWeight: 'bold',
+    color: '#241a1a',
+    marginBottom: 6,
+    textAlign: 'center',
+  },
+  resultMessage: {
+    fontSize: 13.5,
+    color: '#6b5c5d',
+    textAlign: 'center',
+    lineHeight: 19,
+    marginBottom: 20,
+  },
+  resultButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  resultButton: {
+    backgroundColor: '#9e2021',
+    borderRadius: 20,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  resultButtonText: {
+    color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  resultButtonSecondary: {
+    backgroundColor: 'rgba(158,32,33,0.08)',
+  },
+  resultButtonSecondaryText: {
+    color: '#9e2021',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
 });

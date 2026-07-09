@@ -11,8 +11,10 @@ import {
   FlatList,
   Modal,
   ActivityIndicator,
+  RefreshControl,
+  BackHandler,
   Alert
-  
+
 } from 'react-native';
 import { Ionicons, FontAwesome, MaterialIcons } from '@expo/vector-icons';
 import { ImageBackground } from 'react-native';
@@ -44,21 +46,33 @@ const categories = [
   },
   {
     id: 4,
-    name: 'Electrodoméstico',
-    icon: <MaterialIcons name="tv" size={20} color="#fff" />,
+    name: 'Extracto',
+    icon: <FontAwesome5 name="file-invoice" size={18} color="#fff" />,
     color: '#8568ad',
   },
   {
     id: 5,
-    name: 'Adelanto',
+    name: 'Solicitud de Adelanto',
     icon: <FontAwesome5 name="hand-holding-usd" size={18} color="#fff" />,
     color: '#2f8f8a',
   },
   {
     id: 6,
-    name: 'Adelanto ATM',
+    name: 'Pago QR',
     icon: <FontAwesome5 name="qrcode" size={18} color="#fff" />,
     color: '#c0577a',
+  },
+  {
+    id: 7,
+    name: 'Electrodoméstico',
+    icon: <MaterialIcons name="tv" size={20} color="#fff" />,
+    color: '#8568ad',
+  },
+  {
+    id: 8,
+    name: 'Transacciones',
+    icon: <FontAwesome5 name="exchange-alt" size={18} color="#fff" />,
+    color: '#4d7ea8',
   }
 ];
 
@@ -121,32 +135,31 @@ export default function HomeScreen() {
   }, []);
 
   // Tarjetas del usuario (mismo endpoint que usa la pantalla "Mis Tarjetas")
-  useEffect(() => {
+  const obtenerMisTarjetas = useCallback(async () => {
     if (!usuario) return;
+    try {
+      setLoadingTarjetas(true);
+      setErrorTarjetas(null);
 
-    const obtenerMisTarjetas = async () => {
-      try {
-        setLoadingTarjetas(true);
-        setErrorTarjetas(null);
+      const res = await fetch(`https://api.progresarcorp.com.py/api/ver_tarjeta/${usuario}`);
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-        const res = await fetch(`https://api.progresarcorp.com.py/api/ver_tarjeta/${usuario}`);
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-
-        const data = await res.json();
-        const lista = Array.isArray(data) ? data : [];
-        setMisTarjetas(lista);
-        setActiveCardIndex(0);
-        cargarSaldosDisponibles(lista);
-      } catch (e) {
-        console.log('Error al obtener tarjetas:', e?.message);
-        setErrorTarjetas('No pudimos cargar tus tarjetas.');
-      } finally {
-        setLoadingTarjetas(false);
-      }
-    };
-
-    obtenerMisTarjetas();
+      const data = await res.json();
+      const lista = Array.isArray(data) ? data : [];
+      setMisTarjetas(lista);
+      setActiveCardIndex(0);
+      await cargarSaldosDisponibles(lista);
+    } catch (e) {
+      console.log('Error al obtener tarjetas:', e?.message);
+      setErrorTarjetas('No pudimos cargar tus tarjetas.');
+    } finally {
+      setLoadingTarjetas(false);
+    }
   }, [usuario]);
+
+  useEffect(() => {
+    obtenerMisTarjetas();
+  }, [obtenerMisTarjetas]);
 
   // Saldo disponible en tiempo real por tarjeta (mismo endpoint que usa "Detalle de tarjeta")
   const cargarSaldosDisponibles = async (lista) => {
@@ -209,14 +222,11 @@ const obtenerIniciales = (nombreCompleto) => {
   return `${primera}|${segunda}`;
 };
 
- useEffect(() => {
-  const controller = new AbortController();
-  const sleep = (ms) => new Promise(r => setTimeout(r, ms));
-
-  const fetchFlyers = async () => { 
+ const fetchFlyers = useCallback(async (signal) => {
     setLoading(true);
     setError(null);
 
+    const sleep = (ms) => new Promise(r => setTimeout(r, ms));
     const url = 'https://api.progresarcorp.com.py/api/ver_comercios_adheridos';
     const options = {
       method: 'GET',
@@ -225,7 +235,7 @@ const obtenerIniciales = (nombreCompleto) => {
         'X-Requested-With': 'XMLHttpRequest',
         'Cache-Control': 'no-cache'
       },
-      signal: controller.signal,
+      signal,
     };
 
     const maxRetries = 1;     // reintenta 1 vez extra si es 500
@@ -277,12 +287,28 @@ const obtenerIniciales = (nombreCompleto) => {
     }
 
     setLoading(false);
-  };
+  }, []);
 
-  fetchFlyers();
+  useEffect(() => {
+    const controller = new AbortController();
+    fetchFlyers(controller.signal);
+    return () => controller.abort();
+  }, [fetchFlyers]);
 
-  return () => controller.abort();
-}, []);
+  // Pull-to-refresh: recarga todo lo del inicio
+  const [refreshing, setRefreshing] = useState(false);
+  const onRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        obtenerMisTarjetas(),
+        obtenerAdelantoActivo(),
+        fetchFlyers(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [obtenerMisTarjetas, obtenerAdelantoActivo, fetchFlyers]);
 
 
   const mostrarHistoria = (item) => setHistoriaSeleccionada(item);
@@ -293,9 +319,22 @@ const obtenerIniciales = (nombreCompleto) => {
     if (navigation.canGoBack()) {
       navigation.goBack();        // vuelve a la pantalla anterior
     } else {
-      navigation.popToTop();      // fallback: vuelve al inicio del stack
+      BackHandler.exitApp();      // no hay a dónde volver: cierra la app
     }
   };
+
+  // Botón físico de "atrás": mostrar el mismo aviso en vez de salir directo
+  useFocusEffect(
+    useCallback(() => {
+      const onBackPress = () => {
+        setModalSalirVisible(true);
+        return true; // evita el comportamiento por defecto (salir sin avisar)
+      };
+
+      const subscription = BackHandler.addEventListener('hardwareBackPress', onBackPress);
+      return () => subscription.remove();
+    }, [])
+  );
 
   const handleDetalleTarjeta = (tarjeta) => {
     const clase = String(tarjeta.clase_tarjeta ?? '');
@@ -329,7 +368,18 @@ const obtenerIniciales = (nombreCompleto) => {
     <View style={styles.container}>
       <StatusBar translucent backgroundColor="transparent" barStyle="light-content" />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        contentContainerStyle={styles.scrollContainer}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            colors={['#9e2021']}
+            tintColor="#9e2021"
+          />
+        }
+      >
         {/* Encabezado */}
         <ImageBackground
           source={require('../assets/inicio_nuevo.png')}
@@ -525,12 +575,16 @@ const obtenerIniciales = (nombreCompleto) => {
                       navigation.navigate('MisSeguros');
                       } else if (cat.name === 'Operaciones') {
                       navigation.navigate('MisOperaciones');
+                      } else if (cat.name === 'Extracto') {
+                      navigation.navigate('Extracto');
+                      } else if (cat.name === 'Solicitud de Adelanto') {
+                      navigation.navigate('SolicitudAdelanto');
+                      } else if (cat.name === 'Pago QR') {
+                      navigation.navigate('PagoQr', { num_doc: String(usuario) });
                       } else if (cat.name === 'Electrodoméstico') {
                       navigation.navigate('MisElectrodomesticos');
-                      } else if (cat.name === 'Adelanto') {
-                      navigation.navigate('SolicitudAdelanto');
-                      } else if (cat.name === 'Adelanto ATM') {
-                      navigation.navigate('AtmQr');
+                      } else if (cat.name === 'Transacciones') {
+                      navigation.navigate('Notificaciones');
                       } else {
                       console.log(cat.name);
                     }
@@ -1002,18 +1056,17 @@ const styles = StyleSheet.create({
   categoryContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    justifyContent: 'center',
+    justifyContent: 'space-between',
     rowGap: 16,
-    columnGap: 12,
   },
   categoryItem: {
     alignItems: 'center',
-    width: '26%',
+    width: '21%',
   },
   categoryIconCircle: {
-    width: 52,
-    height: 52,
-    borderRadius: 26,
+    width: 46,
+    height: 46,
+    borderRadius: 23,
     justifyContent: 'center',
     alignItems: 'center',
     elevation: 2,
@@ -1024,7 +1077,7 @@ const styles = StyleSheet.create({
   },
   categoryLabel: {
     marginTop: 8,
-    fontSize: 11.5,
+    fontSize: 10.5,
     fontWeight: '600',
     color: '#241a1a',
     textAlign: 'center',

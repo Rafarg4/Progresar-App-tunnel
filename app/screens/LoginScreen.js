@@ -43,38 +43,6 @@ const isVersionOlder = (current, latest) => {
   }
   return false; // son iguales
 };
- 
-axios
-  .get('https://api.progresarcorp.com.py/api/actualizacion', { headers: { 'Cache-Control': 'no-cache' } })
-  .then(response => {
-    const latest = String(response.data).trim();   
-    const current = Constants.expoConfig?.version || Constants.manifest?.version;
-
-    console.log(`Versión actual: ${current}, disponible: ${latest}`);
-
-    if (isVersionOlder(current, latest)) {
-      Alert.alert(  
-        '¡Aviso de actualización!',
-        `Tienes la versión ${current}, pero hay una nueva versión ${latest} disponible.`,
-        [
-          { 
-            text: 'Actualizar',
-            onPress: () => 
-              WebBrowser.openBrowserAsync(
-                'https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil&hl=es'
-              ),
-          },
-          { 
-            text: 'Cerrar', 
-            style: 'cancel'   // estilo de botón de cierre
-          }
-        ] 
-      );
-    }
-  })
-  .catch((err) => {
-    console.log("Error al consultar actualización:", err.message);
-  });
 export default class LoginScreen extends Component{
 
     constructor(props){
@@ -107,9 +75,39 @@ export default class LoginScreen extends Component{
             metodoLogin: 'password',
             iconShow: 'eye-slash',
             bioAvaliable: false,
-            errorModal: { visible: false, success: false, title: '', message: '', onClose: null }
+            errorModal: { visible: false, success: false, title: '', message: '', onClose: null },
+            updateModal: { visible: false, current: '', latest: '' }
         }
        global.currentRouteName = 'Login';
+    }
+
+    verificarActualizacion(){
+      axios
+        .get('https://api.progresarcorp.com.py/api/actualizacion', { headers: { 'Cache-Control': 'no-cache' } })
+        .then(response => {
+          const latest = String(response.data).trim();
+          const current = Constants.expoConfig?.version || Constants.manifest?.version;
+
+          console.log(`Versión actual: ${current}, disponible: ${latest}`);
+
+          if (isVersionOlder(current, latest)) {
+            this.setState({ updateModal: { visible: true, current, latest } });
+          }
+        })
+        .catch((err) => {
+          console.log("Error al consultar actualización:", err.message);
+        });
+    }
+
+    cerrarActualizacion = () => {
+      this.setState({ updateModal: { visible: false, current: '', latest: '' } });
+    }
+
+    irATienda = () => {
+      WebBrowser.openBrowserAsync(
+        'https://play.google.com/store/apps/details?id=com.progresarcorporation.progresarmovil&hl=es'
+      );
+      this.cerrarActualizacion();
     }
 
     mostrarError(title, message, onClose){
@@ -303,6 +301,7 @@ verificarBiometria = async () => {
 
 componentDidMount() {
 this.cargarNombreGuardado(); // Solo el nombre
+this.verificarActualizacion();
 }
  
 //Valida si esta configurado la contraseña 
@@ -558,7 +557,7 @@ changeUser(user){
     } */
 
     render(){
-        const {buttonStyle, disabledButton, loading, bioAvaliable, optBio, secureText, iconShow, errorModal} = this.state;
+        const {buttonStyle, disabledButton, loading, bioAvaliable, optBio, secureText, iconShow, errorModal, updateModal} = this.state;
 
         const puedeIngresar = this.state.user !== '' && this.state.pass !== '';
 
@@ -931,6 +930,41 @@ changeUser(user){
                   </View>
                 </View>
               </Modal>
+
+              <Modal
+                visible={updateModal.visible}
+                transparent
+                animationType="fade"
+                onRequestClose={this.cerrarActualizacion}
+              >
+                <View style={styles.errorOverlay}>
+                  <View style={styles.errorCard}>
+                    <View style={styles.errorIconCircle}>
+                      <Icon name="cloud-download" size={20} color="#fff" />
+                    </View>
+                    <Text style={styles.errorTitle}>¡Aviso de actualización!</Text>
+                    <Text style={styles.errorMessage}>
+                      Tenés la versión {updateModal.current}, pero hay una nueva versión {updateModal.latest} disponible.
+                    </Text>
+                    <View style={styles.errorButtonsRow}>
+                      <TouchableOpacity
+                        style={[styles.errorButton, styles.errorButtonSecondary, { flex: 1 }]}
+                        onPress={this.cerrarActualizacion}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.errorButtonSecondaryText, { textAlign: 'center' }]}>Cerrar</Text>
+                      </TouchableOpacity>
+                      <TouchableOpacity
+                        style={[styles.errorButton, { flex: 1 }]}
+                        onPress={this.irATienda}
+                        activeOpacity={0.85}
+                      >
+                        <Text style={[styles.errorButtonText, { textAlign: 'center' }]}>Actualizar</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </View>
+              </Modal>
             </View>
         );
     }
@@ -1280,6 +1314,19 @@ const styles = StyleSheet.create({
   },
   errorButtonText: {
     color: '#fff',
+    fontWeight: 'bold',
+    fontSize: 14,
+  },
+  errorButtonsRow: {
+    flexDirection: 'row',
+    gap: 10,
+    width: '100%',
+  },
+  errorButtonSecondary: {
+    backgroundColor: 'rgba(158,32,33,0.08)',
+  },
+  errorButtonSecondaryText: {
+    color: '#9e2021',
     fontWeight: 'bold',
     fontSize: 14,
   },

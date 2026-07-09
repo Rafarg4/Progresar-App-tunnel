@@ -57,6 +57,7 @@
     "react-dom": "19.1.0",
     "react-native": "0.81.5",
     "react-native-awesome-alerts": "^2.0.0",
+    "react-native-blob-util": "^0.24.10",
     "react-native-dropdown-picker": "^5.4.4",
     "react-native-element-textinput": "^2.0.1",
     "react-native-elements": "^3.4.2",
